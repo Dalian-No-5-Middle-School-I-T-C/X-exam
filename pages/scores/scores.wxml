@@ -1,0 +1,120 @@
+<!-- pages/scores/scores.wxml -->
+<view class="container">
+  <view class="hero-head">
+    <view>
+      <view class="hero-sub">{{name ? name + '，' : ''}}这是你的成绩</view>
+      <view class="title">我的成绩</view>
+    </view>
+    <view wx:if="{{fromCache}}" class="cache-tag">缓存</view>
+  </view>
+
+  <!-- 最新一次考试大卡 -->
+  <view wx:if="{{latest}}" class="hero anim {{ready ? 'show' : ''}}" bindtap="goLatest">
+    <view class="eyebrow">LATEST EXAM · 最新考试</view>
+    <view class="hero-top">
+      <view class="hero-name">
+        <text class="hero-exam">{{latest.exam_name}}</text>
+        <text wx:if="{{latest.subject}}" class="tag">{{latest.subject}}</text>
+      </view>
+      <view class="hero-change {{latestChange > 0 ? 'up' : (latestChange < 0 ? 'down' : 'flat')}}">
+        <text wx:if="{{latestChange > 0}}">▲ {{latestChange}}</text>
+        <text wx:elif="{{latestChange < 0}}">▼ {{-latestChange}}</text>
+        <text wx:else>—</text>
+      </view>
+    </view>
+
+    <view class="hero-score num">{{heroScore}}<text wx:if="{{latest.full_score != null}}" class="hero-total"> / {{latest.full_score}}</text></view>
+
+    <view class="hero-stats">
+      <view class="hero-stat">
+        <view class="hero-num">{{latest.rank != null ? latest.rank : '—'}}</view>
+        <view class="muted">班排 / {{latest.class_size}}</view>
+      </view>
+      <view class="hero-stat">
+        <view class="hero-num">{{latest.percentile != null ? latest.percentile + '%' : '—'}}</view>
+        <view class="muted">超越同学</view>
+      </view>
+      <view class="hero-stat">
+        <view class="hero-num">{{latest.objective_score}}</view>
+        <view class="muted">客观分</view>
+      </view>
+      <view class="hero-stat">
+        <view class="hero-num">{{latest.subjective_score}}</view>
+        <view class="muted">主观分</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{latest}}" class="hero-actions">
+    <button class="ghost-btn" bindtap="goLeaderboard">查看成绩天梯 ›</button>
+  </view>
+
+  <!-- 总览统计卡 -->
+  <view wx:if="{{overview}}" class="ovw card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms">
+    <view class="ovw-item">
+      <view class="ovw-num">{{overview.totalExams}}</view>
+      <view class="muted">考试次数</view>
+    </view>
+    <view class="ovw-item">
+      <view class="ovw-num">{{overview.avgScore}}</view>
+      <view class="muted">平均分</view>
+    </view>
+    <view class="ovw-item">
+      <view class="ovw-num">{{overview.subjectCount}}</view>
+      <view class="muted">学科数</view>
+    </view>
+    <view class="ovw-item">
+      <view class="ovw-num sm">{{overview.best}}</view>
+      <view class="muted">最佳单科</view>
+    </view>
+  </view>
+
+  <!-- 分析入口 -->
+  <view class="entry-row anim {{ready ? 'show' : ''}}" style="animation-delay: 100ms">
+    <view class="entry" bindtap="goSubjects">
+      <text class="entry-ico"></text>
+      <view class="entry-txt">
+        <view class="entry-title">学科对比</view>
+        <view class="muted">雷达 · 明细</view>
+      </view>
+      <text class="entry-arrow">›</text>
+    </view>
+    <view class="entry" bindtap="goSemester">
+      <text class="entry-ico"></text>
+      <view class="entry-txt">
+        <view class="entry-title">学期对比</view>
+        <view class="muted">进步 · 退步</view>
+      </view>
+      <text class="entry-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 搜索 + 学科筛选 -->
+  <view class="toolbar">
+    <view class="search-box">
+      <input class="search" placeholder="搜索考试 / 学科" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" />
+    </view>
+  </view>
+  <scroll-view wx:if="{{subjects.length > 0}}" scroll-x class="chips">
+    <view class="chip {{subjectFilter === '' ? 'on' : ''}}" bindtap="onSubject" data-value="">全部</view>
+    <view wx:for="{{subjects}}" wx:key="*this"
+          class="chip {{subjectFilter === item ? 'on' : ''}}"
+          bindtap="onSubject" data-value="{{item}}">{{item}}</view>
+  </scroll-view>
+
+  <!-- 列表 -->
+  <view class="list">
+    <block wx:if="{{viewList.length > 0}}">
+      <view wx:for="{{viewList}}" wx:key="exam_id" class="anim {{ready ? 'show' : ''}}" style="animation-delay: {{index < 12 ? index * 45 : 0}}ms">
+        <score-card score="{{item}}" bind:tap="goDetail" />
+      </view>
+    </block>
+    <view wx:elif="{{!loading}}" class="empty {{ready ? 'show' : ''}}">没有匹配的成绩</view>
+  </view>
+
+  <view wx:if="{{loading && !latest}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-num"></view><view class="sk sk-line w-80"></view></view>
+    <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view><view class="sk sk-line w-80"></view></view>
+  </view>
+  <view wx:if="{{error}}" class="empty">{{error}}</view>
+</view>

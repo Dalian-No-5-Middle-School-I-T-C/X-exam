@@ -1,0 +1,48 @@
+<!-- pages/subjects/subjects.wxml -->
+<view class="container">
+  <view class="title">学科对比</view>
+  <view wx:if="{{loading}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-block"></view></view>
+    <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
+  </view>
+
+  <view wx:if="{{subjects.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学科对比数据</view>
+
+  <block wx:if="{{subjects.length > 0}}">
+    <view class="section-title">我的均分 vs 班级均分</view>
+    <canvas wx:if="{{subjects.length >= 3}}" type="2d" id="radarCanvas" class="chart radar"></canvas>
+    <view wx:if="{{subjects.length >= 3}}" class="legend">
+      <text class="lg brand">我的均分</text>
+      <text class="lg muted">班级均分</text>
+    </view>
+    <view wx:if="{{subjects.length < 3}}" class="muted sub">学科数不足 3，雷达图需至少 3 科，下方以表格呈现</view>
+
+    <view wx:if="{{weakSubject}}" class="weak-note">
+      最需加强：<text class="tag-lime">{{weakSubject}}</text>（与班级均分差距最大）
+    </view>
+
+    <view class="section-title">学科明细</view>
+    <view class="tbl card anim {{ready ? 'show' : ''}}">
+      <view class="tbl-head">
+        <text class="c1">学科</text>
+        <text class="c2">次数</text>
+        <text class="c2">均分</text>
+        <text class="c2">班均</text>
+        <text class="c2">差距</text>
+        <text class="c2">趋势</text>
+      </view>
+      <view wx:for="{{subjects}}" wx:key="subject" class="tbl-row">
+        <text class="c1">{{item.subject}}</text>
+        <text class="c2">{{item.examCount}}</text>
+        <text class="c2">{{item.avgScore}}</text>
+        <text class="c2">{{item.avgClassAvg}}</text>
+        <text class="c2 {{item.gapToClass >= 0 ? 'green' : 'red'}}">{{item.gapToClass >= 0 ? '+' : ''}}{{item.gapToClass}}</text>
+        <text class="c2 {{item.trend === 'up' ? 'green' : (item.trend === 'down' ? 'red' : 'muted')}}">{{item.trend === 'up' ? '▲' : (item.trend === 'down' ? '▼' : '—')}}</text>
+      </view>
+    </view>
+
+    <view class="section-title">与班级均分差距</view>
+    <canvas type="2d" id="barCanvas" class="chart"></canvas>
+    <view class="muted sub">蓝色=高于班级均分，红色=低于班级均分</view>
+  </block>
+</view>

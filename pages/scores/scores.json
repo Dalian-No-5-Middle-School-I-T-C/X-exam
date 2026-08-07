@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "成绩",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#F1EFE9",
+  "usingComponents": {
+    "score-card": "/components/score-card/score-card"
+  }
+}

@@ -1,0 +1,64 @@
+/* pages/subjects/subjects.wxss */
+.chart {
+  width: 100%;
+  height: 420rpx;
+}
+.radar { height: 460rpx; }
+
+.legend {
+  display: flex;
+  gap: 28rpx;
+  justify-content: center;
+  margin-top: 12rpx;
+}
+.lg {
+  font-size: 22rpx;
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+}
+.lg::before {
+  content: '';
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 0;
+  margin-right: 8rpx;
+}
+.lg.brand::before { background: var(--brand); }
+.lg.muted::before { background: var(--text-3); }
+.lg.amber::before { background: var(--warning); }
+
+.weak-note {
+  font-size: 24rpx;
+  color: var(--text-2);
+  margin: 10rpx 4rpx 0;
+}
+/* 荧光绿：本页唯一 lime 点缀（最需加强学科） */
+.tag-lime {
+  display: inline-block;
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 700;
+  padding: 2rpx 12rpx;
+  font-size: 24rpx;
+}
+
+/* 明细表 */
+.tbl { padding: 6rpx 0; }
+.tbl-head, .tbl-row {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 20rpx;
+}
+.tbl-head {
+  color: var(--text-3);
+  font-size: 22rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+.tbl-row {
+  border-bottom: 1rpx solid var(--border);
+  font-size: 24rpx;
+}
+.tbl-row:last-child { border-bottom: none; }
+.c1 { flex: 2; font-weight: 600; color: var(--text-1); }
+.c2 { flex: 1; text-align: center; color: var(--text-2); }

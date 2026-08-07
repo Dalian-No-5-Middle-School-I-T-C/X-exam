@@ -1,0 +1,71 @@
+<!-- pages/detail/detail.wxml -->
+<view class="container">
+  <view class="eyebrow">EXAM · 成绩详情</view>
+  <view class="title">{{examName || ('考试 #' + examId)}}</view>
+
+  <view wx:if="{{loading}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
+    <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view></view>
+  </view>
+  <view wx:elif="{{error}}" class="empty">{{error}}</view>
+
+  <block wx:else>
+    <!-- 客观题 -->
+    <view class="section-title">客观题</view>
+    <view class="q-card anim {{ready ? 'show' : ''}}" wx:if="{{objective.length > 0}}">
+      <view class="q-row" wx:for="{{objective}}" wx:key="question_number">
+        <text class="q-no">Q{{item.question_number}}</text>
+        <text class="q-score {{item.score < item.max_score ? 'amber' : 'green'}}">{{item.score}}/{{item.max_score}}</text>
+        <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
+      </view>
+    </view>
+    <view wx:else class="muted sub">无客观题</view>
+
+    <!-- 主观题 -->
+    <view class="section-title">主观题</view>
+    <view class="q-card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms" wx:if="{{subjective.length > 0}}">
+      <view class="q-row" wx:for="{{subjective}}" wx:key="question_number">
+        <text class="q-no">Q{{item.question_number}}</text>
+        <text class="q-score {{item.score < item.max_score ? 'amber' : 'green'}}">{{item.score}}/{{item.max_score}}</text>
+        <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
+      </view>
+    </view>
+    <view wx:else class="muted sub">无主观题</view>
+
+    <!-- 原卷图 -->
+    <view wx:if="{{showImages}}" class="section-title">原卷作答</view>
+    <scroll-view wx:if="{{showImages}}" scroll-x class="imgs">
+      <view class="img-wrap" wx:for="{{images}}" wx:key="id">
+        <image class="crop" src="{{item.url}}" mode="widthFix" show-menu-by-longpress="true" />
+        <text class="img-title">{{item.title}}</text>
+      </view>
+    </scroll-view>
+
+    <!-- 本场 AI 分析 -->
+    <view class="section-title">本场 AI 分析</view>
+    <button class="btn-primary ai-btn" loading="{{aiLoading}}" bindtap="onAi">生成分析</button>
+    <view wx:if="{{aiError}}" class="empty ai-err">{{aiError}}</view>
+
+    <view wx:if="{{aiReport.isText}}" class="card ai-report">
+      <text class="ai-text" user-select="true" space="nbsp">{{aiReport.text}}</text>
+    </view>
+    <view wx:elif="{{aiReport.overall || aiReport.weak.length || aiReport.next.length || aiReport.cave.length}}" class="card ai-report">
+      <view wx:if="{{aiReport.overall}}" class="ai-judge">{{aiReport.overall}}</view>
+
+      <view wx:if="{{aiReport.weak.length > 0}}" class="ai-block">
+        <view class="ai-h">薄弱点</view>
+        <view wx:for="{{aiReport.weak}}" wx:key="*this" class="ai-li">· {{item}}</view>
+      </view>
+
+      <view wx:if="{{aiReport.next.length > 0}}" class="ai-block">
+        <view class="ai-h">下一步</view>
+        <view wx:for="{{aiReport.next}}" wx:key="*this" class="ai-li">· {{item}}</view>
+      </view>
+
+      <view wx:if="{{aiReport.cave.length > 0}}" class="ai-block">
+        <view class="ai-h">说明</view>
+        <view wx:for="{{aiReport.cave}}" wx:key="*this" class="ai-li muted">{{item}}</view>
+      </view>
+    </view>
+  </block>
+</view>

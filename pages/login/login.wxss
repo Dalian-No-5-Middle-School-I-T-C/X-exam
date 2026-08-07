@@ -1,0 +1,84 @@
+/* pages/login/login.wxss — editorial-brutalist */
+.login { padding-top: 28rpx; }
+
+/* 深色 hero 条 */
+.hero-sec {
+  background: var(--dark);
+  color: var(--paper);
+  padding: 40rpx 32rpx;
+  border: 1rpx solid var(--line-dark);
+  margin-bottom: 28rpx;
+}
+.logo {
+  width: 72rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  text-align: center;
+  background: var(--blue);
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 800;
+  border-radius: 0;
+  margin-bottom: 20rpx;
+}
+.h-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  letter-spacing: -1rpx;
+  color: var(--paper);
+  line-height: 1.2;
+}
+.hero-sec .eyebrow { color: var(--gray-on-dark); margin: 12rpx 0 18rpx; }
+.h-feats { display: flex; flex-direction: column; gap: 8rpx; }
+.h-feat { font-family: var(--font-mono); font-size: 24rpx; color: var(--gray-on-dark); }
+
+/* 登录卡：直角 + 硬阴影（重点卡） */
+.card {
+  background: var(--card-bg);
+  border: 1rpx solid var(--ink);
+  border-radius: 0;
+  padding: 36rpx 32rpx;
+  box-shadow: var(--shadow-hard);
+}
+.field { margin-bottom: 28rpx; }
+.label {
+  display: block;
+  font-size: 24rpx;
+  color: var(--text-2);
+  margin-bottom: 12rpx;
+  font-weight: 600;
+}
+.input {
+  background: var(--paper);
+  border: 1rpx solid var(--border-2);
+  border-radius: 0;
+  padding: 24rpx 26rpx;
+  color: var(--text-1);
+  font-size: 30rpx;
+  height: 92rpx;
+}
+.input:focus { border-color: var(--blue); }
+.ph { color: #B0B0B8; }
+.remember {
+  font-size: 24rpx;
+  color: var(--text-2);
+  margin: 4rpx 0 24rpx;
+}
+/* 错误：绯红仅错误语义 */
+.error {
+  color: var(--err-fg);
+  font-size: 24rpx;
+  margin-bottom: 18rpx;
+  background: var(--err-soft);
+  padding: 14rpx 20rpx;
+  border: 1rpx solid var(--err-bd);
+  border-radius: 0;
+  line-height: 1.5;
+}
+.login-btn { margin-top: 8rpx; }
+.foot {
+  text-align: center;
+  margin-top: 44rpx;
+  font-size: 24rpx;
+  color: var(--text-3);
+}

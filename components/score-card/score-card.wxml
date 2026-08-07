@@ -1,0 +1,22 @@
+<!-- components/score-card/score-card.wxml -->
+<view class="sc-card" bindtap="onTap">
+  <view class="sc-head">
+    <view class="sc-name">{{score.exam_name}}</view>
+    <view wx:if="{{score.subject}}" class="tag sc-subject">{{score.subject}}</view>
+  </view>
+
+  <view class="sc-body">
+    <view class="sc-score">{{score.total_score}}<text wx:if="{{score.full_score != null}}" class="sc-total"> / {{score.full_score}}</text></view>
+    <view wx:if="{{score.rank != null}}" class="sc-rank">
+      <text class="sc-rank-num">第 {{score.rank}}/{{score.class_size}}</text>
+      <text class="sc-pct">前 {{score.percentile}}%</text>
+    </view>
+    <view wx:else class="sc-rank muted">暂无排名</view>
+  </view>
+
+  <view class="sc-foot">
+    <text class="sc-meta">客观 {{score.objective_score}}</text>
+    <text class="sc-dot">·</text>
+    <text class="sc-meta">主观 {{score.subjective_score}}</text>
+  </view>
+</view>

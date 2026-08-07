@@ -1,0 +1,51 @@
+/* pages/semester/semester.wxss */
+.sem-cards { display: flex; gap: 18rpx; }
+.sem-card { flex: 1; text-align: center; }
+.sem-label { font-size: 24rpx; color: var(--text-3); }
+.sem-avg {
+  font-size: 56rpx;
+  font-weight: 800;
+  color: var(--brand);
+  line-height: 1.2;
+  margin: 8rpx 0;
+}
+.sem-card:last-child .sem-avg { color: var(--text-2); }
+
+.change-row {
+  text-align: center;
+  margin: 24rpx 0 8rpx;
+  font-size: 28rpx;
+  color: var(--text-2);
+}
+.change-row.up { color: var(--success); }
+.change-row.down { color: var(--danger); }
+.change-row .big {
+  font-size: 40rpx;
+  font-weight: 800;
+  margin-left: 8rpx;
+}
+
+.tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin: 8rpx 0 4rpx; }
+.tag-pill { font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 999rpx; }
+.tag-pill.green { color: var(--blue); background: var(--blue-soft); border: 1rpx solid var(--blue-bd); }
+.tag-pill.red { color: var(--err-fg); background: var(--err-soft); border: 1rpx solid var(--err-bd); }
+
+/* 明细表 */
+.tbl { padding: 6rpx 0; }
+.tbl-head, .tbl-row {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 20rpx;
+}
+.tbl-head {
+  color: var(--text-3);
+  font-size: 22rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+.tbl-row {
+  border-bottom: 1rpx solid var(--border);
+  font-size: 24rpx;
+}
+.tbl-row:last-child { border-bottom: none; }
+.c1 { flex: 2; font-weight: 600; color: var(--text-1); }
+.c2 { flex: 1; text-align: center; color: var(--text-2); }

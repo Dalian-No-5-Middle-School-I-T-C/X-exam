@@ -1,0 +1,19 @@
+<!-- pages/trends/trends.wxml -->
+<view class="container">
+  <view class="eyebrow">TREND · 成绩走势</view>
+  <view class="title">成绩趋势</view>
+  <view wx:if="{{loading}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-block"></view></view>
+  </view>
+
+  <view class="section-title">成绩走势</view>
+  <view wx:if="{{trends.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无成绩数据</view>
+  <canvas wx:if="{{trends.length > 0}}" type="2d" id="lineCanvas" class="chart"></canvas>
+  <view wx:if="{{trends.length > 0}}" class="legend anim {{ready ? 'show' : ''}}">
+    <text class="lg brand">总分</text>
+    <text class="lg amber">班均</text>
+    <text class="lg muted">年段均</text>
+  </view>
+
+  <view class="muted sub" style="text-align:center;margin-top:40rpx;">学科雷达对比、学期进步/退步已移至「我的成绩」页的分析入口</view>
+</view>

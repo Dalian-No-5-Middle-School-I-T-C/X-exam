@@ -1,0 +1,33 @@
+<!-- pages/login/login.wxml -->
+<view class="container login">
+  <view class="hero-sec anim {{ready ? 'show' : ''}}">
+    <view class="logo">PX</view>
+    <view class="h-title">学生成绩查询</view>
+    <view class="eyebrow">PROJECT-X / DALIAN NO.5</view>
+    <view class="h-feats">
+      <text class="h-feat">· 极速查分 · 仅本人可见</text>
+      <text class="h-feat">· 趋势 / 学科 / 学期分析</text>
+    </view>
+  </view>
+
+  <view class="card card--hard anim {{ready ? 'show' : ''}}" style="animation-delay: 80ms">
+    <view class="field">
+      <text class="label">学号 / 用户名</text>
+      <input class="input" placeholder="请输入学号或用户名" placeholder-class="ph" value="{{identifier}}" bindinput="onIdentifier" />
+    </view>
+    <view class="field">
+      <text class="label">密码</text>
+      <input class="input" password placeholder="请输入密码" placeholder-class="ph" value="{{password}}" bindinput="onPassword" />
+    </view>
+
+    <checkbox-group bindchange="onRememberChange" class="remember">
+      <label><checkbox checked="{{remember}}" color="#2E44FF" /> 记住我（180 天免登录）</label>
+    </checkbox-group>
+
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+
+    <button class="btn-primary login-btn" loading="{{loading}}" bindtap="onLogin">登 录</button>
+  </view>
+
+  <view class="foot">数据由学校 Project-X 系统提供</view>
+</view>

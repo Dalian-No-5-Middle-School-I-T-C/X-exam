@@ -1,0 +1,53 @@
+<!-- pages/semester/semester.wxml -->
+<view class="container">
+  <view class="title">学期对比</view>
+  <view wx:if="{{loading}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-num"></view></view>
+    <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view></view>
+  </view>
+
+  <view wx:if="{{!current && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学期对比数据</view>
+
+  <block wx:if="{{current}}">
+    <view class="section-title">本学期 vs 上学期</view>
+    <view class="sem-cards anim {{ready ? 'show' : ''}}">
+      <view class="sem-card card">
+        <view class="sem-label">本学期</view>
+        <view class="sem-avg num">{{curAvg}}</view>
+        <view class="muted">{{current.examCount}} 场 · {{current.label}}</view>
+      </view>
+      <view class="sem-card card">
+        <view class="sem-label">上学期</view>
+        <view class="sem-avg muted num">{{previous ? prevAvg : '—'}}</view>
+        <view class="muted">{{previous ? previous.examCount + ' 场' : '暂无数据'}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{avgScoreChange != null}}" class="change-row {{avgScoreChange >= 0 ? 'up' : 'down'}}">
+      总均分{{avgScoreChange >= 0 ? '提升' : '下降'}}<text class="big">{{avgScoreChange >= 0 ? '+' : ''}}{{avgScoreChange}}</text>
+    </view>
+
+    <view wx:if="{{improved.length > 0 || declined.length > 0}}" class="tags">
+      <view wx:for="{{improved}}" wx:key="*this" class="tag-pill green">{{item}} ↑</view>
+      <view wx:for="{{declined}}" wx:key="*this" class="tag-pill red">{{item}} ↓</view>
+    </view>
+
+    <view class="section-title">学科明细</view>
+    <view class="tbl card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms">
+      <view class="tbl-head">
+        <text class="c1">学科</text>
+        <text class="c2">本学期</text>
+        <text class="c2">上学期</text>
+        <text class="c2">变化</text>
+        <text class="c2">班差</text>
+      </view>
+      <view wx:for="{{rows}}" wx:key="subject" class="tbl-row">
+        <text class="c1">{{item.subject}}</text>
+        <text class="c2">{{item.cur}}</text>
+        <text class="c2">{{item.prev}}</text>
+        <text class="c2 {{item.delta != null ? (item.delta >= 0 ? 'green' : 'red') : 'muted'}}">{{item.delta != null ? (item.delta >= 0 ? '+' : '') + item.delta : '—'}}</text>
+        <text class="c2">{{item.gap}}</text>
+      </view>
+    </view>
+  </block>
+</view>

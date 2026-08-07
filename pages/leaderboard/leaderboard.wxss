@@ -1,0 +1,85 @@
+/* pages/leaderboard/leaderboard.wxss — editorial-brutalist */
+.lb-sub { margin-top: 6rpx; }
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 18rpx;
+  margin: 30rpx 0 10rpx;
+}
+.pod {
+  flex: 1;
+  border-radius: 0;
+  padding: 22rpx 8rpx 18rpx;
+  text-align: center;
+  background: var(--sheet);
+  box-shadow: none;
+  border: 1rpx solid var(--border);
+}
+/* 第一名：蓝实底 + 黑硬阴影（重点卡） */
+.pod-1 {
+  background: var(--blue);
+  border: 1rpx solid var(--ink);
+  box-shadow: var(--shadow-hard);
+  transform: translateY(-18rpx);
+  padding-top: 30rpx;
+}
+.pod-2 { border-top: 6rpx solid var(--gray); }
+.pod-3 { border-top: 6rpx solid var(--ink-soft); }
+
+.pod-medal {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  margin: 0 auto 12rpx;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700;
+  font-size: 30rpx;
+}
+.pod-1 .pod-medal { background: var(--ink); transform: scale(1.15); }
+.pod-2 .pod-medal { background: var(--gray); }
+.pod-3 .pod-medal { background: var(--ink-soft); }
+
+.pod-name { font-size: 24rpx; color: var(--text-2); font-weight: 600; }
+.pod-1 .pod-name { color: #fff; }
+.pod-score { font-size: 32rpx; font-weight: 800; color: var(--text-1); margin-top: 4rpx; }
+.pod-1 .pod-score { color: #fff; }
+
+.lb-list { padding: 8rpx 0; }
+.lb-row {
+  display: flex;
+  align-items: center;
+  padding: 22rpx 24rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-row.me { background: var(--blue-soft); border-radius: 0; }
+
+.lb-rank {
+  width: 56rpx;
+  text-align: center;
+  font-weight: 700;
+  font-size: 30rpx;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.lb-rank.r1 { color: var(--blue); }
+.lb-rank.r2 { color: var(--gray); }
+.lb-rank.r3 { color: var(--ink-soft); }
+
+.lb-name { flex: 1; margin-left: 20rpx; font-size: 28rpx; color: var(--text-1); }
+.lb-score { font-size: 30rpx; font-weight: 700; color: var(--blue); }
+
+.mine-card {
+  margin-top: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mine-row { display: flex; align-items: baseline; gap: 16rpx; }
+.mine-rank { font-size: 48rpx; font-weight: 800; color: var(--blue); font-variant-numeric: tabular-nums; }
+.mine-score { font-size: 32rpx; font-weight: 700; color: var(--text-1); }
