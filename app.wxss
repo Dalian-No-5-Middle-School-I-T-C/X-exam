@@ -1,0 +1,268 @@
+/* ===== Project-X 小程序设计令牌（editorial-brutalist · Clarity V2.0） =====
+   权威基准：demo-brutalist.html。蓝=品牌/正向，绯红=仅错误/异常语义。
+   兼容别名：保留旧 --brand/--text-* 等变量名，全部指向新值，旧引用零改动变蓝。 */
+page {
+  /* 纸面 / 墨 */
+  --paper: #F1EFE9;
+  --paper-2: #E9E6DE;
+  --sheet: #FFFFFF;
+  --ink: #1A1917;
+  --ink-soft: #4A4842;
+  --gray: #8B887E;
+  --line: #D8D5CB;
+  --line-dark: #2E2E2B;
+
+  /* 强调 */
+  --blue: #2E44FF;
+  --blue-deep: #1F30C8;
+  --blue-soft: rgba(46, 68, 255, 0.09);
+  --blue-bd: rgba(46, 68, 255, 0.35);
+  --lime: #C8FF33;
+
+  /* 错误（绯红仅错误语义） */
+  --err: #C00F28;
+  --err-fg: #A10D22;
+  --err-soft: #FCF3F4;
+  --err-bd: #F1C2C9;
+
+  /* 深色 */
+  --dark: #141413;
+  --dark-2: #1D1D1B;
+  --gray-on-dark: #8A887F;
+
+  /* 阴影 / 圆角 / 字体 */
+  --shadow-hard: 8rpx 8rpx 0 var(--ink);
+  --r-pill: 999rpx;
+  --font-sans: "PingFang SC", "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", -apple-system, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  /* ── 兼容别名：旧变量名 → 新值（让现有 var(--brand) 等自动换肤） ── */
+  --brand: #2E44FF;
+  --brand-light: #5A6BFF;
+  --brand-dark: #1F30C8;
+  --brand-bg: rgba(46, 68, 255, 0.09);
+  --page-bg: var(--paper);
+  --card-bg: var(--sheet);
+  --border: var(--line);
+  --border-2: var(--line);
+  --text-1: var(--ink);
+  --text-2: var(--ink-soft);
+  --text-3: var(--gray);
+  --success: var(--blue);   /* 正向 / 进步 → 蓝 */
+  --warning: var(--ink);    /* 进行中 / 待提升 → 墨 */
+  --danger: var(--err);     /* 错误 / 退步 / 异常 → 绯红 */
+  --grid: var(--line);
+  --shadow-sm: none;
+  --shadow: none;
+
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 28rpx;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+view, text, input, button, scroll-view, image { box-sizing: border-box; }
+
+.container { padding: 28rpx 28rpx 56rpx; }
+
+/* 标题 */
+.title {
+  font-size: 52rpx;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -2rpx;
+  line-height: 1.15;
+}
+.sub { font-size: 24rpx; color: var(--text-3); font-weight: 400; letter-spacing: 0.2rpx; line-height: 1.55; }
+.muted { color: var(--text-3); font-size: 24rpx; font-weight: 400; letter-spacing: 0.2rpx; }
+
+/* 区块标题：左侧蓝色方块条（直角） */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -1rpx;
+  margin: 40rpx 6rpx 18rpx;
+}
+.section-title::before {
+  content: '';
+  width: 8rpx;
+  height: 34rpx;
+  border-radius: 0;
+  background: var(--blue);
+}
+
+/* 卡片：直角 + 1px 细线 + 无柔阴影 */
+.card {
+  background: var(--card-bg);
+  border: 1rpx solid var(--border);
+  border-radius: 0;
+  padding: 28rpx;
+}
+.card text { line-height: 1.6; }
+.card:active { background: #FAF8F3; }
+/* 硬阴影重点卡（全工程仅 3 处：登录卡 / 成绩 hero / 天梯领奖台） */
+.card--hard { box-shadow: var(--shadow-hard); border-color: var(--ink); }
+
+/* 标签 / 学科徽标（胶囊保留） */
+.tag {
+  display: inline-block;
+  font-size: 22rpx;
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+  padding: 5rpx 18rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid var(--blue-bd);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.tag:active { transform: scale(0.96); }
+
+/* 主按钮：蓝实底 + 胶囊 + 无阴影 + 按压缩小 */
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  border-radius: var(--r-pill);
+  height: 92rpx;
+  line-height: 92rpx;
+  border: none;
+  box-shadow: none;
+  letter-spacing: 2rpx;
+}
+.btn-primary::after { border: none; }
+.btn-primary:active { transform: scale(0.97); background: var(--blue-deep); }
+
+/* 状态色 */
+.green { color: var(--success); }
+.red { color: var(--danger); }
+.amber { color: var(--warning); }
+.primary { color: var(--brand); }
+.blue { color: var(--brand); }
+
+/* ── 新增原语（对齐 demo-brutalist） ── */
+/* 等宽眉题 */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 20rpx;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+.eyebrow--blue { color: var(--blue); }
+/* 等宽元信息 */
+.meta {
+  font-family: var(--font-mono);
+  font-size: 20rpx;
+  color: var(--gray);
+}
+.meta--faint { color: var(--line); }
+/* 数据点（等宽右对齐） */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 700;
+}
+/* 深色反白块 */
+.sec-dark {
+  background: var(--dark);
+  color: var(--paper);
+  background-image: none;
+}
+.sec-dark .card {
+  background: var(--dark-2);
+  border-color: var(--line-dark);
+}
+/* 按钮变体 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  font-weight: 700;
+  font-size: 30rpx;
+  border: 1rpx solid transparent;
+  line-height: 1.2;
+}
+.btn::after { border: none; }
+.btn.out { border-color: var(--ink); color: var(--ink); background: transparent; }
+.btn.out:active { background: var(--ink); color: var(--paper); transform: scale(0.98); }
+.btn.gho { color: var(--ink-soft); background: transparent; }
+.btn.gho:active { transform: scale(0.98); }
+.btn.dan { background: var(--err); color: #fff; }
+.btn.dan:active { background: var(--err-fg); transform: scale(0.98); }
+/* 徽章族（直角 / 胶囊，对齐 demo b-*） */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 36rpx;
+  padding: 0 16rpx;
+  border-radius: var(--r-pill);
+  font-size: 22rpx;
+  font-weight: 600;
+  border: 1rpx solid;
+}
+.b-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+.b-gray { background: var(--paper-2); color: var(--ink-soft); border-color: var(--line); }
+.b-amber { background: transparent; color: var(--ink); border-color: var(--ink); }
+.b-red { background: var(--err-soft); color: var(--err-fg); border-color: var(--err-bd); }
+.b-brand { background: var(--blue-soft); color: var(--blue-deep); border-color: var(--blue-bd); }
+/* 进度条：直角 + 蓝填充 */
+.prog {
+  height: 12rpx;
+  background: var(--paper-2);
+  overflow: hidden;
+  border-radius: 0;
+}
+.prog > i { display: block; height: 100%; background: var(--blue); }
+
+.loading, .empty {
+  text-align: center;
+  color: var(--text-3);
+  font-size: 24rpx;
+  padding: 56rpx 0;
+}
+
+/* ── 导语段落（呼吸感） ── */
+.lede { font-size: 30rpx; font-weight: 400; line-height: 1.7; color: var(--text-2); }
+
+/* ── 进场动画原语（克制：缓出 ≤0.45s，无弹跳） ── */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(16rpx); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim { opacity: 0; }
+.anim.show { animation: riseIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.empty.show { animation: riseIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── 骨架屏（静态占位 + 极淡脉冲，克制不晃眼） ── */
+@keyframes skPulse {
+  from { opacity: 1; }
+  to   { opacity: 0.55; }
+}
+.sk {
+  background: var(--paper-2);
+  border-radius: 0;
+  animation: skPulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite alternate;
+}
+.sk-card {
+  background: var(--card-bg);
+  border: 1rpx solid var(--border);
+  padding: 28rpx;
+  margin-bottom: 18rpx;
+}
+.sk-title { height: 40rpx; width: 45%; margin: 10rpx 0 20rpx; }
+.sk-num { height: 88rpx; width: 55%; margin: 16rpx 0; }
+.sk-block { height: 320rpx; margin: 16rpx 0; }
+.sk-line { height: 26rpx; margin: 14rpx 0; }
+.sk-line.w-40 { width: 40%; }
+.sk-line.w-60 { width: 60%; }
+.sk-line.w-80 { width: 80%; }

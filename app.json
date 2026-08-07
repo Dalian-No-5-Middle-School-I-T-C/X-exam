@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/scores/scores",
+    "pages/detail/detail",
+    "pages/trends/trends",
+    "pages/profile/profile",
+    "pages/leaderboard/leaderboard",
+    "pages/subjects/subjects",
+    "pages/semester/semester"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#F1EFE9",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "成绩查询",
+    "backgroundColor": "#F1EFE9",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#8B887E",
+    "selectedColor": "#2E44FF",
+    "backgroundColor": "#F1EFE9",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/scores/scores", "text": "成绩" },
+      { "pagePath": "pages/trends/trends", "text": "趋势" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
