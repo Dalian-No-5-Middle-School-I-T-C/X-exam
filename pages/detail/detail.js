@@ -1,8 +1,7 @@
 // pages/detail/detail.js
-const { get, post } = require('../../utils/request');
+const { get, post, getBuffer } = require('../../utils/request');
 const { getToken } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
-const { API_BASE } = require('../../utils/env');
 const { normalizeReport } = require('../../utils/ai');
 
 Page({
@@ -71,36 +70,43 @@ Page({
     const self = this;
     const cached = getCachedScores();
     const studentId = cached && cached.studentId;
-    const token = getToken();
-    if (!studentId || !token) return;
+    if (!studentId) return; // 鉴权由 request 封装统一处理
 
-    wx.request({
-      url: API_BASE + '/api/exams/' + this.data.examId + '/student/' + studentId + '/scores',
-      method: 'GET',
-      header: { 'Authorization': 'Bearer ' + token },
-      success: function (res) {
-        if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
-          const d = res.data;
-          if (d.classQuestionStats) {
-            self.setData({ classAvgMap: d.classQuestionStats });
-            self.buildLists();
-          }
-          const blocks = d.answerBlocks || [];
-          if (blocks.length > 0) {
-            const imgs = blocks
-              .filter(function (b) { return b && b.id; })
-              .map(function (b) {
-                return {
-                  id: b.id,
-                  title: b.blockTitle || ('第 ' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
-                  url: API_BASE + '/api/answer-block-crops/' + b.id + '/image?token=' + encodeURIComponent(token)
-                };
-              });
-            if (imgs.length > 0) self.setData({ images: imgs, showImages: true });
-          }
+    // 元数据走统一封装：自动带 Bearer、401 自动清 token 并跳登录
+    get('/exams/' + this.data.examId + '/student/' + studentId + '/scores')
+      .then(function (d) {
+        if (d.classQuestionStats) {
+          self.setData({ classAvgMap: d.classQuestionStats });
+          self.buildLists();
         }
-      },
-      fail: function () { /* 原卷图不可用，静默降级 */ }
+        const blocks = d.answerBlocks || [];
+        if (blocks.length > 0) self.loadCropImages(blocks);
+      })
+      .catch(function () { /* 附加信息不可用，静默降级 */ });
+  },
+
+  // 原卷图：经 getBuffer 在请求头带 token 拉取字节，转 base64 data URI 喂给 <image>
+  // token 仅存在于请求头，不再落入 URL / 访问日志 / 缓存键
+  loadCropImages: function (blocks) {
+    const self = this;
+    const tasks = blocks
+      .filter(function (b) { return b && b.id; })
+      .map(function (b) {
+        return getBuffer('/answer-block-crops/' + b.id + '/image')
+          .then(function (r) {
+            const base64 = wx.arrayBufferToBase64(r.buffer);
+            return {
+              id: b.id,
+              title: b.blockTitle || ('第 ' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
+              url: 'data:' + r.contentType + ';base64,' + base64
+            };
+          })
+          .catch(function () { return null; }); // 单张失败不阻断其余
+      });
+
+    Promise.all(tasks).then(function (imgs) {
+      const ok = imgs.filter(Boolean);
+      if (ok.length > 0) self.setData({ images: ok, showImages: true });
     });
   },
 
