@@ -1,5 +1,6 @@
 // pages/trends/trends.js
 const { get } = require('../../utils/request');
+const { fail: failToast } = require('../../utils/toast');
 
 // progress: 0→1 折线从底部生长（克制：缓出，无弹跳）
 function drawLine(ctx, w, h, pts, progress) {
@@ -80,7 +81,7 @@ Page({
     this.setData({ loading: true });
     get('/scores/me/trends')
       .then(function (r) { self.setData({ trends: r || [] }); self.drawLine(); })
-      .catch(function () { self.setData({ trends: [] }); })
+      .catch(function () { self.setData({ trends: [] }); failToast('成绩趋势加载失败'); })
       .finally(function () { self.setData({ loading: false }); if (done) done(); });
   },
 

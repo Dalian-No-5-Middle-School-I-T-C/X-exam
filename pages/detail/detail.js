@@ -1,9 +1,9 @@
 // pages/detail/detail.js
 const { get, post } = require('../../utils/request');
-const { getToken } = require('../../utils/auth');
-const { getCachedScores } = require('../../utils/cache');
+const { getToken, getUser } = require('../../utils/auth');
 const { API_BASE } = require('../../utils/env');
-const { normalizeReport } = require('../../utils/ai');
+const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
+const { fail: failToast } = require('../../utils/toast');
 
 Page({
   data: {
@@ -69,50 +69,51 @@ Page({
 
   loadExtras: function () {
     const self = this;
-    const cached = getCachedScores();
-    const studentId = cached && cached.studentId;
+    const user = getUser();
+    const studentId = user && (user.id || user.studentId);
     const token = getToken();
     if (!studentId || !token) return;
 
-    wx.request({
-      url: API_BASE + '/api/exams/' + this.data.examId + '/student/' + studentId + '/scores',
-      method: 'GET',
-      header: { 'Authorization': 'Bearer ' + token },
-      success: function (res) {
-        if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
-          const d = res.data;
-          if (d.classQuestionStats) {
-            self.setData({ classAvgMap: d.classQuestionStats });
-            self.buildLists();
-          }
-          const blocks = d.answerBlocks || [];
-          if (blocks.length > 0) {
-            const imgs = blocks
-              .filter(function (b) { return b && b.id; })
-              .map(function (b) {
-                return {
-                  id: b.id,
-                  title: b.blockTitle || ('第 ' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
-                  url: API_BASE + '/api/answer-block-crops/' + b.id + '/image?token=' + encodeURIComponent(token)
-                };
-              });
-            if (imgs.length > 0) self.setData({ images: imgs, showImages: true });
-          }
+    get('/exams/' + this.data.examId + '/student/' + studentId + '/scores')
+      .then(function (d) {
+        if (d && d.classQuestionStats) {
+          self.setData({ classAvgMap: d.classQuestionStats });
+          self.buildLists();
         }
-      },
-      fail: function () { /* 原卷图不可用，静默降级 */ }
-    });
+        const blocks = (d && d.answerBlocks) || [];
+        if (blocks.length > 0) {
+          const imgs = [];
+          blocks.forEach(function (b) {
+            if (!b || !b.id) return;
+            const title = b.blockTitle || ('第 ' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题');
+            wx.downloadFile({
+              url: API_BASE + '/api/answer-block-crops/' + b.id + '/image',
+              header: { 'Authorization': 'Bearer ' + token },
+              success: function (res) {
+                if (res.statusCode === 200 && res.tempFilePath) {
+                  imgs.push({ id: b.id, title: title, url: res.tempFilePath });
+                  self.setData({ images: imgs.slice(), showImages: true });
+                }
+              },
+              fail: function () { /* 单张原卷图失败，忽略 */ }
+            });
+          });
+        }
+      })
+      .catch(function () { failToast('原卷图加载失败'); });
   },
 
   onAi: function () {
     const self = this;
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
+    const cached = getCachedAI('exam', this.data.examId);
+    if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
     post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {})
       .then(function (resp) {
         const rep = normalizeReport(resp);
-        if (rep) self.setData({ aiReport: rep });
+        if (rep) { setCachedAI('exam', self.data.examId, rep); self.setData({ aiReport: rep }); }
         else self.setData({ aiError: '暂未生成分析' });
       })
       .catch(function (err) {

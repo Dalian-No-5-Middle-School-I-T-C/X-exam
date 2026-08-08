@@ -1,5 +1,6 @@
 // pages/semester/semester.js
 const { get } = require('../../utils/request');
+const { fail: failToast } = require('../../utils/toast');
 const { animateNumber } = require('../../utils/animate');
 
 function num(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : d; }
@@ -50,6 +51,7 @@ Page({
       })
       .catch(function () {
         self.setData({ loading: false, current: null, previous: null, rows: [] });
+        failToast('学期对比加载失败');
       })
       .finally(function () { if (done) done(); });
   },

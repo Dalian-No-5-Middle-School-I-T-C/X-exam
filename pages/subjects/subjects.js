@@ -1,5 +1,6 @@
 // pages/subjects/subjects.js
 const { get } = require('../../utils/request');
+const { fail: failToast } = require('../../utils/toast');
 
 // 防御式归一化：响应可能是 {subjects, weakSubject, totalExams} 或裸数组
 function normResp(resp) {
@@ -158,6 +159,7 @@ Page({
       })
       .catch(function () {
         self.setData({ subjects: [], weakSubject: '', totalExams: 0, loading: false });
+        failToast('学科对比加载失败');
       })
       .finally(function () { if (done) done(); });
   },

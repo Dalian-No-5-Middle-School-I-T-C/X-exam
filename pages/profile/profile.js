@@ -1,8 +1,9 @@
 // pages/profile/profile.js
 const { getUser, logout, getToken } = require('../../utils/auth');
 const { post } = require('../../utils/request');
-const { normalizeReport } = require('../../utils/ai');
+const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { getSubStatus, setSubStatus, requestSubscribe, TEMPLATE_ID } = require('../../utils/subscribe');
+const { clearCachedScores } = require('../../utils/cache');
 
 Page({
   data: {
@@ -26,17 +27,36 @@ Page({
       subOn: getSubStatus(),
       subReady: !!TEMPLATE_ID
     });
+    this.syncSubAuth();
+  },
+
+  // 用微信真实订阅授权态复核本地开关，避免开关与实际授权脱节
+  syncSubAuth: function () {
+    if (!TEMPLATE_ID) return;
+    const self = this;
+    wx.getSetting({
+      withSubscriptions: true,
+      success: function (res) {
+        const settings = res.subscriptionsSetting && res.subscriptionsSetting.itemSettings;
+        if (settings && settings[TEMPLATE_ID] === 'reject') {
+          setSubStatus(false);
+          self.setData({ subOn: false });
+        }
+      }
+    });
   },
 
   onAi: function () {
     const self = this;
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
+    const cached = getCachedAI('overall');
+    if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
     post('/scores/me/ai-analysis', {})
       .then(function (resp) {
         const rep = normalizeReport(resp);
-        if (rep) self.setData({ aiReport: rep });
+        if (rep) { setCachedAI('overall', null, rep); self.setData({ aiReport: rep }); }
         else self.setData({ aiError: '暂未生成分析' });
       })
       .catch(function (err) {
@@ -51,6 +71,9 @@ Page({
     if (!wantOn) {
       setSubStatus(false);
       this.setData({ subOn: false });
+      if (TEMPLATE_ID) {
+        post('/scores/me/unsubscribe', { templateId: TEMPLATE_ID }).catch(function () {});
+      }
       return;
     }
     requestSubscribe().then(function (r) {
@@ -74,6 +97,9 @@ Page({
       success: function (r) {
         if (r.confirm) {
           logout();
+          clearCachedScores();
+          const app = getApp();
+          if (app) app.globalData = { token: '', user: null };
           wx.reLaunch({ url: '/pages/login/login' });
         }
       }

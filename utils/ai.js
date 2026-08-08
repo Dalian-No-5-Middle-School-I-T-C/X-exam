@@ -42,4 +42,18 @@ function normalizeReport(data) {
   return null;
 }
 
-module.exports = { normalizeReport };
+// AI 报告本地缓存：避免每次进入都重请求（报告短时不变）
+const CACHE_TTL = 30 * 60 * 1000; // 30 分钟
+function aiKey(kind, id) { return 'px_ai_' + kind + '_' + (id || 'overall'); }
+function getCachedAI(kind, id) {
+  try {
+    const raw = wx.getStorageSync(aiKey(kind, id));
+    if (raw && raw.t && (Date.now() - raw.t) < CACHE_TTL) return raw.report;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+function setCachedAI(kind, id, report) {
+  try { wx.setStorageSync(aiKey(kind, id), { t: Date.now(), report: report }); } catch (e) { /* ignore */ }
+}
+
+module.exports = { normalizeReport, getCachedAI, setCachedAI };
