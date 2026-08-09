@@ -130,8 +130,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 |------|------|------|----------|
 | POST | `/api/auth/login` | `{identifier,password,isPersistent}` → `{token,user}` | `utils/auth.js` |
 | GET | `/api/scores/me` | 本人全部成绩（含 `exam_id/exam_name/subject/total_score/graded_at`） | `pages/scores` |
-| GET | `/api/scores/me/exams/:examId` | 单场详情，逐题小分 `questions[]` | `pages/detail` |
-| GET | `/api/exams/:examId/student/:studentId/scores` | 班级均分、原卷图块 | `pages/detail`（loadExtras，统一请求封装） |
+| GET | `/api/scores/me/exams/:examId` | 单场详情：逐题小分 + 班级均分 + 原卷图块 | `pages/detail` |
 | GET | `/api/scores/me/trends` | 趋势数据（总分 + 班均 + 年段均） | `pages/trends` |
 | GET | `/api/scores/me/subject-comparison` | 学科对比（我的均分 / 班级均分 / 差距 / 趋势 / 薄弱学科） | `pages/subjects` |
 | GET | `/api/scores/me/semester-comparison` | 学期对比（本学期 vs 上学期、进步/退步学科） | `pages/semester` |

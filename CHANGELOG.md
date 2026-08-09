@@ -34,6 +34,7 @@
 - `project.config.json` 的 libVersion 由 `trial` 固定为 `3.17.0`；README 的 AppID 与实际配置一致。
 - 订阅开关文案明确「仅管理本机授权状态」。
 - 天梯页对齐后端真实契约：`GET /api/ladder/exams/:examId`（`rows` / `myRank` / `myScore`，403=未开放），修正此前错误的 `/scores/me/leaderboard` 路径。
+- 详情页改为单请求：`/api/scores/me/exams/:examId` 直接返回班级均分与试卷图块，不再依赖教师侧 `/api/exams` 接口（配合后端 Project-X#232）。
 
 ### Removed
 - `utils/request.js` 的 `getBuffer`（被 downloadFile 方案取代）。

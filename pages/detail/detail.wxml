@@ -24,8 +24,8 @@
     <!-- 客观题 -->
     <view class="section-title">客观题</view>
     <view class="q-card anim {{ready ? 'show' : ''}}" wx:if="{{objective.length > 0}}">
-      <view class="q-row" wx:for="{{objective}}" wx:key="question_number">
-        <text class="q-no">Q{{item.question_number}}</text>
+      <view class="q-row" wx:for="{{objective}}" wx:key="_key">
+        <text class="q-no">Q{{item.question_number != null ? item.question_number : '?'}}</text>
         <text class="q-score {{item.max_score != null && item.score < item.max_score ? 'warn' : 'up'}}">{{item.max_score != null ? item.score + '/' + item.max_score : item.score}}</text>
         <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
       </view>
@@ -35,15 +35,15 @@
     <!-- 主观题 -->
     <view class="section-title">主观题</view>
     <view class="q-card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms" wx:if="{{subjective.length > 0}}">
-      <view class="q-row" wx:for="{{subjective}}" wx:key="question_number">
-        <text class="q-no">Q{{item.question_number}}</text>
+      <view class="q-row" wx:for="{{subjective}}" wx:key="_key">
+        <text class="q-no">Q{{item.question_number != null ? item.question_number : '?'}}</text>
         <text class="q-score {{item.max_score != null && item.score < item.max_score ? 'warn' : 'up'}}">{{item.max_score != null ? item.score + '/' + item.max_score : item.score}}</text>
         <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
       </view>
     </view>
     <view wx:else class="muted sub">无主观题</view>
 
-    <view wx:if="{{extrasUnavailable}}" class="muted sub extras-hint">班级均分与试卷图片暂不可用，请先从「我的成绩」进入本场考试后重试</view>
+    <view wx:if="{{extrasUnavailable}}" class="muted sub extras-hint">试卷图片暂不可用，可下拉刷新重试</view>
 
     <!-- 原卷图 -->
     <view wx:if="{{showImages}}" class="section-title">原卷作答</view>
