@@ -4,6 +4,7 @@
 const { API_BASE, API_PREFIX } = require('./env');
 
 const DEFAULT_TIMEOUT = 20000;
+let handling401 = false;
 
 // 延迟 require 打破 auth.js <-> request.js 循环依赖
 function getToken() { return require('./auth').getToken(); }
@@ -14,6 +15,8 @@ function clearLogin() {
 }
 
 function handleUnauthorized() {
+  if (handling401) return;
+  handling401 = true;
   clearLogin();
   var pages = getCurrentPages();
   var top = pages[pages.length - 1];
@@ -21,6 +24,8 @@ function handleUnauthorized() {
   if (!onLogin) {
     wx.reLaunch({ url: '/pages/login/login' });
   }
+  // 多个并发请求同时 401 时只跳一次，避免重复 reLaunch
+  setTimeout(function () { handling401 = false; }, 2000);
 }
 
 function apiError(res) {

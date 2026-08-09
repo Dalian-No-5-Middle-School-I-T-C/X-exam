@@ -8,11 +8,11 @@
     <view class="summary-score num">{{summary.total_score}}<text wx:if="{{summary.full_score != null}}" class="summary-total"> / {{summary.full_score}}</text></view>
     <view class="summary-meta">
       <text wx:if="{{summary.subject}}" class="tag">{{summary.subject}}</text>
-      <text wx:if="{{summary.rank != null}}" class="muted">班排 {{summary.rank}}/{{summary.class_size}} · 超过 {{summary.percentile}}%</text>
+      <text wx:if="{{summary.rank != null}}" class="muted">班排 {{summary.rank}}<text wx:if="{{summary.class_size != null}}">/{{summary.class_size}}</text><text wx:if="{{summary.percentile != null}}"> · 超过 {{summary.percentile}}%</text></text>
     </view>
   </view>
 
-  <button wx:if="{{examId}}" class="btn out lb-btn anim {{ready ? 'show' : ''}}" bindtap="goLeaderboard">查看成绩天梯 →</button>
+  <button wx:if="{{examId && !loading && !error}}" class="btn out lb-btn anim {{ready ? 'show' : ''}}" bindtap="goLeaderboard">查看成绩天梯 →</button>
 
   <view wx:if="{{loading}}" class="skeleton">
     <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
