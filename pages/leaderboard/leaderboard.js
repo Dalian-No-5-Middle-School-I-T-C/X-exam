@@ -14,6 +14,9 @@ function pickName(it, i) {
 function pickRank(it, i) {
   return it.rank != null ? it.rank : (it.ranking != null ? it.ranking : (i + 1));
 }
+function toBool(v) {
+  return v === true || v === 'true' || v === 1;
+}
 
 Page({
   data: {
@@ -45,6 +48,12 @@ Page({
 
   loadBoard: function (done) {
     const self = this;
+    // 下拉刷新/错误重试同样需要守卫，避免 examId=0 请求无效接口
+    if (!this.data.examId) {
+      this.setData({ loading: false, error: '参数缺失，无法加载天梯' });
+      if (typeof done === 'function') done();
+      return;
+    }
     this.setData({ loading: true, error: '' });
     get('/scores/me/leaderboard?examId=' + this.data.examId)
       .then(function (resp) {
@@ -70,8 +79,8 @@ Page({
           if (me) mine = { rank: me.rank, score: me.score, name: '我' };
         }
 
-        // 缺省关闭：只有后端显式开启才展示天梯
-        const enabled = data.enabled === true || data.leaderboardEnabled === true;
+        // 缺省关闭：只有后端显式开启才展示天梯；兼容 "true" / 1
+        const enabled = toBool(data.enabled) || toBool(data.leaderboardEnabled);
         self.setData({ list: list, mine: mine, enabled: enabled, loading: false, error: '' });
         self.animateMine(mine);
       })

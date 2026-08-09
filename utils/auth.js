@@ -41,6 +41,15 @@ function clearUser() {
   try { wx.removeStorageSync(USER_KEY); } catch (e) { /* ignore */ }
 }
 
+// 本地缓存盐：优先用户 id，缺失时用 token 尾部，保证跨账号隔离
+function userSalt() {
+  var u = getUser() || {};
+  var id = u.studentId || u.student_id || u.id || u.student_number || '';
+  if (id) return String(id);
+  var t = getToken() || '';
+  return t ? t.slice(-8) : '';
+}
+
 // 登录：identifier 支持 用户名 / 学号 / 邮箱；isPersistent=记住我 180 天
 function login(identifier, password, remember) {
   return requestRaw('POST', '/auth/login', {
@@ -78,5 +87,6 @@ module.exports = {
   clearUser: clearUser,
   login: login,
   logout: logout,
-  isLoggedIn: isLoggedIn
+  isLoggedIn: isLoggedIn,
+  userSalt: userSalt
 };

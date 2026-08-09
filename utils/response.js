@@ -34,7 +34,7 @@ function normalizeScores(resp) {
       exam_name: pick(s, ['exam_name', 'examName', 'name'], ''),
       subject: pick(s, ['subject'], ''),
       total_score: toNum(pick(s, ['total_score', 'totalScore'], 0)),
-      full_score: pick(s, ['full_score', 'fullScore', 'max_score', 'maxScore'], null),
+      full_score: toNum(pick(s, ['full_score', 'fullScore', 'max_score', 'maxScore'], null), null),
       graded_at: pick(s, ['graded_at', 'gradedAt', 'date'], ''),
       rank: pick(s, ['rank'], null),
       class_size: pick(s, ['class_size', 'classSize'], null),
@@ -51,7 +51,14 @@ function normalizeScores(resp) {
 }
 
 function normalizeTrends(resp) {
-  return toArr(resp, 'trends')
+  // 按“字段存在性”过滤而非“非零”，保留真实 0 分条目
+  var arr = toArr(resp, 'trends').filter(function (p) {
+    return pick(p, ['examName', 'exam_name', 'name'], '') !== '' ||
+      pick(p, ['totalScore', 'total_score', 'total'], null) != null ||
+      pick(p, ['classAvg', 'class_avg', 'classAverage', 'class_average'], null) != null ||
+      pick(p, ['gradeAvg', 'grade_avg', 'gradeAverage', 'grade_average'], null) != null;
+  });
+  return arr
     .map(function (p) {
       return {
         examName: pick(p, ['examName', 'exam_name', 'name'], ''),
@@ -59,9 +66,6 @@ function normalizeTrends(resp) {
         classAvg: toNum(pick(p, ['classAvg', 'class_avg', 'classAverage', 'class_average'], 0)),
         gradeAvg: toNum(pick(p, ['gradeAvg', 'grade_avg', 'gradeAverage', 'grade_average'], 0))
       };
-    })
-    .filter(function (p) {
-      return p.examName !== '' || p.total !== 0 || p.classAvg !== 0 || p.gradeAvg !== 0;
     });
 }
 
@@ -93,7 +97,7 @@ function normalizeQuestions(resp) {
       question_number: toNum(pick(q, ['question_number', 'questionNumber', 'no'], 0)),
       score_type: pick(q, ['score_type', 'scoreType', 'type'], ''),
       score: toNum(pick(q, ['score'], 0)),
-      max_score: toNum(pick(q, ['max_score', 'maxScore', 'full_score', 'fullScore'], 0))
+      max_score: toNum(pick(q, ['max_score', 'maxScore', 'full_score', 'fullScore'], null), null)
     };
   });
 }
@@ -112,17 +116,20 @@ if (typeof require !== 'undefined' && require.main === module) {
   const s = normalizeScores({
     name: '张三',
     studentId: 1,
-    scores: [{ exam_id: '5', totalScore: '78.5', full_score: 100, objective_score: '20' }]
+    scores: [{ exam_id: '5', totalScore: '78.5', full_score: '100', objective_score: '20' }]
   });
   assert.strictEqual(s.studentId, 1);
   assert.strictEqual(s.scores[0].exam_id, 5);
   assert.strictEqual(s.scores[0].total_score, 78.5);
   assert.strictEqual(s.scores[0].objective_score, 20);
+  assert.strictEqual(s.scores[0].full_score, 100);
 
   const t = normalizeTrends([{ total_score: '90', class_avg: 80, grade_avg: '70' }]);
   assert.strictEqual(t[0].total, 90);
   assert.strictEqual(t[0].classAvg, 80);
   assert.strictEqual(t[0].gradeAvg, 70);
+  // 真实 0 分条目不应被过滤
+  assert.strictEqual(normalizeTrends([{ exam_name: '考试0', total_score: 0 }]).length, 1);
 
   const subj = normalizeSubjects({ subjects: [{ subject: '数学', avg_score: '88' }] });
   assert.strictEqual(subj.subjects[0].avgScore, 88);
@@ -133,6 +140,8 @@ if (typeof require !== 'undefined' && require.main === module) {
   assert.strictEqual(q[0].score_type, 'objective');
   assert.strictEqual(q[0].score, 2);
   assert.strictEqual(q[0].max_score, 4);
+  // 缺少满分时归一化为 null，而不是 0
+  assert.strictEqual(normalizeQuestions({ questions: [{ score: 2 }] })[0].max_score, null);
 
   assert.strictEqual(normalizeTrends('oops').length, 0);
   assert.strictEqual(normalizeSubjects(null).subjects.length, 0);

@@ -21,11 +21,15 @@ function handleUnauthorized() {
   var pages = getCurrentPages();
   var top = pages[pages.length - 1];
   var onLogin = top && top.route && top.route.indexOf('login') >= 0;
-  if (!onLogin) {
-    wx.reLaunch({ url: '/pages/login/login' });
+  if (onLogin) {
+    handling401 = false;
+    return;
   }
-  // 多个并发请求同时 401 时只跳一次，避免重复 reLaunch
-  setTimeout(function () { handling401 = false; }, 2000);
+  // 多个并发请求同时 401 时只跳一次；reLaunch 完成后立即复位，避免锁住后续 401
+  wx.reLaunch({
+    url: '/pages/login/login',
+    complete: function () { handling401 = false; }
+  });
 }
 
 function apiError(res) {
