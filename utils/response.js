@@ -92,9 +92,11 @@ function normalizeSubjects(resp) {
 }
 
 function normalizeQuestions(resp) {
-  return toArr(resp, 'questions').map(function (q) {
+  return toArr(resp, 'questions').map(function (q, i) {
     return {
-      question_number: toNum(pick(q, ['question_number', 'questionNumber', 'no'], 0)),
+      _key: i,
+      // 保留 null：后端 question_number 可空，页面显示 “Q?” 而不是伪造 Q0
+      question_number: pick(q, ['question_number', 'questionNumber', 'no'], null),
       score_type: pick(q, ['score_type', 'scoreType', 'type'], ''),
       score: toNum(pick(q, ['score'], 0)),
       max_score: toNum(pick(q, ['max_score', 'maxScore', 'full_score', 'fullScore'], null), null)

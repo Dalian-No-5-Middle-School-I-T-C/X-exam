@@ -15,17 +15,17 @@
     <!-- Top3 领奖台 -->
     <view class="podium anim {{ready ? 'show' : ''}}">
       <view class="pod pod-2" wx:if="{{list[1]}}">
-        <view class="pod-medal">2</view>
+        <view class="pod-medal">{{list[1].rank}}</view>
         <view class="pod-name">{{list[1].name}}</view>
         <view class="pod-score">{{list[1].score}}</view>
       </view>
       <view class="pod pod-1" wx:if="{{list[0]}}">
-        <view class="pod-medal">1</view>
+        <view class="pod-medal">{{list[0].rank}}</view>
         <view class="pod-name">{{list[0].name}}</view>
         <view class="pod-score">{{list[0].score}}</view>
       </view>
       <view class="pod pod-3" wx:if="{{list[2]}}">
-        <view class="pod-medal">3</view>
+        <view class="pod-medal">{{list[2].rank}}</view>
         <view class="pod-name">{{list[2].name}}</view>
         <view class="pod-score">{{list[2].score}}</view>
       </view>

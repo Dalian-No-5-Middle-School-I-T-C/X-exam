@@ -6,7 +6,7 @@ const { normalizeSubjects, toNum } = require('../../utils/response');
 function val(v) { return toNum(v, 0); }
 
 // 雷达图：我的均分 vs 班级均分；progress 0→1 多边形从中心展开
-function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
+function drawRadar(ctx, w, h, labels, myData, classData, axisMin, axisMax, progress) {
   if (progress == null) progress = 1;
   ctx.clearRect(0, 0, w, h);
   const cx = w / 2;
@@ -14,6 +14,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
   const R = Math.min(w, h) / 2 - 46;
   const N = labels.length;
   if (N < 3) return;
+  const span = axisMax - axisMin || 1;
   const angle = function (i) { return -Math.PI / 2 + i * 2 * Math.PI / N; };
 
   const rings = 4;
@@ -52,7 +53,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
     for (let i = 0; i <= N; i++) {
       const idx = i % N;
       const a = angle(idx);
-      const rr = R * (val(data[idx]) / axisMax) * progress;
+      const rr = R * Math.max(0, Math.min(1, (val(data[idx]) - axisMin) / span)) * progress;
       const x = cx + rr * Math.cos(a);
       const y = cy + rr * Math.sin(a);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
@@ -62,7 +63,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
     ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke();
     for (let i = 0; i < N; i++) {
       const a = angle(i);
-      const rr = R * (val(data[i]) / axisMax) * progress;
+      const rr = R * Math.max(0, Math.min(1, (val(data[i]) - axisMin) / span)) * progress;
       ctx.beginPath();
       ctx.arc(cx + rr * Math.cos(a), cy + rr * Math.sin(a), 2.5, 0, Math.PI * 2);
       ctx.fillStyle = stroke; ctx.fill();
@@ -199,16 +200,18 @@ Page({
     const labels = arr.map(function (s) { return s.subject; });
     const myData = arr.map(function (s) { return val(s.avgScore); });
     const classData = arr.map(function (s) { return val(s.avgClassAvg); });
-    let maxVal = 100;
-    myData.concat(classData).forEach(function (v) { if (v > maxVal) maxVal = v; });
-    const axisMax = Math.ceil(maxVal / 10) * 10;
+    const vals = myData.concat(classData);
+    let axisMin = Math.floor(Math.min.apply(null, vals.concat(0)) / 10) * 10;
+    let axisMax = Math.ceil(Math.max.apply(null, vals.concat(0)) / 10) * 10;
+    if (axisMin < 0) axisMin = 0;
+    if (axisMax - axisMin < 20) axisMax = axisMin + 20;
     this._cancelAll();
 
     if (arr.length >= 3) {
       this._queryCanvas('#radarCanvas', function (canvas, ctx, w, h) {
         self._radarCanvas = canvas;
         self._animate(canvas, '_radarRaf', function (p) {
-          drawRadar(ctx, w, h, labels, myData, classData, axisMax, p);
+          drawRadar(ctx, w, h, labels, myData, classData, axisMin, axisMax, p);
         });
       });
     }

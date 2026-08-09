@@ -1,8 +1,8 @@
 // pages/detail/detail.js
 const { get, post } = require('../../utils/request');
-const { getToken, getUser } = require('../../utils/auth');
+const { getToken } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
-const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
+const { normalizeReport } = require('../../utils/ai');
 const { normalizeScores, normalizeQuestions } = require('../../utils/response');
 const { API_BASE, API_PREFIX } = require('../../utils/env');
 
@@ -43,9 +43,10 @@ Page({
   },
 
   onShow: function () {
-    // 下载被 onHide 取消后返回页面时自动恢复附加信息
-    if (this._extrasCancelled && this.data.examId && !this.data.loading && !this.data.error) {
-      this.loadExtras();
+    // 图片下载被 onHide 取消后，返回页面自动恢复
+    if (this._extrasCancelled && this._answerBlocks && this._answerBlocks.length > 0 &&
+        !this.data.loading && !this.data.error) {
+      this.loadCropImages(this._answerBlocks);
     }
   },
   onHide: function () { this._extrasCancelled = true; },
@@ -66,20 +67,26 @@ Page({
     if (found) this.setData({ summary: found });
   },
 
+  // 单请求：/scores/me/exams/:examId 已含逐题、班级均分与原卷图块（后端 PR #232）
   loadDetail: function (done) {
     const self = this;
     this.setData({ loading: true, error: '' });
     get('/scores/me/exams/' + this.data.examId)
       .then(function (resp) {
-        self.setData({ rawQuestions: normalizeQuestions(resp) });
+        self._answerBlocks = resp.answerBlocks || [];
+        self.setData({
+          rawQuestions: normalizeQuestions(resp),
+          classAvgMap: resp.classQuestionStats || {},
+          extrasUnavailable: false
+        });
         self.buildLists();
         self.setData({ loading: false });
-        self.loadExtras();
+        self.loadCropImages(self._answerBlocks);
       })
       .catch(function (err) {
         self.setData({ loading: false, error: (err && err.message) || '加载失败' });
       })
-      .finally(function () { if (done) done(); });
+      .finally(function () { if (typeof done === 'function') done(); });
   },
 
   buildLists: function () {
@@ -93,38 +100,6 @@ Page({
     const obj = qs.filter(function (q) { return q.score_type === 'objective'; }).map(enrich);
     const sub = qs.filter(function (q) { return q.score_type === 'subjective'; }).map(enrich);
     this.setData({ objective: obj, subjective: sub });
-  },
-
-  loadExtras: function () {
-    const self = this;
-    let studentId = '';
-    const cached = getCachedScores();
-    if (cached) studentId = normalizeScores(cached).studentId;
-    if (!studentId) {
-      const u = getUser() || {};
-      // 后端 users.id 即学生 ID（class_students.student_id / 天梯均用 u.id），可作兜底
-      studentId = u.studentId || u.student_id || u.id || '';
-    }
-    if (!studentId) {
-      // 深链/直接进入时无缓存可依赖：明确提示，而不是静默缺失
-      this.setData({ extrasUnavailable: true });
-      return;
-    }
-
-    get('/exams/' + this.data.examId + '/student/' + studentId + '/scores')
-      .then(function (d) {
-        self.setData({ extrasUnavailable: false });
-        if (d.classQuestionStats) {
-          self.setData({ classAvgMap: d.classQuestionStats });
-          self.buildLists();
-        }
-        const blocks = d.answerBlocks || [];
-        if (blocks.length > 0) self.loadCropImages(blocks);
-      })
-      .catch(function () {
-        // 附加信息不可用：静默降级，但给出可感知提示
-        self.setData({ extrasUnavailable: true });
-      });
   },
 
   // 原卷图：wx.downloadFile 带 Authorization 头拿临时文件，token 不进 URL，
@@ -194,13 +169,11 @@ Page({
     const self = this;
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
-    const cached = getCachedAI('exam', this.data.examId);
-    if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
     post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {}, { timeout: 120000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
-        if (rep) { setCachedAI('exam', self.data.examId, rep); self.setData({ aiReport: rep }); }
+        if (rep) self.setData({ aiReport: rep });
         else self.setData({ aiError: '暂未生成分析' });
       })
       .catch(function (err) {
