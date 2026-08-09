@@ -137,7 +137,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 | GET | `/api/scores/me/semester-comparison` | 学期对比（本学期 vs 上学期、进步/退步学科） | `pages/semester` |
 | POST | `/api/scores/me/ai-analysis` | 整体 AI 分析，请求体 `{}` | `pages/profile` |
 | POST | `/api/scores/me/exams/:examId/ai-analysis` | 单场 AI 分析，请求体 `{}` | `pages/detail` |
-| GET | `/api/scores/me/leaderboard?examId=` | 年级天梯（接口存在、需鉴权） | `pages/leaderboard`（scores 最新考试 / detail） |
+| GET | `/api/ladder/exams/:examId` | 年级天梯前十 + 我的排名（关闭时返回 403） | `pages/leaderboard`（scores 最新考试 / detail） |
 
 ### AI 响应兼容（`utils/ai.js` 的 `normalizeReport`）
 
@@ -181,7 +181,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 ## 待办与后端依赖（非代码阻塞项）
 
 1. **订阅消息正式生效**需两步：小程序后台申请「成绩发布通知」模板并填入 `utils/subscribe.js` 的 `TEMPLATE_ID`；后端补充成绩发布时 `subscribeMessage.send` 推送逻辑。
-2. **天梯管理员开关**：前端默认关闭，仅当后端显式返回 `enabled=true` 或 `leaderboardEnabled=true` 时展示。
+2. **天梯管理员开关**：后端开关默认开启（`system_settings.ladder_enabled`），关闭时接口返回 403，前端显示「天梯功能暂未开启」。
 3. **原卷图域名**：`downloadFile` 合法域名需含 `dl5zx.cn`。
 4. **指纹/面容解锁（Soter）**：留待后续版本。
 

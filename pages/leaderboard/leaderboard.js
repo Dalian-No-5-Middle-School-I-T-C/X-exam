@@ -14,9 +14,6 @@ function pickName(it, i) {
 function pickRank(it, i) {
   return it.rank != null ? it.rank : (it.ranking != null ? it.ranking : (i + 1));
 }
-function toBool(v) {
-  return v === true || v === 'true' || v === 1;
-}
 
 Page({
   data: {
@@ -55,10 +52,12 @@ Page({
       return;
     }
     this.setData({ loading: true, error: '' });
-    get('/scores/me/leaderboard?examId=' + this.data.examId)
+    // 后端真实契约：GET /api/ladder/exams/:examId → { rows, myRank, myScore }；
+    // 关闭时返回 403（"成绩天梯暂未开放"），开关状态见 /api/ladder/config
+    get('/ladder/exams/' + this.data.examId)
       .then(function (resp) {
         const data = resp || {};
-        const raw = data.leaderboard || data.board || data.rankings || data.list || data.topTen || data.top10 || [];
+        const raw = data.rows || data.leaderboard || data.board || data.rankings || data.list || data.topTen || data.top10 || [];
         const list = raw.map(function (it, i) {
           return {
             rank: pickRank(it, i),
@@ -69,23 +68,26 @@ Page({
         });
 
         let mine = null;
-        const cur = data.currentUser || data.me || data.self || null;
-        if (cur) {
-          // 当前用户缺少 rank 时不伪造“第 1 名”，由页面显示“—”
-          const curRank = cur.rank != null ? cur.rank : (cur.ranking != null ? cur.ranking : null);
-          mine = { rank: curRank, score: pickScore(cur), name: pickName(cur, 0) };
+        if (data.myRank != null) {
+          // 后端直接给当前用户的全量排名/总分，缺失时不伪造
+          mine = { rank: data.myRank, score: data.myScore != null ? data.myScore : '', name: '我' };
         } else {
           const me = list.filter(function (x) { return x.isMe; })[0];
           if (me) mine = { rank: me.rank, score: me.score, name: '我' };
         }
 
-        // 缺省关闭：只有后端显式开启才展示天梯；兼容 "true" / 1
-        const enabled = toBool(data.enabled) || toBool(data.leaderboardEnabled);
+        // 200 说明后端放行（后端开关默认开，管理员可预览）
+        const enabled = true;
         self.setData({ list: list, mine: mine, enabled: enabled, loading: false, error: '' });
         self.animateMine(mine);
       })
       .catch(function (err) {
-        self.setData({ loading: false, error: (err && err.message) || '加载失败', enabled: false });
+        if (err.status === 403) {
+          // 后端关闭天梯：显示“功能暂未开启”，而不是报错
+          self.setData({ loading: false, error: '', enabled: false });
+        } else {
+          self.setData({ loading: false, error: (err && err.message) || '加载失败', enabled: false });
+        }
       })
       .finally(function () { if (typeof done === 'function') done(); });
   },

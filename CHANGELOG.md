@@ -33,6 +33,7 @@
 - `app.js` 移除未被使用的 globalData；`.green` / `.amber` 类名改为 `.up` / `.warn`，与真实颜色语义一致。
 - `project.config.json` 的 libVersion 由 `trial` 固定为 `3.17.0`；README 的 AppID 与实际配置一致。
 - 订阅开关文案明确「仅管理本机授权状态」。
+- 天梯页对齐后端真实契约：`GET /api/ladder/exams/:examId`（`rows` / `myRank` / `myScore`，403=未开放），修正此前错误的 `/scores/me/leaderboard` 路径。
 
 ### Removed
 - `utils/request.js` 的 `getBuffer`（被 downloadFile 方案取代）。
