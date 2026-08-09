@@ -21,7 +21,7 @@
     </view>
 
     <checkbox-group bindchange="onRememberChange" class="remember">
-      <label><checkbox checked="{{remember}}" color="#2E44FF" /> 记住我（180 天免登录）</label>
+      <label><checkbox value="remember" checked="{{remember}}" color="#2E44FF" /> 记住我（180 天免登录）</label>
     </checkbox-group>
 
     <view wx:if="{{error}}" class="error">{{error}}</view>

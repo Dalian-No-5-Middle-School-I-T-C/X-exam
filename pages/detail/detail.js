@@ -2,7 +2,7 @@
 const { get, post, getBuffer } = require('../../utils/request');
 const { getToken } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
-const { normalizeReport } = require('../../utils/ai');
+const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 
 Page({
   data: {

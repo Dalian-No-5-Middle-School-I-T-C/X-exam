@@ -71,9 +71,7 @@ Page({
     if (!wantOn) {
       setSubStatus(false);
       this.setData({ subOn: false });
-      if (TEMPLATE_ID) {
-        post('/scores/me/unsubscribe', { templateId: TEMPLATE_ID }).catch(function () {});
-      }
+      // 后端 /unsubscribe 接口尚未在契约中，关闭仅管理本机授权状态
       return;
     }
     requestSubscribe().then(function (r) {
@@ -98,8 +96,6 @@ Page({
         if (r.confirm) {
           logout();
           clearCachedScores();
-          const app = getApp();
-          if (app) app.globalData = { token: '', user: null };
           wx.reLaunch({ url: '/pages/login/login' });
         }
       }
