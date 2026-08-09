@@ -1,6 +1,5 @@
 // pages/subjects/subjects.js
 const { get } = require('../../utils/request');
-const { fail: failToast } = require('../../utils/toast');
 const { normalizeSubjects, toNum } = require('../../utils/response');
 
 // 数值容错：响应中的字符串数字也参与绘图
@@ -160,7 +159,6 @@ Page({
           loading: false,
           error: (err && err.message) || '加载失败，请重试'
         });
-        failToast('学科对比加载失败');
       })
       .finally(function () { if (typeof done === 'function') done(); });
   },

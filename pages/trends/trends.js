@@ -1,6 +1,5 @@
 // pages/trends/trends.js
 const { get } = require('../../utils/request');
-const { fail: failToast } = require('../../utils/toast');
 const { normalizeTrends } = require('../../utils/response');
 
 // progress: 0→1 折线从底部生长（克制：缓出，无弹跳）
@@ -93,7 +92,6 @@ Page({
       .catch(function (err) {
         // 失败与“没有数据”分开：错误态可点击重试
         self.setData({ trends: [], error: (err && err.message) || '加载失败，请重试' });
-        failToast('成绩趋势加载失败');
       })
       .finally(function () { self.setData({ loading: false }); if (typeof done === 'function') done(); });
   },

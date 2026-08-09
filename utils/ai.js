@@ -1,5 +1,5 @@
 // utils/ai.js
-const { getUser } = require('./auth');
+const { userSalt } = require('./auth');
 // 将后端 AI 分析响应归一化为统一结构，兼容多种返回格式：
 // - { report: {...} } / { report: "文本" }
 // - { analysis: "..." } / { data: "..." }
@@ -44,12 +44,9 @@ function normalizeReport(data) {
 }
 
 // AI 报告本地缓存：避免每次进入都重请求（报告短时不变）；
-// key 带用户标识，避免同一设备换账号后读到上一个学生的报告
+// key 带用户标识（auth.userSalt：优先用户 id，缺失时用 token 尾部），
+// 避免同一设备换账号后读到上一个学生的报告
 const CACHE_TTL = 30 * 60 * 1000; // 30 分钟
-function userSalt() {
-  const u = getUser() || {};
-  return u.studentId || u.student_id || u.id || u.student_number || '';
-}
 function aiKey(kind, id) {
   const salt = userSalt();
   return 'px_ai_' + (salt ? salt + '_' : '') + kind + '_' + (id || 'overall');

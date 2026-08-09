@@ -31,6 +31,7 @@ Page({
   },
 
   // 用微信真实订阅授权态复核本地开关，避免开关与实际授权脱节
+  // 注意：单向同步——只处理 reject→关闭；用户在系统设置里重新允许后，开关需手动打开
   syncSubAuth: function () {
     if (!TEMPLATE_ID) return;
     const self = this;
