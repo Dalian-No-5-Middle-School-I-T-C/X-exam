@@ -66,7 +66,12 @@ Page({
   },
 
   onShow: function () {
-    this.load();
+    // 自动加载防抖：进行中或 5 秒内刚加载过则跳过；下拉刷新/点击重试不受限
+    const now = Date.now();
+    if (!this._loading && (!this._lastAutoLoad || now - this._lastAutoLoad > 5000)) {
+      this._lastAutoLoad = now;
+      this.load();
+    }
   },
 
   onReady: function () {
@@ -83,6 +88,11 @@ Page({
 
   load: function (done) {
     const self = this;
+    if (this._loading) {
+      if (typeof done === 'function') done();
+      return;
+    }
+    this._loading = true;
     this.setData({ loading: true, error: '' });
     get('/scores/me/trends')
       .then(function (r) {
@@ -90,10 +100,15 @@ Page({
         self.drawLine();
       })
       .catch(function (err) {
-        // 失败与“没有数据”分开：错误态可点击重试
+        // 失败与"没有数据"分开：错误态可点击重试
         self.setData({ trends: [], error: (err && err.message) || '加载失败，请重试' });
+        self._lastAutoLoad = 0; // 失败后允许下次 onShow 立即重试
       })
-      .finally(function () { self.setData({ loading: false }); if (typeof done === 'function') done(); });
+      .finally(function () {
+        self._loading = false;
+        self.setData({ loading: false });
+        if (typeof done === 'function') done();
+      });
   },
 
   _cancelTrend: function () {

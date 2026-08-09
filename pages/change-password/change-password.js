@@ -29,6 +29,7 @@ Page({
   onConfirm: function (e) { this.setData({ confirm: e.detail.value }); },
 
   onSubmit: async function () {
+    if (this.data.loading) return;
     const oldPassword = this.data.oldPassword;
     const newPassword = this.data.newPassword;
     const confirm = this.data.confirm;

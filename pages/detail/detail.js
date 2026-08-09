@@ -45,7 +45,7 @@ Page({
   onShow: function () {
     // 图片下载被 onHide 取消后，返回页面自动恢复
     if (this._extrasCancelled && this._answerBlocks && this._answerBlocks.length > 0 &&
-        !this.data.loading && !this.data.error) {
+        !this._imagesDone && !this.data.loading && !this.data.error) {
       this.loadCropImages(this._answerBlocks);
     }
   },
@@ -70,6 +70,11 @@ Page({
   // 单请求：/scores/me/exams/:examId 已含逐题、班级均分与原卷图块（后端 PR #232）
   loadDetail: function (done) {
     const self = this;
+    if (this._loadingDetail) {
+      if (typeof done === 'function') done();
+      return;
+    }
+    this._loadingDetail = true;
     this.setData({ loading: true, error: '' });
     get('/scores/me/exams/' + this.data.examId)
       .then(function (resp) {
@@ -86,7 +91,10 @@ Page({
       .catch(function (err) {
         self.setData({ loading: false, error: (err && err.message) || '加载失败' });
       })
-      .finally(function () { if (typeof done === 'function') done(); });
+      .finally(function () {
+        self._loadingDetail = false;
+        if (typeof done === 'function') done();
+      });
   },
 
   buildLists: function () {
@@ -112,6 +120,7 @@ Page({
     if (!token || list.length === 0) return;
 
     this._extrasCancelled = false;
+    this._imagesDone = false;
     const CONCURRENCY = 3;
     // 按请求顺序落位（results[idx]），并发完成顺序不影响最终图片顺序
     const results = new Array(list.length).fill(null);
@@ -123,6 +132,10 @@ Page({
       const ok = results.filter(Boolean);
       if (ok.length > 0) {
         self.setData({ images: ok, showImages: true });
+        self._imagesDone = true;
+        if (failed) {
+          wx.showToast({ title: (list.length - ok.length) + ' 张图片加载失败', icon: 'none' });
+        }
       } else if (failed) {
         // 全部下载失败：给出可感知提示，而不是无声缺失
         self.setData({ extrasUnavailable: true });
