@@ -16,6 +16,14 @@
 - **AI 深度分析**：兼容纯文本与结构化两种后端响应
 - **editorial-brutalist 纸感蓝主题** + 克制动效（进场 / 数字滚动 / canvas 生长 / 骨架屏）
 
+## 最近更新（2026-08-09）
+
+> 本节汇总近期前端改动的用户可见部分，完整技术记录见 [CHANGELOG](./CHANGELOG.md)。
+
+- **「我的」页 UI 优化**：增大眉题/标题/信息卡/区块标题间距（呼吸感）；退出登录按钮由撑满整宽改为水平居中。
+- **TabBar 字号**：`app.json` 显式设为 12px，解决默认过小、可读性差。
+- **配置明确**：关闭 `project.private.config.json` 的 `skylineRenderEnable`，明确当前为 WebView 渲染（非 Skyline）。
+
 ## 截图
 
 > 待补充。建议放：`login` 登录页 / `scores` 成绩首屏 / `trends` 趋势 / `subjects` 学科对比 / `leaderboard` 天梯 五张。
