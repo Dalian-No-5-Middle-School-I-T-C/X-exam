@@ -54,7 +54,7 @@ Page({
     const cached = getCachedAI('overall');
     if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/ai-analysis', {}, { timeout: 60000 })
+    post('/scores/me/ai-analysis', {}, { timeout: 120000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
         if (rep) { setCachedAI('overall', null, rep); self.setData({ aiReport: rep }); }
@@ -95,8 +95,9 @@ Page({
       content: '确定退出当前账号？',
       success: function (r) {
         if (r.confirm) {
-          logout();
+          // 先清缓存再登出：logout 后 userSalt 会变空，清不到当前用户的 key
           clearCachedScores();
+          logout();
           wx.reLaunch({ url: '/pages/login/login' });
         }
       }

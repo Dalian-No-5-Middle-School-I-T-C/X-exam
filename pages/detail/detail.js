@@ -197,7 +197,7 @@ Page({
     const cached = getCachedAI('exam', this.data.examId);
     if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {}, { timeout: 60000 })
+    post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {}, { timeout: 120000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
         if (rep) { setCachedAI('exam', self.data.examId, rep); self.setData({ aiReport: rep }); }
