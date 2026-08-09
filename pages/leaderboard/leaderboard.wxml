@@ -34,7 +34,7 @@
     <!-- 完整榜单 -->
     <view class="section-title">完整榜单</view>
     <view class="card lb-list anim {{ready ? 'show' : ''}}" style="animation-delay: 80ms">
-      <view class="lb-row {{item.isMe ? 'me' : ''}}" wx:for="{{list}}" wx:key="rank">
+      <view class="lb-row {{item.isMe ? 'me' : ''}}" wx:for="{{list}}" wx:key="studentId">
         <text class="lb-rank r{{item.rank <= 3 ? item.rank : 'n'}}">{{item.rank}}</text>
         <text class="lb-name">{{item.name}}</text>
         <text class="lb-score">{{item.score}}</text>

@@ -60,6 +60,8 @@ Page({
         const raw = data.rows || data.leaderboard || data.board || data.rankings || data.list || data.topTen || data.top10 || [];
         const list = raw.map(function (it, i) {
           return {
+            // 后端竞赛排名允许并列（1,2,2,4），studentId 才是稳定 key
+            studentId: it.studentId || it.student_id || ('r' + i),
             rank: pickRank(it, i),
             name: pickName(it, i),
             score: pickScore(it),
@@ -82,11 +84,13 @@ Page({
         self.animateMine(mine);
       })
       .catch(function (err) {
-        if (err.status === 403) {
-          // 后端关闭天梯：显示“功能暂未开启”，而不是报错
+        const msg = (err && err.message) || '';
+        if (err.status === 403 && msg.indexOf('暂未开放') >= 0) {
+          // 后端明确关闭天梯：显示“功能暂未开启”
           self.setData({ loading: false, error: '', enabled: false });
         } else {
-          self.setData({ loading: false, error: (err && err.message) || '加载失败', enabled: false });
+          // 其它 403（权限不足等）按真实错误展示，不伪装成“未开启”
+          self.setData({ loading: false, error: msg || '加载失败', enabled: false });
         }
       })
       .finally(function () { if (typeof done === 'function') done(); });

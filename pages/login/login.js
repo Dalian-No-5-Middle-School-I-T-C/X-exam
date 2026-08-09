@@ -24,7 +24,7 @@ Page({
   },
   onLogin: async function () {
     const data = this.data;
-    const identifier = data.identifier;
+    const identifier = (data.identifier || '').trim();
     const password = data.password;
     const remember = data.remember;
     if (!identifier || !password) {
