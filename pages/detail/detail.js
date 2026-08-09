@@ -102,8 +102,8 @@ Page({
     if (cached) studentId = normalizeScores(cached).studentId;
     if (!studentId) {
       const u = getUser() || {};
-      // 只用明确的 studentId 字段，不拿账号 id 猜学生 id
-      studentId = u.studentId || u.student_id || '';
+      // 后端 users.id 即学生 ID（class_students.student_id / 天梯均用 u.id），可作兜底
+      studentId = u.studentId || u.student_id || u.id || '';
     }
     if (!studentId) {
       // 深链/直接进入时无缓存可依赖：明确提示，而不是静默缺失

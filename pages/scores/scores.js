@@ -54,8 +54,9 @@ Page({
     if (sorted.length >= 2) {
       const a = sorted[0];
       const b = sorted[1];
-      // 只有同科目且满分一致时，总分差值才有可比性
-      if (a.subject && a.subject === b.subject && a.full_score != null && a.full_score === b.full_score) {
+      // 后端 /scores/me 不返回 full_score：同科目是唯一可比维度；
+      // 若未来返回满分，类型已归一化（toNum），仅满分一致时才比较
+      if (a.subject && a.subject === b.subject && a.full_score === b.full_score) {
         latestChange = toNum(a.total_score) - toNum(b.total_score);
       }
     }
