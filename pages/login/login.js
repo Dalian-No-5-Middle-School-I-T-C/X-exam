@@ -20,7 +20,8 @@ Page({
   onIdentifier: function (e) { this.setData({ identifier: e.detail.value }); },
   onPassword: function (e) { this.setData({ password: e.detail.value }); },
   onRememberChange: function (e) {
-    this.setData({ remember: (e.detail.value && e.detail.value.length > 0) });
+    const vals = (e.detail && e.detail.value) || [];
+    this.setData({ remember: vals.indexOf('remember') >= 0 });
   },
   onLogin: async function () {
     const data = this.data;

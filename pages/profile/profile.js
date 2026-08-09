@@ -1,8 +1,9 @@
 // pages/profile/profile.js
 const { getUser, logout, getToken } = require('../../utils/auth');
 const { post, requestRaw } = require('../../utils/request');
-const { normalizeReport } = require('../../utils/ai');
+const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { getSubStatus, setSubStatus, requestSubscribe, TEMPLATE_ID } = require('../../utils/subscribe');
+const { clearCachedScores } = require('../../utils/cache');
 
 Page({
   data: {
@@ -26,17 +27,37 @@ Page({
       subOn: getSubStatus(),
       subReady: !!TEMPLATE_ID
     });
+    this.syncSubAuth();
+  },
+
+  // 用微信真实订阅授权态复核本地开关，避免开关与实际授权脱节
+  // 注意：单向同步——只处理 reject→关闭；用户在系统设置里重新允许后，开关需手动打开
+  syncSubAuth: function () {
+    if (!TEMPLATE_ID) return;
+    const self = this;
+    wx.getSetting({
+      withSubscriptions: true,
+      success: function (res) {
+        const settings = res.subscriptionsSetting && res.subscriptionsSetting.itemSettings;
+        if (settings && settings[TEMPLATE_ID] === 'reject') {
+          setSubStatus(false);
+          self.setData({ subOn: false });
+        }
+      }
+    });
   },
 
   onAi: function () {
     const self = this;
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
+    const cached = getCachedAI('overall');
+    if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
     post('/scores/me/ai-analysis', {}, { timeout: 120000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
-        if (rep) self.setData({ aiReport: rep });
+        if (rep) { setCachedAI('overall', null, rep); self.setData({ aiReport: rep }); }
         else self.setData({ aiError: '暂未生成分析' });
       })
       .catch(function (err) {
@@ -51,6 +72,7 @@ Page({
     if (!wantOn) {
       setSubStatus(false);
       this.setData({ subOn: false });
+      // 后端 /unsubscribe 接口尚未在契约中，关闭仅管理本机授权状态
       return;
     }
     requestSubscribe().then(function (r) {
@@ -74,6 +96,8 @@ Page({
       success: function (r) {
         if (r.confirm) {
           const token = getToken();
+          // 先清缓存再登出：logout 后 userSalt 会变空，清不到当前用户的 key
+          clearCachedScores();
           logout();
           wx.reLaunch({ url: '/pages/login/login' });
           // 服务端吊销 token（尽力而为，不影响本地登出）

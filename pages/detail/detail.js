@@ -2,7 +2,7 @@
 const { get, post } = require('../../utils/request');
 const { getToken } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
-const { normalizeReport } = require('../../utils/ai');
+const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { normalizeScores, normalizeQuestions } = require('../../utils/response');
 const { API_BASE, API_PREFIX } = require('../../utils/env');
 
@@ -169,11 +169,13 @@ Page({
     const self = this;
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
+    const cached = getCachedAI('exam', this.data.examId);
+    if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
     post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {}, { timeout: 120000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
-        if (rep) self.setData({ aiReport: rep });
+        if (rep) { setCachedAI('exam', self.data.examId, rep); self.setData({ aiReport: rep }); }
         else self.setData({ aiError: '暂未生成分析' });
       })
       .catch(function (err) {

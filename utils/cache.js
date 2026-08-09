@@ -13,5 +13,8 @@ function getCachedScores() {
 function setCachedScores(data) {
   try { wx.setStorageSync(scoresKey(), data); } catch (e) { /* ignore */ }
 }
+function clearCachedScores() {
+  try { wx.removeStorageSync(scoresKey()); } catch (e) { /* ignore */ }
+}
 
-module.exports = { getCachedScores: getCachedScores, setCachedScores: setCachedScores };
+module.exports = { getCachedScores: getCachedScores, setCachedScores: setCachedScores, clearCachedScores: clearCachedScores };

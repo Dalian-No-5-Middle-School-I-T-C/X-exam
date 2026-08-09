@@ -5,22 +5,39 @@ const { requestRaw } = require('./request');
 const TOKEN_KEY = 'px_token';
 const USER_KEY = 'px_user';
 
+// 内存态：非“记住我”登录仅存内存，关闭小程序即登出
+let memToken = '';
+let memUser = null;
+
 function getToken() {
+  if (memToken) return memToken;
   try { return wx.getStorageSync(TOKEN_KEY) || null; } catch (e) { return null; }
 }
-function setToken(t) {
-  try { wx.setStorageSync(TOKEN_KEY, t); } catch (e) { /* ignore */ }
+// persistent=true 写入持久 Storage（记住我）；false 仅存内存并清除持久态
+function setToken(t, persistent) {
+  memToken = t || '';
+  try {
+    if (persistent) wx.setStorageSync(TOKEN_KEY, t);
+    else wx.removeStorageSync(TOKEN_KEY);
+  } catch (e) { /* ignore */ }
 }
 function clearToken() {
+  memToken = '';
   try { wx.removeStorageSync(TOKEN_KEY); } catch (e) { /* ignore */ }
 }
 function getUser() {
+  if (memUser) return memUser;
   try { return wx.getStorageSync(USER_KEY) || null; } catch (e) { return null; }
 }
-function setUser(u) {
-  try { wx.setStorageSync(USER_KEY, u); } catch (e) { /* ignore */ }
+function setUser(u, persistent) {
+  memUser = u || null;
+  try {
+    if (persistent) wx.setStorageSync(USER_KEY, u);
+    else wx.removeStorageSync(USER_KEY);
+  } catch (e) { /* ignore */ }
 }
 function clearUser() {
+  memUser = null;
   try { wx.removeStorageSync(USER_KEY); } catch (e) { /* ignore */ }
 }
 
@@ -41,8 +58,8 @@ function login(identifier, password, remember) {
     isPersistent: remember
   }).then(function (res) {
     if (res.data && res.data.token) {
-      setToken(res.data.token);
-      setUser(res.data.user);
+      setToken(res.data.token, remember);
+      setUser(res.data.user, remember);
       return res.data;
     }
     var err = new Error((res.data && res.data.message) || '登录失败');
