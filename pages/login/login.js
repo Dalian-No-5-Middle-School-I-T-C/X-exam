@@ -24,6 +24,7 @@ Page({
     this.setData({ remember: vals.indexOf('remember') >= 0 });
   },
   onLogin: async function () {
+    if (this.data.loading) return;
     const data = this.data;
     const identifier = (data.identifier || '').trim();
     const password = data.password;

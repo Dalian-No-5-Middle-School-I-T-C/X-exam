@@ -26,6 +26,10 @@
 - 我的排名缺失时显示「—」，不再伪造第 1 名。
 - 详情页/天梯缺失 examId 参数时给出错误提示，不再请求无效接口。
 - 关闭 `project.private.config.json` 的 `skylineRenderEnable`，消除「已开启 Skyline 却未声明 renderer」的误导配置，明确当前为 WebView 渲染。
+- 登录/改密按钮增加提交防重，避免双击重复提交。
+- 原卷图下载完成后返回页面不再重复下载；部分失败时给出失败张数提示。
+- trends / subjects / semester 自动加载增加 5 秒防抖与进行中防重入；leaderboard / detail 增加加载防重入。
+- scores 刷新失败后允许下次进入页面自动重试，不再被防抖窗口挡住。
 
 ### Changed
 - 新增 `utils/response.js` 统一响应归一化（字段别名 + 数值容错），落地此前 P1 待办；scores / trends / subjects / detail 全部接入，后端字符串数字不再导致图表为 0。

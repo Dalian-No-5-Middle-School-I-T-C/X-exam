@@ -141,6 +141,8 @@ Page({
         self.setData({ loading: false });
       })
       .catch(function (err) {
+        // 失败后允许下次 onShow 立即重试（防抖窗口不阻断重试）
+        self._lastAutoRefresh = 0;
         const cache = getCachedScores();
         if (cache) {
           self.setData({ loading: false, fromCache: true });

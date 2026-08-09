@@ -45,6 +45,11 @@ Page({
 
   loadBoard: function (done) {
     const self = this;
+    if (this._loading) {
+      if (typeof done === 'function') done();
+      return;
+    }
+    this._loading = true;
     // 下拉刷新/错误重试同样需要守卫，避免 examId=0 请求无效接口
     if (!this.data.examId) {
       this.setData({ loading: false, error: '参数缺失，无法加载天梯' });
@@ -93,7 +98,10 @@ Page({
           self.setData({ loading: false, error: msg || '加载失败', enabled: false });
         }
       })
-      .finally(function () { if (typeof done === 'function') done(); });
+      .finally(function () {
+        self._loading = false;
+        if (typeof done === 'function') done();
+      });
   },
 
   // 我的排名数字滚动：首次滚动，之后直接赋值
