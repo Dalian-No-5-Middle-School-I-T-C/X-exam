@@ -1,6 +1,7 @@
 // pages/trends/trends.js
 const { get } = require('../../utils/request');
 const { fail: failToast } = require('../../utils/toast');
+const { normalizeTrends } = require('../../utils/response');
 
 // progress: 0→1 折线从底部生长（克制：缓出，无弹跳）
 function drawLine(ctx, w, h, pts, progress) {
@@ -61,6 +62,7 @@ Page({
   data: {
     trends: [],
     loading: false,
+    error: '',
     ready: false
   },
 
@@ -68,7 +70,11 @@ Page({
     this.load();
   },
 
-  onReady: function () { this.setData({ ready: true }); },
+  onReady: function () {
+    this.setData({ ready: true });
+    // 兜底重绘：网络极快时 onShow 里的绘制可能早于 onReady
+    this.drawLine();
+  },
   onHide: function () { this._cancelTrend(); },
   onUnload: function () { this._cancelTrend(); },
 
@@ -78,11 +84,18 @@ Page({
 
   load: function (done) {
     const self = this;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: '' });
     get('/scores/me/trends')
-      .then(function (r) { self.setData({ trends: r || [] }); self.drawLine(); })
-      .catch(function () { self.setData({ trends: [] }); failToast('成绩趋势加载失败'); })
-      .finally(function () { self.setData({ loading: false }); if (done) done(); });
+      .then(function (r) {
+        self.setData({ trends: normalizeTrends(r), error: '' });
+        self.drawLine();
+      })
+      .catch(function (err) {
+        // 失败与“没有数据”分开：错误态可点击重试
+        self.setData({ trends: [], error: (err && err.message) || '加载失败，请重试' });
+        failToast('成绩趋势加载失败');
+      })
+      .finally(function () { self.setData({ loading: false }); if (typeof done === 'function') done(); });
   },
 
   _cancelTrend: function () {
@@ -95,7 +108,7 @@ Page({
   drawLine: function () {
     const self = this;
     const pts = this.data.trends.map(function (p) {
-      return { examName: p.examName, total: p.totalScore, classAvg: p.classAvg, gradeAvg: p.gradeAvg };
+      return { examName: p.examName, total: p.total, classAvg: p.classAvg, gradeAvg: p.gradeAvg };
     });
     if (pts.length === 0) return;
     this._cancelTrend();

@@ -48,7 +48,7 @@
     <view class="sub-row">
       <view>
         <view class="sub-t">成绩发布提醒</view>
-        <view class="muted sub-d" wx:if="{{subReady}}">新成绩发布时将通知你</view>
+        <view class="muted sub-d" wx:if="{{subReady}}">新成绩发布时将通知你（开关仅管理本机授权状态）</view>
         <view class="muted sub-d" wx:else>功能筹备中</view>
       </view>
       <switch checked="{{subOn}}" disabled="{{!subReady}}" color="#2E44FF" bindchange="onToggleSub" />

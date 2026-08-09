@@ -53,7 +53,7 @@ Page({
     const cached = getCachedAI('overall');
     if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/ai-analysis', {})
+    post('/scores/me/ai-analysis', {}, { timeout: 60000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
         if (rep) { setCachedAI('overall', null, rep); self.setData({ aiReport: rep }); }

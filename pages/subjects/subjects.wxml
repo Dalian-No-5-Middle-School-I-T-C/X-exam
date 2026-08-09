@@ -6,7 +6,8 @@
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
   </view>
 
-  <view wx:if="{{subjects.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学科对比数据</view>
+  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="load">{{error}} · 点击重试</view>
+  <view wx:elif="{{subjects.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学科对比数据</view>
 
   <block wx:if="{{subjects.length > 0}}">
     <view class="section-title">我的均分 vs 班级均分</view>
@@ -36,8 +37,8 @@
         <text class="c2">{{item.examCount}}</text>
         <text class="c2">{{item.avgScore}}</text>
         <text class="c2">{{item.avgClassAvg}}</text>
-        <text class="c2 {{item.gapToClass >= 0 ? 'green' : 'red'}}">{{item.gapToClass >= 0 ? '+' : ''}}{{item.gapToClass}}</text>
-        <text class="c2 {{item.trend === 'up' ? 'green' : (item.trend === 'down' ? 'red' : 'muted')}}">{{item.trend === 'up' ? '▲' : (item.trend === 'down' ? '▼' : '—')}}</text>
+        <text class="c2 {{item.gapToClass >= 0 ? 'up' : 'red'}}">{{item.gapToClass >= 0 ? '+' : ''}}{{item.gapToClass}}</text>
+        <text class="c2 {{item.trend === 'up' ? 'up' : (item.trend === 'down' ? 'red' : 'muted')}}">{{item.trend === 'up' ? '▲' : (item.trend === 'down' ? '▼' : '—')}}</text>
       </view>
     </view>
 

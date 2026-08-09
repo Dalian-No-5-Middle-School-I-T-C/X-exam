@@ -1,22 +1,10 @@
 // pages/subjects/subjects.js
 const { get } = require('../../utils/request');
 const { fail: failToast } = require('../../utils/toast');
+const { normalizeSubjects, toNum } = require('../../utils/response');
 
-// 防御式归一化：响应可能是 {subjects, weakSubject, totalExams} 或裸数组
-function normResp(resp) {
-  if (Array.isArray(resp)) {
-    return { subjects: resp, weakSubject: (resp[0] && resp[0].subject) || '', totalExams: resp.length };
-  }
-  if (resp && Array.isArray(resp.subjects)) {
-    return {
-      subjects: resp.subjects,
-      weakSubject: resp.weakSubject || (resp.subjects[0] && resp.subjects[0].subject) || '',
-      totalExams: resp.totalExams || resp.subjects.length
-    };
-  }
-  return { subjects: [], weakSubject: '', totalExams: 0 };
-}
-function val(v) { return (typeof v === 'number' && isFinite(v)) ? v : 0; }
+// 数值容错：响应中的字符串数字也参与绘图
+function val(v) { return toNum(v, 0); }
 
 // 雷达图：我的均分 vs 班级均分；progress 0→1 多边形从中心展开
 function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
@@ -85,7 +73,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
   poly(myData, '#2E44FF', 'rgba(46,68,255,0.12)');
 }
 
-// 与班级均分差距柱状；progress 0→1 柱子从基线升起
+// 与班级均分差距柱状图；progress 0→1 柱子从基线升起
 function drawBar(ctx, w, h, items, progress) {
   if (progress == null) progress = 1;
   ctx.clearRect(0, 0, w, h);
@@ -127,6 +115,7 @@ function setupCanvas(canvas, ctx, w, h) {
 Page({
   data: {
     loading: false,
+    error: '',
     subjects: [],
     weakSubject: '',
     totalExams: 0,
@@ -135,7 +124,11 @@ Page({
 
   onShow: function () { this.load(); },
 
-  onReady: function () { this.setData({ ready: true }); },
+  onReady: function () {
+    this.setData({ ready: true });
+    // 兜底重绘：网络极快时 onShow 里的绘制可能早于 onReady
+    this.drawAll();
+  },
   onHide: function () { this._cancelAll(); },
   onUnload: function () { this._cancelAll(); },
 
@@ -145,23 +138,31 @@ Page({
 
   load: function (done) {
     const self = this;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: '' });
     get('/scores/me/subject-comparison')
       .then(function (r) {
-        const d = normResp(r);
+        const d = normalizeSubjects(r);
         self.setData({
           subjects: d.subjects || [],
           weakSubject: d.weakSubject || '',
-          totalExams: d.totalExams || (d.subjects ? d.subjects.length : 0),
-          loading: false
+          totalExams: d.totalExams || 0,
+          loading: false,
+          error: ''
         });
         self.drawAll();
       })
-      .catch(function () {
-        self.setData({ subjects: [], weakSubject: '', totalExams: 0, loading: false });
+      .catch(function (err) {
+        // 失败与“没有数据”分开：错误态可点击重试
+        self.setData({
+          subjects: [],
+          weakSubject: '',
+          totalExams: 0,
+          loading: false,
+          error: (err && err.message) || '加载失败，请重试'
+        });
         failToast('学科对比加载失败');
       })
-      .finally(function () { if (done) done(); });
+      .finally(function () { if (typeof done === 'function') done(); });
   },
 
   _queryCanvas: function (sel, cb) {

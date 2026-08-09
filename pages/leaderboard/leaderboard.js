@@ -30,6 +30,10 @@ Page({
 
   onLoad: function (options) {
     const examId = parseInt(options.examId, 10) || 0;
+    if (!examId) {
+      this.setData({ loading: false, error: '参数缺失，无法加载天梯' });
+      return;
+    }
     const examName = options.name ? decodeURIComponent(options.name) : '';
     this.setData({ examId: examId, examName: examName });
     this.loadBoard();
@@ -58,26 +62,29 @@ Page({
         let mine = null;
         const cur = data.currentUser || data.me || data.self || null;
         if (cur) {
-          mine = { rank: pickRank(cur, 0), score: pickScore(cur), name: pickName(cur, 0) };
+          // 当前用户缺少 rank 时不伪造“第 1 名”，由页面显示“—”
+          const curRank = cur.rank != null ? cur.rank : (cur.ranking != null ? cur.ranking : null);
+          mine = { rank: curRank, score: pickScore(cur), name: pickName(cur, 0) };
         } else {
           const me = list.filter(function (x) { return x.isMe; })[0];
           if (me) mine = { rank: me.rank, score: me.score, name: '我' };
         }
 
-        const enabled = data.enabled !== false && data.leaderboardEnabled !== false;
-        self.setData({ list: list, mine: mine, enabled: enabled, loading: false });
+        // 缺省关闭：只有后端显式开启才展示天梯
+        const enabled = data.enabled === true || data.leaderboardEnabled === true;
+        self.setData({ list: list, mine: mine, enabled: enabled, loading: false, error: '' });
         self.animateMine(mine);
       })
       .catch(function (err) {
         self.setData({ loading: false, error: (err && err.message) || '加载失败', enabled: false });
       })
-      .finally(function () { if (done) done(); });
+      .finally(function () { if (typeof done === 'function') done(); });
   },
 
   // 我的排名数字滚动：首次滚动，之后直接赋值
   animateMine: function (mine) {
     const self = this;
-    const target = mine && typeof mine.rank === 'number' ? mine.rank : 0;
+    const target = mine && mine.rank != null ? mine.rank : 0;
     this._cancelMine();
     if (!this._mineDone) {
       this._mineDone = true;
