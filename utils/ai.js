@@ -1,5 +1,4 @@
 // utils/ai.js
-const { userSalt } = require('./auth');
 // 将后端 AI 分析响应归一化为统一结构，兼容多种返回格式：
 // - { report: {...} } / { report: "文本" }
 // - { analysis: "..." } / { data: "..." }
@@ -43,23 +42,4 @@ function normalizeReport(data) {
   return null;
 }
 
-// AI 报告本地缓存：避免每次进入都重请求（报告短时不变）；
-// key 带用户标识（auth.userSalt：优先用户 id，缺失时用 token 尾部），
-// 避免同一设备换账号后读到上一个学生的报告
-const CACHE_TTL = 30 * 60 * 1000; // 30 分钟
-function aiKey(kind, id) {
-  const salt = userSalt();
-  return 'px_ai_' + (salt ? salt + '_' : '') + kind + '_' + (id || 'overall');
-}
-function getCachedAI(kind, id) {
-  try {
-    const raw = wx.getStorageSync(aiKey(kind, id));
-    if (raw && raw.t && (Date.now() - raw.t) < CACHE_TTL) return raw.report;
-  } catch (e) { /* ignore */ }
-  return null;
-}
-function setCachedAI(kind, id, report) {
-  try { wx.setStorageSync(aiKey(kind, id), { t: Date.now(), report: report }); } catch (e) { /* ignore */ }
-}
-
-module.exports = { normalizeReport, getCachedAI, setCachedAI };
+module.exports = { normalizeReport };

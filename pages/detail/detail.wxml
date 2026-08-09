@@ -1,18 +1,7 @@
 <!-- pages/detail/detail.wxml -->
-<view class="container">
+<view class="container app-root" data-skin="{{skin}}" data-theme="{{theme}}">
   <view class="eyebrow">EXAM · 成绩详情</view>
   <view class="title">{{examName || ('考试 #' + examId)}}</view>
-
-  <!-- 本场总分/排名概览 -->
-  <view wx:if="{{summary}}" class="card summary anim {{ready ? 'show' : ''}}">
-    <view class="summary-score num">{{summary.total_score}}<text wx:if="{{summary.full_score != null}}" class="summary-total"> / {{summary.full_score}}</text></view>
-    <view class="summary-meta">
-      <text wx:if="{{summary.subject}}" class="tag">{{summary.subject}}</text>
-      <text wx:if="{{summary.rank != null}}" class="muted">班排 {{summary.rank}}<text wx:if="{{summary.class_size != null}}">/{{summary.class_size}}</text><text wx:if="{{summary.percentile != null}}"> · 超过 {{summary.percentile}}%</text></text>
-    </view>
-  </view>
-
-  <button wx:if="{{examId && !loading && !error}}" class="btn out lb-btn anim {{ready ? 'show' : ''}}" bindtap="goLeaderboard">查看成绩天梯 →</button>
 
   <view wx:if="{{loading}}" class="skeleton">
     <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
@@ -24,9 +13,9 @@
     <!-- 客观题 -->
     <view class="section-title">客观题</view>
     <view class="q-card anim {{ready ? 'show' : ''}}" wx:if="{{objective.length > 0}}">
-      <view class="q-row" wx:for="{{objective}}" wx:key="_key">
-        <text class="q-no">Q{{item.question_number != null ? item.question_number : '?'}}</text>
-        <text class="q-score {{item.max_score != null && item.score < item.max_score ? 'warn' : 'up'}}">{{item.max_score != null ? item.score + '/' + item.max_score : item.score}}</text>
+      <view class="q-row" wx:for="{{objective}}" wx:key="question_number">
+        <text class="q-no">Q{{item.question_number}}</text>
+        <text class="q-score {{item.score < item.max_score ? 'amber' : 'green'}}">{{item.score}}/{{item.max_score}}</text>
         <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
       </view>
     </view>
@@ -35,15 +24,13 @@
     <!-- 主观题 -->
     <view class="section-title">主观题</view>
     <view class="q-card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms" wx:if="{{subjective.length > 0}}">
-      <view class="q-row" wx:for="{{subjective}}" wx:key="_key">
-        <text class="q-no">Q{{item.question_number != null ? item.question_number : '?'}}</text>
-        <text class="q-score {{item.max_score != null && item.score < item.max_score ? 'warn' : 'up'}}">{{item.max_score != null ? item.score + '/' + item.max_score : item.score}}</text>
+      <view class="q-row" wx:for="{{subjective}}" wx:key="question_number">
+        <text class="q-no">Q{{item.question_number}}</text>
+        <text class="q-score {{item.score < item.max_score ? 'amber' : 'green'}}">{{item.score}}/{{item.max_score}}</text>
         <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
       </view>
     </view>
     <view wx:else class="muted sub">无主观题</view>
-
-    <view wx:if="{{extrasUnavailable}}" class="muted sub extras-hint">试卷图片暂不可用，可下拉刷新重试</view>
 
     <!-- 原卷图 -->
     <view wx:if="{{showImages}}" class="section-title">原卷作答</view>

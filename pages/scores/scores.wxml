@@ -1,5 +1,5 @@
 <!-- pages/scores/scores.wxml -->
-<view class="container">
+<view class="container app-root" data-skin="{{skin}}" data-theme="{{theme}}">
   <view class="hero-head">
     <view>
       <view class="hero-sub">{{name ? name + '，' : ''}}这是你的成绩</view>
@@ -72,7 +72,7 @@
   <!-- 分析入口 -->
   <view class="entry-row anim {{ready ? 'show' : ''}}" style="animation-delay: 100ms">
     <view class="entry" bindtap="goSubjects">
-      <view class="entry-ico entry-ico--subj"></view>
+      <text class="entry-ico"></text>
       <view class="entry-txt">
         <view class="entry-title">学科对比</view>
         <view class="muted">雷达 · 明细</view>
@@ -80,7 +80,7 @@
       <text class="entry-arrow">›</text>
     </view>
     <view class="entry" bindtap="goSemester">
-      <view class="entry-ico entry-ico--sem"></view>
+      <text class="entry-ico"></text>
       <view class="entry-txt">
         <view class="entry-title">学期对比</view>
         <view class="muted">进步 · 退步</view>

@@ -125,28 +125,24 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 
 /* 主按钮：蓝实底 + 胶囊 + 无阴影 + 按压缩小 */
 .btn-primary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
   background: var(--blue);
   color: #fff;
   font-size: 32rpx;
   font-weight: 700;
   border-radius: var(--r-pill);
   height: 92rpx;
-  line-height: 1.2;
+  line-height: 92rpx;
   border: none;
   box-shadow: none;
   letter-spacing: 2rpx;
 }
-.btn-primary::after { content: none; }
+.btn-primary::after { border: none; }
 .btn-primary:active { transform: scale(0.97); background: var(--blue-deep); }
 
 /* 状态色 */
-.up { color: var(--success); }
+.green { color: var(--success); }
 .red { color: var(--danger); }
-.warn { color: var(--warning); }
+.amber { color: var(--warning); }
 .primary { color: var(--brand); }
 .blue { color: var(--brand); }
 
@@ -216,7 +212,7 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 }
 .b-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
 .b-gray { background: var(--paper-2); color: var(--ink-soft); border-color: var(--line); }
-.b-warn { background: transparent; color: var(--ink); border-color: var(--ink); }
+.b-amber { background: transparent; color: var(--ink); border-color: var(--ink); }
 .b-red { background: var(--err-soft); color: var(--err-fg); border-color: var(--err-bd); }
 .b-brand { background: var(--blue-soft); color: var(--blue-deep); border-color: var(--blue-bd); }
 /* 进度条：直角 + 蓝填充 */
@@ -270,3 +266,176 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 .sk-line.w-40 { width: 40%; }
 .sk-line.w-60 { width: 60%; }
 .sk-line.w-80 { width: 80%; }
+
+/* ============================================================================
+   皮肤 / 主题 覆盖层（切换皮肤用）
+   ----------------------------------------------------------------------------
+   默认 = paper-edge（纸锋）：上方 :root 即现状基准，无需重定义。
+   新增维度：[data-skin="flat"]（明澈）/ [data-theme="dark"]（暗色），
+   通过页面根容器 <view data-skin data-theme> 命中，覆盖同名语义变量。
+   视觉基因对齐 Project-X main 仓库 tokens.css（L1/L2/L3 分层）。
+   ============================================================================ */
+
+/* 根容器：铺满屏高并随皮肤取背景/文字色（page 背景在 data-skin 作用域外，靠此覆盖） */
+.app-root { min-height: 100vh; background: var(--paper); color: var(--ink); }
+
+/* ── 明澈 flat：白底 · 绯红品牌 · 柔和阴影 ── */
+[data-skin="flat"] {
+  --paper: #F4F4F5;
+  --paper-2: #E4E4E7;
+  --sheet: #FFFFFF;
+  --ink: #18181B;
+  --ink-soft: #52525B;
+  --gray: #71717A;
+  --line: #E4E4E7;
+  --line-dark: #27272A;
+
+  --blue: #C00F28;            /* 品牌绯红 */
+  --blue-deep: #A10D22;
+  --blue-soft: #FCF3F4;
+  --blue-bd: #F1C2C9;
+  --lime: #16A34A;
+
+  --err: #C00F28;
+  --err-fg: #A10D22;
+  --err-soft: #FCF3F4;
+  --err-bd: #F1C2C9;
+
+  --dark: #0B0B0D;
+  --dark-2: #18181B;
+  --gray-on-dark: #71717A;
+
+  --shadow-hard: 0 2px 8px rgba(24, 24, 27, 0.10); /* 明澈用柔和阴影替代纸锋硬影 */
+
+  /* 语义别名对齐 明澈（success=绿 / warning=琥珀 / 其余同原值） */
+  --brand: #C00F28;
+  --brand-light: #D95E70;
+  --brand-dark: #A10D22;
+  --brand-bg: #FCF3F4;
+  --page-bg: var(--paper);
+  --card-bg: var(--sheet);
+  --border: var(--line);
+  --border-2: var(--line);
+  --text-1: var(--ink);
+  --text-2: var(--ink-soft);
+  --text-3: var(--gray);
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: var(--err);
+  --grid: var(--line);
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --shadow: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(24, 24, 27, 0.06);
+}
+
+/* ── 暗色（基准 = 纸锋暗，默认皮肤用） ── */
+[data-theme="dark"] {
+  --paper: #141413;
+  --paper-2: #1D1D1B;
+  --sheet: #1D1D1B;
+  --ink: #F1EFE9;
+  --ink-soft: #B8B5AB;
+  --gray: #8A887F;
+  --line: #2E2E2B;
+  --line-dark: #2E2E2B;
+
+  --blue: #4A5CFF;
+  --blue-deep: #2E44FF;
+  --blue-soft: rgba(46, 68, 255, 0.22);
+  --blue-bd: rgba(46, 68, 255, 0.50);
+
+  --err: #D93851;
+  --err-fg: #F28393;
+  --err-soft: rgba(192, 15, 40, 0.18);
+  --err-bd: rgba(192, 15, 40, 0.50);
+
+  --dark: #0B0B0D;
+  --dark-2: #18181B;
+  --gray-on-dark: #8A887F;
+
+  --shadow-hard: 8px 8px 0 #000000;
+
+  --brand: #4A5CFF;
+  --brand-light: #5F70FF;
+  --brand-dark: #2E44FF;
+  --brand-bg: rgba(46, 68, 255, 0.22);
+  --page-bg: var(--paper);
+  --card-bg: var(--sheet);
+  --border: var(--line);
+  --border-2: var(--line);
+  --text-1: var(--ink);
+  --text-2: var(--ink-soft);
+  --text-3: var(--gray);
+  --success: #4A5CFF;
+  --warning: #F1EFE9;
+  --danger: var(--err);
+  --grid: var(--line);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.40);
+}
+
+/* ── 纸锋 + 暗色 组合（显式，避免与上方 flat 暗冲突） ── */
+[data-skin="paper-edge"][data-theme="dark"] {
+  --blue: #4A5CFF;
+  --blue-deep: #2E44FF;
+  --blue-soft: rgba(46, 68, 255, 0.22);
+  --blue-bd: rgba(46, 68, 255, 0.50);
+  --brand: #4A5CFF;
+  --success: #4A5CFF;
+  --warning: #F1EFE9;
+}
+
+/* ── 明澈 + 暗色 组合 ── */
+[data-skin="flat"][data-theme="dark"] {
+  --paper: #101013;
+  --paper-2: #1B1B20;
+  --sheet: #17171B;
+  --ink: #F4F4F5;
+  --ink-soft: #A1A1AA;
+  --gray: #8B8B94;
+  --line: rgba(255, 255, 255, 0.11);
+  --line-dark: rgba(255, 255, 255, 0.18);
+
+  --blue: #D93851;
+  --blue-deep: #C00F28;
+  --blue-soft: rgba(217, 56, 81, 0.14);
+  --blue-bd: rgba(217, 56, 81, 0.35);
+
+  --err: #D93851;
+  --err-fg: #F28393;
+  --err-soft: rgba(217, 56, 81, 0.14);
+  --err-bd: rgba(217, 56, 81, 0.35);
+
+  --shadow-hard: 0 2px 8px rgba(0, 0, 0, 0.40);
+
+  --brand: #D93851;
+  --brand-light: #E0485F;
+  --brand-dark: #C00F28;
+  --brand-bg: rgba(217, 56, 81, 0.14);
+  --page-bg: var(--paper);
+  --card-bg: var(--sheet);
+  --border: var(--line);
+  --border-2: var(--line);
+  --text-1: var(--ink);
+  --text-2: var(--ink-soft);
+  --text-3: var(--gray);
+  --success: #22C55E;
+  --warning: #FBBF24;
+  --danger: var(--err);
+  --grid: var(--line);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.40);
+}
+
+/* ── 皮肤切换器（profile 外观区 / login 调色板 共用） ── */
+.skin-row { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 0; }
+.skin-row + .skin-row { border-top: 1rpx solid var(--border); }
+.skin-info { display: flex; flex-direction: column; gap: 4rpx; }
+.skin-name { font-size: 30rpx; font-weight: 600; color: var(--text-1); }
+.skin-dot { width: 40rpx; height: 40rpx; border-radius: 50%; border: 2rpx solid var(--border); box-sizing: border-box; }
+.skin-dot.on { border-color: var(--blue); box-shadow: 0 0 0 4rpx var(--blue-soft); }
+.skin-dot--paper-edge { background: #2E44FF; }
+.skin-dot--flat { background: #C00F28; }
+
+.palette { display: flex; align-items: center; justify-content: center; gap: 40rpx; margin-top: 28rpx; }
+.palette-row { display: flex; align-items: center; gap: 12rpx; padding: 10rpx 22rpx; border: 1rpx solid var(--border); border-radius: var(--r-pill); }
+.palette-name { font-size: 24rpx; color: var(--text-2); }

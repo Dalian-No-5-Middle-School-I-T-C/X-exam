@@ -16,7 +16,7 @@
 }
 .lg.brand { color: var(--brand); font-weight: 600; }
 .lg.muted { color: var(--text-3); }
-.lg.warn { color: var(--warning); font-weight: 600; }
+.lg.amber { color: var(--warning); font-weight: 600; }
 
 .sem-row {
   display: flex;

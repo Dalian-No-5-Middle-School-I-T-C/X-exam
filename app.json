@@ -1,7 +1,6 @@
 {
   "pages": [
     "pages/login/login",
-    "pages/change-password/change-password",
     "pages/scores/scores",
     "pages/detail/detail",
     "pages/trends/trends",
@@ -22,7 +21,6 @@
     "selectedColor": "#2E44FF",
     "backgroundColor": "#F1EFE9",
     "borderStyle": "black",
-    "fontSize": 12,
     "list": [
       { "pagePath": "pages/scores/scores", "text": "成绩" },
       { "pagePath": "pages/trends/trends", "text": "趋势" },

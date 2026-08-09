@@ -1,9 +1,9 @@
 // pages/profile/profile.js
 const { getUser, logout, getToken } = require('../../utils/auth');
-const { post, requestRaw } = require('../../utils/request');
-const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
+const { post } = require('../../utils/request');
+const { normalizeReport } = require('../../utils/ai');
 const { getSubStatus, setSubStatus, requestSubscribe, TEMPLATE_ID } = require('../../utils/subscribe');
-const { clearCachedScores } = require('../../utils/cache');
+const theme = require('../../utils/theme');
 
 Page({
   data: {
@@ -14,36 +14,25 @@ Page({
     aiError: '',
     subOn: false,
     subReady: false,
-    ready: false
+    ready: false,
+    skin: 'paper-edge',
+    theme: 'light',
+    skinOptions: [],
+    themeOptions: []
   },
 
   onReady: function () { this.setData({ ready: true }); },
 
   onShow: function () {
     const u = getUser();
+    theme.syncPage(this);
     this.setData({
       user: u,
       nameInitial: (u && u.name) ? String(u.name).charAt(0) : '?',
       subOn: getSubStatus(),
-      subReady: !!TEMPLATE_ID
-    });
-    this.syncSubAuth();
-  },
-
-  // 用微信真实订阅授权态复核本地开关，避免开关与实际授权脱节
-  // 注意：单向同步——只处理 reject→关闭；用户在系统设置里重新允许后，开关需手动打开
-  syncSubAuth: function () {
-    if (!TEMPLATE_ID) return;
-    const self = this;
-    wx.getSetting({
-      withSubscriptions: true,
-      success: function (res) {
-        const settings = res.subscriptionsSetting && res.subscriptionsSetting.itemSettings;
-        if (settings && settings[TEMPLATE_ID] === 'reject') {
-          setSubStatus(false);
-          self.setData({ subOn: false });
-        }
-      }
+      subReady: !!TEMPLATE_ID,
+      skinOptions: theme.SKIN_OPTIONS,
+      themeOptions: theme.THEME_OPTIONS
     });
   },
 
@@ -51,13 +40,11 @@ Page({
     const self = this;
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
-    const cached = getCachedAI('overall');
-    if (cached) { this.setData({ aiReport: cached }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/ai-analysis', {}, { timeout: 120000 })
+    post('/scores/me/ai-analysis', {})
       .then(function (resp) {
         const rep = normalizeReport(resp);
-        if (rep) { setCachedAI('overall', null, rep); self.setData({ aiReport: rep }); }
+        if (rep) self.setData({ aiReport: rep });
         else self.setData({ aiError: '暂未生成分析' });
       })
       .catch(function (err) {
@@ -72,7 +59,6 @@ Page({
     if (!wantOn) {
       setSubStatus(false);
       this.setData({ subOn: false });
-      // 后端 /unsubscribe 接口尚未在契约中，关闭仅管理本机授权状态
       return;
     }
     requestSubscribe().then(function (r) {
@@ -89,23 +75,26 @@ Page({
     });
   },
 
+  onSelectSkin: function (e) {
+    const skin = e.currentTarget.dataset.skin;
+    if (!skin) return;
+    getApp().applyTheme(skin, null);
+    this.setData({ skin: skin });
+  },
+  onToggleTheme: function (e) {
+    const themeName = e.detail.value ? 'dark' : 'light';
+    getApp().applyTheme(null, themeName);
+    this.setData({ theme: themeName });
+  },
+
   onLogout: function () {
     wx.showModal({
       title: '退出登录',
       content: '确定退出当前账号？',
       success: function (r) {
         if (r.confirm) {
-          const token = getToken();
-          // 先清缓存再登出：logout 后 userSalt 会变空，清不到当前用户的 key
-          clearCachedScores();
           logout();
           wx.reLaunch({ url: '/pages/login/login' });
-          // 服务端吊销 token（尽力而为，不影响本地登出）
-          if (token) {
-            requestRaw('POST', '/auth/logout', undefined, {
-              header: { 'Authorization': 'Bearer ' + token }
-            }).catch(function () { /* 网络失败不阻塞本地登出 */ });
-          }
         }
       }
     });

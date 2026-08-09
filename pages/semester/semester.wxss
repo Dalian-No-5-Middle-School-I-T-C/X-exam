@@ -27,7 +27,7 @@
 
 .tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin: 8rpx 0 4rpx; }
 .tag-pill { font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 999rpx; }
-.tag-pill.up { color: var(--blue); background: var(--blue-soft); border: 1rpx solid var(--blue-bd); }
+.tag-pill.green { color: var(--blue); background: var(--blue-soft); border: 1rpx solid var(--blue-bd); }
 .tag-pill.red { color: var(--err-fg); background: var(--err-soft); border: 1rpx solid var(--err-bd); }
 
 /* 明细表 */

@@ -1,88 +1,47 @@
 // utils/request.js
-// 统一封装 wx.request：自动带 Bearer，401 清登录态并跳登录。
-// requestRaw 为低层请求，auth.js 复用，避免登录接口重复一套请求逻辑。
+// 统一封装 wx.request：自动带 Bearer，401 清 token 并跳登录
+const { getToken, clearToken } = require('./auth');
 const { API_BASE, API_PREFIX } = require('./env');
 
-const DEFAULT_TIMEOUT = 20000;
-let handling401 = false;
-let handling428 = false;
-
-// 延迟 require 打破 auth.js <-> request.js 循环依赖
-function getToken() { return require('./auth').getToken(); }
-function clearLogin() {
-  var auth = require('./auth');
-  auth.clearToken();
-  auth.clearUser();
-}
-
-function handleUnauthorized() {
-  if (handling401) return;
-  handling401 = true;
-  clearLogin();
-  var pages = getCurrentPages();
-  var top = pages[pages.length - 1];
-  var onLogin = top && top.route && top.route.indexOf('login') >= 0;
-  if (onLogin) {
-    handling401 = false;
-    return;
-  }
-  // 多个并发请求同时 401 时只跳一次；reLaunch 完成后立即复位，避免锁住后续 401
-  wx.reLaunch({
-    url: '/pages/login/login',
-    complete: function () { handling401 = false; }
-  });
-}
-
-// 428 = 后端要求先完成一次性改密（PASSWORD_CHANGE_REQUIRED），统一引导到改密页
-function handlePasswordRequired() {
-  if (handling428) return;
-  handling428 = true;
-  var pages = getCurrentPages();
-  var top = pages[pages.length - 1];
-  var onChange = top && top.route && top.route.indexOf('change-password') >= 0;
-  if (onChange) {
-    handling428 = false;
-    return;
-  }
-  wx.reLaunch({
-    url: '/pages/change-password/change-password',
-    complete: function () { handling428 = false; }
-  });
-}
-
-function apiError(res) {
-  var message = '请求失败';
-  var body = null;
-  try {
-    body = res.data;
-    if (body && body.message) message = body.message;
-  } catch (e) { /* ignore */ }
-  var err = new Error(message);
-  err.status = res.statusCode;
-  err.body = body;
-  return err;
-}
-
-// 低层请求：不带鉴权/401 逻辑，成功 resolve 完整 response
-function requestRaw(method, path, data, options) {
-  options = options || {};
+function request(method, path, data) {
   return new Promise(function (resolve, reject) {
+    const token = getToken();
+    const header = { 'content-type': 'application/json' };
+    if (token) header['Authorization'] = 'Bearer ' + token;
+
     wx.request({
       url: API_BASE + API_PREFIX + path,
       method: method,
       data: data,
-      header: options.header || { 'content-type': 'application/json' },
-      responseType: options.responseType,
-      timeout: options.timeout,
+      header: header,
       success: function (res) {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res);
-        } else {
-          reject(apiError(res));
+        const status = res.statusCode;
+        if (status >= 200 && status < 300) {
+          resolve(res.data);
+          return;
         }
+        let message = '请求失败';
+        let body = null;
+        try {
+          body = res.data;
+          if (body && body.message) message = body.message;
+        } catch (e) { /* ignore */ }
+        if (status === 401) {
+          clearToken();
+          const pages = getCurrentPages();
+          const top = pages[pages.length - 1];
+          const onLogin = top && top.route && top.route.indexOf('login') >= 0;
+          if (!onLogin) {
+            wx.reLaunch({ url: '/pages/login/login' });
+          }
+        }
+        const err = new Error(message);
+        err.status = status;
+        err.body = body;
+        reject(err);
       },
       fail: function (err) {
-        var e = new Error((err && err.errMsg) || '网络异常，请检查连接');
+        const e = new Error((err && err.errMsg) || '网络异常，请检查连接');
         e.status = 0;
         reject(e);
       }
@@ -90,29 +49,54 @@ function requestRaw(method, path, data, options) {
   });
 }
 
-function request(method, path, data, opts) {
-  opts = opts || {};
-  var token = getToken();
-  var header = { 'content-type': 'application/json' };
-  if (token) header['Authorization'] = 'Bearer ' + token;
-  return requestRaw(method, path, data, {
-    header: header,
-    timeout: opts.timeout || DEFAULT_TIMEOUT
-  })
-    .then(function (res) { return res.data; })
-    .catch(function (err) {
-      if (err.status === 401) handleUnauthorized();
-      else if (err.status === 428) handlePasswordRequired();
-      throw err;
+function get(path) {
+  return request('GET', path);
+}
+
+function post(path, data) {
+  return request('POST', path, data);
+}
+
+// 二进制资源（如原卷图）：带鉴权头拉取，返回 { buffer, contentType }
+// 用于 <image> 无法附加 Authorization 头的场景——字节经本地转 base64，token 不进 URL
+function getBuffer(path) {
+  return new Promise(function (resolve, reject) {
+    const token = getToken();
+    const header = { 'content-type': 'application/json' };
+    if (token) header['Authorization'] = 'Bearer ' + token;
+
+    wx.request({
+      url: API_BASE + API_PREFIX + path,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      header: header,
+      success: function (res) {
+        const status = res.statusCode;
+        if (status >= 200 && status < 300) {
+          const rawType = (res.header && (res.header['Content-Type'] || res.header['content-type'])) || 'image/png';
+          resolve({ buffer: res.data, contentType: rawType.split(';')[0] });
+          return;
+        }
+        if (status === 401) {
+          clearToken();
+          const pages = getCurrentPages();
+          const top = pages[pages.length - 1];
+          const onLogin = top && top.route && top.route.indexOf('login') >= 0;
+          if (!onLogin) {
+            wx.reLaunch({ url: '/pages/login/login' });
+          }
+        }
+        const err = new Error('资源加载失败');
+        err.status = status;
+        reject(err);
+      },
+      fail: function (err) {
+        const e = new Error((err && err.errMsg) || '网络异常，请检查连接');
+        e.status = 0;
+        reject(e);
+      }
     });
+  });
 }
 
-function get(path, opts) {
-  return request('GET', path, undefined, opts);
-}
-
-function post(path, data, opts) {
-  return request('POST', path, data, opts);
-}
-
-module.exports = { requestRaw: requestRaw, get: get, post: post };
+module.exports = { get, post, getBuffer };

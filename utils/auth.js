@@ -1,70 +1,52 @@
 // utils/auth.js
-// 登录态管理：token / user 的存取，登录与退出，静默登录判断
-const { requestRaw } = require('./request');
+// 登录态管理：token / user 的存取，登录与登出，静默登录判断
+const { API_BASE, API_PREFIX } = require('./env');
 
 const TOKEN_KEY = 'px_token';
 const USER_KEY = 'px_user';
 
-// 内存态：非“记住我”登录仅存内存，关闭小程序即登出
-let memToken = '';
-let memUser = null;
-
 function getToken() {
-  if (memToken) return memToken;
   try { return wx.getStorageSync(TOKEN_KEY) || null; } catch (e) { return null; }
 }
-// persistent=true 写入持久 Storage（记住我）；false 仅存内存并清除持久态
-function setToken(t, persistent) {
-  memToken = t || '';
-  try {
-    if (persistent) wx.setStorageSync(TOKEN_KEY, t);
-    else wx.removeStorageSync(TOKEN_KEY);
-  } catch (e) { /* ignore */ }
+function setToken(t) {
+  try { wx.setStorageSync(TOKEN_KEY, t); } catch (e) { /* ignore */ }
 }
 function clearToken() {
-  memToken = '';
   try { wx.removeStorageSync(TOKEN_KEY); } catch (e) { /* ignore */ }
 }
 function getUser() {
-  if (memUser) return memUser;
   try { return wx.getStorageSync(USER_KEY) || null; } catch (e) { return null; }
 }
-function setUser(u, persistent) {
-  memUser = u || null;
-  try {
-    if (persistent) wx.setStorageSync(USER_KEY, u);
-    else wx.removeStorageSync(USER_KEY);
-  } catch (e) { /* ignore */ }
+function setUser(u) {
+  try { wx.setStorageSync(USER_KEY, u); } catch (e) { /* ignore */ }
 }
 function clearUser() {
-  memUser = null;
   try { wx.removeStorageSync(USER_KEY); } catch (e) { /* ignore */ }
 }
 
-// 本地缓存盐：优先用户 id，缺失时用 token 尾部，保证跨账号隔离
-function userSalt() {
-  var u = getUser() || {};
-  var id = u.studentId || u.student_id || u.id || u.student_number || '';
-  if (id) return String(id);
-  var t = getToken() || '';
-  return t ? t.slice(-8) : '';
-}
-
-// 登录：identifier 支持 用户名 / 学号 / 邮箱；isPersistent=记住我 180 天
+// 登录：identifier 支持 用户名 / 学号 / 邮箱；isPersistent=记住我(180天)
 function login(identifier, password, remember) {
-  return requestRaw('POST', '/auth/login', {
-    identifier: identifier,
-    password: password,
-    isPersistent: remember
-  }).then(function (res) {
-    if (res.data && res.data.token) {
-      setToken(res.data.token, remember);
-      setUser(res.data.user, remember);
-      return res.data;
-    }
-    var err = new Error((res.data && res.data.message) || '登录失败');
-    err.status = res.statusCode;
-    throw err;
+  return new Promise(function (resolve, reject) {
+    wx.request({
+      url: API_BASE + API_PREFIX + '/auth/login',
+      method: 'POST',
+      data: { identifier: identifier, password: password, isPersistent: remember },
+      header: { 'content-type': 'application/json' },
+      success: function (res) {
+        if (res.statusCode === 200 && res.data && res.data.token) {
+          setToken(res.data.token);
+          setUser(res.data.user);
+          resolve(res.data);
+        } else {
+          let msg = '登录失败';
+          try { if (res.data && res.data.message) msg = res.data.message; } catch (e) { /* ignore */ }
+          const err = new Error(msg);
+          err.status = res.statusCode;
+          reject(err);
+        }
+      },
+      fail: function () { reject(new Error('网络异常，请检查连接')); }
+    });
   });
 }
 
@@ -87,6 +69,5 @@ module.exports = {
   clearUser: clearUser,
   login: login,
   logout: logout,
-  isLoggedIn: isLoggedIn,
-  userSalt: userSalt
+  isLoggedIn: isLoggedIn
 };

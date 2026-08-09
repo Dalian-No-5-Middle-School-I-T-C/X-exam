@@ -1,5 +1,5 @@
 <!-- pages/leaderboard/leaderboard.wxml -->
-<view class="container">
+<view class="container app-root" data-skin="{{skin}}" data-theme="{{theme}}">
   <view class="eyebrow">LEADERBOARD · 年级天梯</view>
   <view class="title">{{examName || ('考试 #' + examId)}}</view>
   <view class="sub lb-sub">年级成绩天梯 · 前十</view>
@@ -9,23 +9,21 @@
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
   </view>
 
-  <view wx:elif="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="loadBoard">{{error}} · 点击重试</view>
-
   <block wx:elif="{{enabled && list.length > 0}}">
     <!-- Top3 领奖台 -->
     <view class="podium anim {{ready ? 'show' : ''}}">
       <view class="pod pod-2" wx:if="{{list[1]}}">
-        <view class="pod-medal">{{list[1].rank}}</view>
+        <view class="pod-medal">2</view>
         <view class="pod-name">{{list[1].name}}</view>
         <view class="pod-score">{{list[1].score}}</view>
       </view>
       <view class="pod pod-1" wx:if="{{list[0]}}">
-        <view class="pod-medal">{{list[0].rank}}</view>
+        <view class="pod-medal">1</view>
         <view class="pod-name">{{list[0].name}}</view>
         <view class="pod-score">{{list[0].score}}</view>
       </view>
       <view class="pod pod-3" wx:if="{{list[2]}}">
-        <view class="pod-medal">{{list[2].rank}}</view>
+        <view class="pod-medal">3</view>
         <view class="pod-name">{{list[2].name}}</view>
         <view class="pod-score">{{list[2].score}}</view>
       </view>
@@ -34,7 +32,7 @@
     <!-- 完整榜单 -->
     <view class="section-title">完整榜单</view>
     <view class="card lb-list anim {{ready ? 'show' : ''}}" style="animation-delay: 80ms">
-      <view class="lb-row {{item.isMe ? 'me' : ''}}" wx:for="{{list}}" wx:key="studentId">
+      <view class="lb-row {{item.isMe ? 'me' : ''}}" wx:for="{{list}}" wx:key="rank">
         <text class="lb-rank r{{item.rank <= 3 ? item.rank : 'n'}}">{{item.rank}}</text>
         <text class="lb-name">{{item.name}}</text>
         <text class="lb-score">{{item.score}}</text>
@@ -45,7 +43,7 @@
     <view wx:if="{{mine}}" class="card mine-card anim {{ready ? 'show' : ''}}" style="animation-delay: 120ms">
       <text class="muted">我的排名</text>
       <view class="mine-row">
-        <text class="mine-rank num">{{mine.rank == null ? '—' : mineRank}}</text>
+        <text class="mine-rank num">{{mineRank}}</text>
         <text class="mine-score">{{mine.score}}</text>
       </view>
     </view>
