@@ -7,12 +7,13 @@
   </view>
 
   <view class="section-title">成绩走势</view>
-  <view wx:if="{{trends.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无成绩数据</view>
+  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="load">{{error}} · 点击重试</view>
+  <view wx:elif="{{trends.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无成绩数据</view>
   <canvas wx:if="{{trends.length > 0}}" type="2d" id="lineCanvas" class="chart"></canvas>
   <view wx:if="{{trends.length > 0}}" class="legend anim {{ready ? 'show' : ''}}">
     <text class="lg brand">总分</text>
-    <text class="lg amber">班均</text>
-    <text class="lg muted">年段均</text>
+    <text class="lg warn">班均</text>
+    <text class="lg muted">年级均</text>
   </view>
 
   <view class="muted sub" style="text-align:center;margin-top:40rpx;">学科雷达对比、学期进步/退步已移至「我的成绩」页的分析入口</view>

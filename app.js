@@ -1,14 +1,3 @@
-App({
-  globalData: {
-    token: '',
-    user: null
-  },
-  onLaunch: function () {
-    var token = wx.getStorageSync('px_token');
-    var user = wx.getStorageSync('px_user');
-    if (token) {
-      this.globalData.token = token;
-      this.globalData.user = user;
-    }
-  }
-});
+// app.js
+// 全局入口：登录态统一由 utils/auth.js 的 storage 管理，这里不再维护重复的 globalData
+App({});

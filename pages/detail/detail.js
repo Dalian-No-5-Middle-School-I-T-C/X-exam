@@ -1,13 +1,17 @@
 // pages/detail/detail.js
-const { get, post, getBuffer } = require('../../utils/request');
-const { getToken } = require('../../utils/auth');
+const { get, post } = require('../../utils/request');
+const { getToken, getUser } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
 const { normalizeReport } = require('../../utils/ai');
+const { normalizeScores, normalizeQuestions } = require('../../utils/response');
+const { API_BASE, API_PREFIX } = require('../../utils/env');
 
 Page({
   data: {
     examId: 0,
     examName: '',
+    summary: null,
+    extrasUnavailable: false,
     rawQuestions: [],
     objective: [],
     subjective: [],
@@ -24,8 +28,13 @@ Page({
 
   onLoad: function (options) {
     const examId = parseInt(options.examId, 10) || 0;
+    if (!examId) {
+      this.setData({ error: '参数缺失，无法加载考试' });
+      return;
+    }
     const examName = options.name ? decodeURIComponent(options.name) : '';
     this.setData({ examId: examId, examName: examName });
+    this.loadSummary();
     this.loadDetail();
   },
 
@@ -33,8 +42,22 @@ Page({
     this.setData({ ready: true });
   },
 
+  onHide: function () { this._extrasCancelled = true; },
+  onUnload: function () { this._extrasCancelled = true; },
+
   onPullDownRefresh: function () {
     this.loadDetail(function () { wx.stopPullDownRefresh(); });
+  },
+
+  // 本场总分/排名概览：优先从成绩列表缓存中取，避免详情页缺少关键信息
+  loadSummary: function () {
+    const self = this;
+    const cache = getCachedScores();
+    if (!cache) return;
+    const found = normalizeScores(cache).scores.filter(function (s) {
+      return Number(s.exam_id) === self.data.examId;
+    })[0];
+    if (found) this.setData({ summary: found });
   },
 
   loadDetail: function (done) {
@@ -42,7 +65,7 @@ Page({
     this.setData({ loading: true, error: '' });
     get('/scores/me/exams/' + this.data.examId)
       .then(function (resp) {
-        self.setData({ rawQuestions: resp.questions || [] });
+        self.setData({ rawQuestions: normalizeQuestions(resp) });
         self.buildLists();
         self.setData({ loading: false });
         self.loadExtras();
@@ -68,13 +91,22 @@ Page({
 
   loadExtras: function () {
     const self = this;
+    let studentId = '';
     const cached = getCachedScores();
-    const studentId = cached && cached.studentId;
-    if (!studentId) return; // 鉴权由 request 封装统一处理
+    if (cached) studentId = normalizeScores(cached).studentId;
+    if (!studentId) {
+      const u = getUser() || {};
+      studentId = u.studentId || u.student_id || u.id || '';
+    }
+    if (!studentId) {
+      // 深链/直接进入时无缓存可依赖：明确提示，而不是静默缺失
+      this.setData({ extrasUnavailable: true });
+      return;
+    }
 
-    // 元数据走统一封装：自动带 Bearer、401 自动清 token 并跳登录
     get('/exams/' + this.data.examId + '/student/' + studentId + '/scores')
       .then(function (d) {
+        self.setData({ extrasUnavailable: false });
         if (d.classQuestionStats) {
           self.setData({ classAvgMap: d.classQuestionStats });
           self.buildLists();
@@ -82,32 +114,65 @@ Page({
         const blocks = d.answerBlocks || [];
         if (blocks.length > 0) self.loadCropImages(blocks);
       })
-      .catch(function () { /* 附加信息不可用，静默降级 */ });
+      .catch(function () {
+        // 附加信息不可用：静默降级，但给出可感知提示
+        self.setData({ extrasUnavailable: true });
+      });
   },
 
-  // 原卷图：经 getBuffer 在请求头带 token 拉取字节，转 base64 data URI 喂给 <image>
-  // token 仅存在于请求头，不再落入 URL / 访问日志 / 缓存键
+  // 原卷图：wx.downloadFile 带 Authorization 头拿临时文件，token 不进 URL，
+  // 也不再把大图 base64 塞进 setData（避免超过 setData 体积上限）。
+  // 并发限制 3，页面隐藏/卸载后不再回写结果。
   loadCropImages: function (blocks) {
     const self = this;
-    const tasks = blocks
-      .filter(function (b) { return b && b.id; })
-      .map(function (b) {
-        return getBuffer('/answer-block-crops/' + b.id + '/image')
-          .then(function (r) {
-            const base64 = wx.arrayBufferToBase64(r.buffer);
-            return {
-              id: b.id,
-              title: b.blockTitle || ('第 ' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
-              url: 'data:' + r.contentType + ';base64,' + base64
-            };
-          })
-          .catch(function () { return null; }); // 单张失败不阻断其余
-      });
+    const token = getToken();
+    const list = blocks.filter(function (b) { return b && b.id; });
+    if (!token || list.length === 0) return;
 
-    Promise.all(tasks).then(function (imgs) {
-      const ok = imgs.filter(Boolean);
+    this._extrasCancelled = false;
+    const CONCURRENCY = 3;
+    const results = [];
+    let index = 0;
+
+    const finish = function () {
+      if (self._extrasCancelled) return;
+      const ok = results.filter(Boolean);
       if (ok.length > 0) self.setData({ images: ok, showImages: true });
-    });
+    };
+    const next = function () {
+      if (self._extrasCancelled) return;
+      if (index >= list.length) { finish(); return; }
+      const b = list[index++];
+      wx.downloadFile({
+        url: API_BASE + API_PREFIX + '/answer-block-crops/' + b.id + '/image',
+        header: { 'Authorization': 'Bearer ' + token },
+        success: function (res) {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            results.push({
+              id: b.id,
+              title: b.blockTitle || ('第' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
+              url: res.tempFilePath
+            });
+          }
+          next();
+        },
+        fail: function () { next(); }
+      });
+    };
+    for (let i = 0; i < Math.min(CONCURRENCY, list.length); i++) next();
+  },
+
+  goLeaderboard: function () {
+    const name = this.data.examName ? encodeURIComponent(this.data.examName) : '';
+    wx.navigateTo({ url: '/pages/leaderboard/leaderboard?examId=' + this.data.examId + '&name=' + name });
+  },
+
+  onShareAppMessage: function () {
+    return {
+      title: this.data.examName || ('考试 #' + this.data.examId),
+      path: '/pages/detail/detail?examId=' + this.data.examId +
+        '&name=' + encodeURIComponent(this.data.examName || '')
+    };
   },
 
   onAi: function () {
@@ -115,7 +180,7 @@ Page({
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {})
+    post('/scores/me/exams/' + this.data.examId + '/ai-analysis', {}, { timeout: 60000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
         if (rep) self.setData({ aiReport: rep });

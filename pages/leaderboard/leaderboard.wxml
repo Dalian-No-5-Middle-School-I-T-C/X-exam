@@ -9,6 +9,8 @@
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
   </view>
 
+  <view wx:elif="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="loadBoard">{{error}} · 点击重试</view>
+
   <block wx:elif="{{enabled && list.length > 0}}">
     <!-- Top3 领奖台 -->
     <view class="podium anim {{ready ? 'show' : ''}}">
@@ -43,7 +45,7 @@
     <view wx:if="{{mine}}" class="card mine-card anim {{ready ? 'show' : ''}}" style="animation-delay: 120ms">
       <text class="muted">我的排名</text>
       <view class="mine-row">
-        <text class="mine-rank num">{{mineRank}}</text>
+        <text class="mine-rank num">{{mine.rank == null ? '—' : mineRank}}</text>
         <text class="mine-score">{{mine.score}}</text>
       </view>
     </view>

@@ -26,7 +26,6 @@
 }
 .lg.brand::before { background: var(--brand); }
 .lg.muted::before { background: var(--text-3); }
-.lg.amber::before { background: var(--warning); }
 
 .weak-note {
   font-size: 24rpx;

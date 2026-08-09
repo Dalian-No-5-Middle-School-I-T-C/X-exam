@@ -33,7 +33,7 @@ Page({
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/ai-analysis', {})
+    post('/scores/me/ai-analysis', {}, { timeout: 60000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
         if (rep) self.setData({ aiReport: rep });
