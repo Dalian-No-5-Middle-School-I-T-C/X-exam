@@ -58,6 +58,7 @@ projectX-mini/
 └── utils/
     ├── env.js                       # API_BASE / API_PREFIX 常量
     ├── request.js                   # wx.request 封装：自动带 Bearer，401 跳登录
+    ├── response.js                  # 后端响应归一化（字段别名 + 数值容错）
     ├── auth.js                      # 登录态管理（token / user 存取、login / logout / isLoggedIn）
     ├── cache.js                     # 成绩本地缓存（秒开）
     ├── ai.js                        # AI 响应归一化（兼容纯文本 / 结构化对象）
@@ -92,7 +93,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 
 2. **用微信开发者工具导入**：选择工程目录 `projectX-mini`（注意目录名大写 `X`、无连字符）。
 
-3. **AppID**：工程内已填正式 `wx7c255cb7fec43a9e`；也可用测试号，按需切换 `project.config.json`。
+3. **AppID**：工程内已填正式 `wx898f2f45a283582f`；也可用测试号，按需切换 `project.config.json`。
 
 4. **编译**（`Ctrl+B`）。若报合法域名相关错误，二选一：
 
@@ -104,7 +105,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 
 ## 启动与登录流程
 
-- 启动页为 `login`。`app.js` 的 `onLaunch` 会同步本地 `px_token`，存在则视为已登录。
+- 启动页为 `login`；本地已存 token 时自动 `reLaunch` 到成绩页（静默登录），无需重复输入账号密码。
 - 登录成功后 `reLaunch` 到 `pages/scores/scores`（成绩页）。
 - 任意接口返回 `401` → `utils/request.js` 自动清除 token 并 `reLaunch` 回登录页（强制重新鉴权）。
 - 「记住我」：登录时 `isPersistent=true`，后端下发约 180 天有效期 token。
@@ -129,14 +130,13 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 |------|------|------|----------|
 | POST | `/api/auth/login` | `{identifier,password,isPersistent}` → `{token,user}` | `utils/auth.js` |
 | GET | `/api/scores/me` | 本人全部成绩（含 `exam_id/exam_name/subject/total_score/graded_at`） | `pages/scores` |
-| GET | `/api/scores/me/exams/:examId` | 单场详情，逐题小分 `questions[]` | `pages/detail` |
-| GET | `/api/exams/:examId/student/:studentId/scores` | 班级均分、原卷图块 | `pages/detail`（loadExtras，裸 `wx.request`） |
+| GET | `/api/scores/me/exams/:examId` | 单场详情：逐题小分 + 班级均分 + 原卷图块 | `pages/detail` |
 | GET | `/api/scores/me/trends` | 趋势数据（总分 + 班均 + 年段均） | `pages/trends` |
 | GET | `/api/scores/me/subject-comparison` | 学科对比（我的均分 / 班级均分 / 差距 / 趋势 / 薄弱学科） | `pages/subjects` |
 | GET | `/api/scores/me/semester-comparison` | 学期对比（本学期 vs 上学期、进步/退步学科） | `pages/semester` |
 | POST | `/api/scores/me/ai-analysis` | 整体 AI 分析，请求体 `{}` | `pages/profile` |
 | POST | `/api/scores/me/exams/:examId/ai-analysis` | 单场 AI 分析，请求体 `{}` | `pages/detail` |
-| GET | `/api/scores/me/leaderboard?examId=` | 年级天梯（接口存在、需鉴权） | `pages/leaderboard` |
+| GET | `/api/ladder/exams/:examId` | 年级天梯前十 + 我的排名（关闭时返回 403） | `pages/leaderboard`（scores 最新考试 / detail） |
 
 ### AI 响应兼容（`utils/ai.js` 的 `normalizeReport`）
 
@@ -180,7 +180,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 ## 待办与后端依赖（非代码阻塞项）
 
 1. **订阅消息正式生效**需两步：小程序后台申请「成绩发布通知」模板并填入 `utils/subscribe.js` 的 `TEMPLATE_ID`；后端补充成绩发布时 `subscribeMessage.send` 推送逻辑。
-2. **天梯管理员开关**：前端已读 `enabled/leaderboardEnabled` 控制显隐，由后端按管理员配置返回。
+2. **天梯管理员开关**：后端开关默认开启（`system_settings.ladder_enabled`），关闭时接口返回 403，前端显示「天梯功能暂未开启」。
 3. **原卷图域名**：`downloadFile` 合法域名需含 `dl5zx.cn`。
 4. **指纹/面容解锁（Soter）**：留待后续版本。
 
@@ -226,4 +226,3 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 ## 免责声明
 
 本仓库为**前端源码**，依赖的 Project-X 后端 `https://dl5zx.cn` 由后端维护方独立部署与运营，其数据、接口与可用性不在本仓库范围内。本前端仅做展示与教学用途，不对后端数据的准确性或可用性作任何担保。
-

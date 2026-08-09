@@ -1,6 +1,6 @@
 // pages/profile/profile.js
 const { getUser, logout, getToken } = require('../../utils/auth');
-const { post } = require('../../utils/request');
+const { post, requestRaw } = require('../../utils/request');
 const { normalizeReport } = require('../../utils/ai');
 const { getSubStatus, setSubStatus, requestSubscribe, TEMPLATE_ID } = require('../../utils/subscribe');
 
@@ -33,7 +33,7 @@ Page({
     if (this.data.aiLoading) return;
     if (!getToken()) { this.setData({ aiError: '请先登录' }); return; }
     this.setData({ aiLoading: true, aiError: '' });
-    post('/scores/me/ai-analysis', {})
+    post('/scores/me/ai-analysis', {}, { timeout: 120000 })
       .then(function (resp) {
         const rep = normalizeReport(resp);
         if (rep) self.setData({ aiReport: rep });
@@ -73,8 +73,15 @@ Page({
       content: '确定退出当前账号？',
       success: function (r) {
         if (r.confirm) {
+          const token = getToken();
           logout();
           wx.reLaunch({ url: '/pages/login/login' });
+          // 服务端吊销 token（尽力而为，不影响本地登出）
+          if (token) {
+            requestRaw('POST', '/auth/logout', undefined, {
+              header: { 'Authorization': 'Bearer ' + token }
+            }).catch(function () { /* 网络失败不阻塞本地登出 */ });
+          }
         }
       }
     });

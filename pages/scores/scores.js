@@ -2,6 +2,7 @@
 const { get } = require('../../utils/request');
 const { getCachedScores, setCachedScores } = require('../../utils/cache');
 const { animateNumber } = require('../../utils/animate');
+const { normalizeScores, toNum } = require('../../utils/response');
 
 function byDateDesc(a, b) {
   return (b.graded_at || '').localeCompare(a.graded_at || '');
@@ -46,14 +47,21 @@ Page({
   },
 
   applyData: function (resp, fromCache) {
-    const sorted = (resp.scores || []).slice().sort(byDateDesc);
+    const data = normalizeScores(resp);
+    const sorted = (data.scores || []).slice().sort(byDateDesc);
     const subjects = Array.from(new Set(sorted.map(function (s) { return s.subject; }).filter(function (x) { return x; })));
     let latestChange = null;
     if (sorted.length >= 2) {
-      latestChange = sorted[0].total_score - sorted[1].total_score;
+      const a = sorted[0];
+      const b = sorted[1];
+      // 后端 /scores/me 不返回 full_score：同科目是唯一可比维度；
+      // 若未来返回满分，类型已归一化（toNum），仅满分一致时才比较
+      if (a.subject && a.subject === b.subject && a.full_score === b.full_score) {
+        latestChange = toNum(a.total_score) - toNum(b.total_score);
+      }
     }
     this.setData({
-      name: resp.name || '',
+      name: data.name || '',
       latest: sorted[0] || null,
       latestChange: latestChange,
       list: sorted,
@@ -82,14 +90,14 @@ Page({
     }
   },
 
-  // 总览统计卡：考试次数 / 平均分 / 学科数 / 最佳·最差单科（均基于 /me 列表本地计算）
+  // 汇总统计卡：考试次数 / 平均分 / 学科数 / 最佳最差单科（均基于 /me 列表本地计算）
   computeOverview: function (list) {
     if (!list || list.length === 0) return null;
-    const total = list.reduce(function (s, x) { return s + (x.total_score || 0); }, 0);
+    const total = list.reduce(function (s, x) { return s + toNum(x.total_score); }, 0);
     const avg = round1(total / list.length);
     const subs = new Set(list.map(function (s) { return s.subject; }).filter(function (x) { return x; })).size;
-    const best = list.slice().sort(function (a, b) { return (b.total_score || 0) - (a.total_score || 0); })[0];
-    const worst = list.slice().sort(function (a, b) { return (a.total_score || 0) - (b.total_score || 0); })[0];
+    const best = list.slice().sort(function (a, b) { return toNum(b.total_score) - toNum(a.total_score); })[0];
+    const worst = list.slice().sort(function (a, b) { return toNum(a.total_score) - toNum(b.total_score); })[0];
     const label = function (e) { return (e.subject ? e.subject + ' ' : '') + (e.total_score != null ? e.total_score : '—'); };
     return {
       totalExams: list.length,
@@ -117,8 +125,9 @@ Page({
     this.setData({ loading: true, error: '' });
     get('/scores/me')
       .then(function (resp) {
-        self.applyData(resp, false);
-        setCachedScores(resp);
+        const norm = normalizeScores(resp);
+        self.applyData(norm, false);
+        setCachedScores(norm);
         self.setData({ loading: false });
       })
       .catch(function (err) {

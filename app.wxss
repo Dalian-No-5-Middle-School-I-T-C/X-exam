@@ -140,9 +140,9 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 .btn-primary:active { transform: scale(0.97); background: var(--blue-deep); }
 
 /* 状态色 */
-.green { color: var(--success); }
+.up { color: var(--success); }
 .red { color: var(--danger); }
-.amber { color: var(--warning); }
+.warn { color: var(--warning); }
 .primary { color: var(--brand); }
 .blue { color: var(--brand); }
 
@@ -212,7 +212,7 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 }
 .b-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
 .b-gray { background: var(--paper-2); color: var(--ink-soft); border-color: var(--line); }
-.b-amber { background: transparent; color: var(--ink); border-color: var(--ink); }
+.b-warn { background: transparent; color: var(--ink); border-color: var(--ink); }
 .b-red { background: var(--err-soft); color: var(--err-fg); border-color: var(--err-bd); }
 .b-brand { background: var(--blue-soft); color: var(--blue-deep); border-color: var(--blue-bd); }
 /* 进度条：直角 + 蓝填充 */

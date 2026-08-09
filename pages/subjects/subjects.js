@@ -1,24 +1,12 @@
 // pages/subjects/subjects.js
 const { get } = require('../../utils/request');
+const { normalizeSubjects, toNum } = require('../../utils/response');
 
-// 防御式归一化：响应可能是 {subjects, weakSubject, totalExams} 或裸数组
-function normResp(resp) {
-  if (Array.isArray(resp)) {
-    return { subjects: resp, weakSubject: (resp[0] && resp[0].subject) || '', totalExams: resp.length };
-  }
-  if (resp && Array.isArray(resp.subjects)) {
-    return {
-      subjects: resp.subjects,
-      weakSubject: resp.weakSubject || (resp.subjects[0] && resp.subjects[0].subject) || '',
-      totalExams: resp.totalExams || resp.subjects.length
-    };
-  }
-  return { subjects: [], weakSubject: '', totalExams: 0 };
-}
-function val(v) { return (typeof v === 'number' && isFinite(v)) ? v : 0; }
+// 数值容错：响应中的字符串数字也参与绘图
+function val(v) { return toNum(v, 0); }
 
 // 雷达图：我的均分 vs 班级均分；progress 0→1 多边形从中心展开
-function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
+function drawRadar(ctx, w, h, labels, myData, classData, axisMin, axisMax, progress) {
   if (progress == null) progress = 1;
   ctx.clearRect(0, 0, w, h);
   const cx = w / 2;
@@ -26,6 +14,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
   const R = Math.min(w, h) / 2 - 46;
   const N = labels.length;
   if (N < 3) return;
+  const span = axisMax - axisMin || 1;
   const angle = function (i) { return -Math.PI / 2 + i * 2 * Math.PI / N; };
 
   const rings = 4;
@@ -64,7 +53,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
     for (let i = 0; i <= N; i++) {
       const idx = i % N;
       const a = angle(idx);
-      const rr = R * (val(data[idx]) / axisMax) * progress;
+      const rr = R * Math.max(0, Math.min(1, (val(data[idx]) - axisMin) / span)) * progress;
       const x = cx + rr * Math.cos(a);
       const y = cy + rr * Math.sin(a);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
@@ -74,7 +63,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
     ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke();
     for (let i = 0; i < N; i++) {
       const a = angle(i);
-      const rr = R * (val(data[i]) / axisMax) * progress;
+      const rr = R * Math.max(0, Math.min(1, (val(data[i]) - axisMin) / span)) * progress;
       ctx.beginPath();
       ctx.arc(cx + rr * Math.cos(a), cy + rr * Math.sin(a), 2.5, 0, Math.PI * 2);
       ctx.fillStyle = stroke; ctx.fill();
@@ -84,7 +73,7 @@ function drawRadar(ctx, w, h, labels, myData, classData, axisMax, progress) {
   poly(myData, '#2E44FF', 'rgba(46,68,255,0.12)');
 }
 
-// 与班级均分差距柱状；progress 0→1 柱子从基线升起
+// 与班级均分差距柱状图；progress 0→1 柱子从基线升起
 function drawBar(ctx, w, h, items, progress) {
   if (progress == null) progress = 1;
   ctx.clearRect(0, 0, w, h);
@@ -126,6 +115,7 @@ function setupCanvas(canvas, ctx, w, h) {
 Page({
   data: {
     loading: false,
+    error: '',
     subjects: [],
     weakSubject: '',
     totalExams: 0,
@@ -134,7 +124,11 @@ Page({
 
   onShow: function () { this.load(); },
 
-  onReady: function () { this.setData({ ready: true }); },
+  onReady: function () {
+    this.setData({ ready: true });
+    // 兜底重绘：网络极快时 onShow 里的绘制可能早于 onReady
+    this.drawAll();
+  },
   onHide: function () { this._cancelAll(); },
   onUnload: function () { this._cancelAll(); },
 
@@ -144,22 +138,30 @@ Page({
 
   load: function (done) {
     const self = this;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: '' });
     get('/scores/me/subject-comparison')
       .then(function (r) {
-        const d = normResp(r);
+        const d = normalizeSubjects(r);
         self.setData({
           subjects: d.subjects || [],
           weakSubject: d.weakSubject || '',
-          totalExams: d.totalExams || (d.subjects ? d.subjects.length : 0),
-          loading: false
+          totalExams: d.totalExams || 0,
+          loading: false,
+          error: ''
         });
         self.drawAll();
       })
-      .catch(function () {
-        self.setData({ subjects: [], weakSubject: '', totalExams: 0, loading: false });
+      .catch(function (err) {
+        // 失败与“没有数据”分开：错误态可点击重试
+        self.setData({
+          subjects: [],
+          weakSubject: '',
+          totalExams: 0,
+          loading: false,
+          error: (err && err.message) || '加载失败，请重试'
+        });
       })
-      .finally(function () { if (done) done(); });
+      .finally(function () { if (typeof done === 'function') done(); });
   },
 
   _queryCanvas: function (sel, cb) {
@@ -198,16 +200,18 @@ Page({
     const labels = arr.map(function (s) { return s.subject; });
     const myData = arr.map(function (s) { return val(s.avgScore); });
     const classData = arr.map(function (s) { return val(s.avgClassAvg); });
-    let maxVal = 100;
-    myData.concat(classData).forEach(function (v) { if (v > maxVal) maxVal = v; });
-    const axisMax = Math.ceil(maxVal / 10) * 10;
+    const vals = myData.concat(classData);
+    let axisMin = Math.floor(Math.min.apply(null, vals.concat(0)) / 10) * 10;
+    let axisMax = Math.ceil(Math.max.apply(null, vals.concat(0)) / 10) * 10;
+    if (axisMin < 0) axisMin = 0;
+    if (axisMax - axisMin < 20) axisMax = axisMin + 20;
     this._cancelAll();
 
     if (arr.length >= 3) {
       this._queryCanvas('#radarCanvas', function (canvas, ctx, w, h) {
         self._radarCanvas = canvas;
         self._animate(canvas, '_radarRaf', function (p) {
-          drawRadar(ctx, w, h, labels, myData, classData, axisMax, p);
+          drawRadar(ctx, w, h, labels, myData, classData, axisMin, axisMax, p);
         });
       });
     }

@@ -1,13 +1,14 @@
 // pages/semester/semester.js
 const { get } = require('../../utils/request');
 const { animateNumber } = require('../../utils/animate');
+const { toNum } = require('../../utils/response');
 
-function num(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : d; }
 function round1(n) { return Math.round(n * 10) / 10; }
 
 Page({
   data: {
     loading: false,
+    error: '',
     current: null,
     previous: null,
     avgScoreChange: null,
@@ -31,7 +32,7 @@ Page({
 
   load: function (done) {
     const self = this;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: '' });
     get('/scores/me/semester-comparison')
       .then(function (r) {
         const resp = r || {};
@@ -39,26 +40,34 @@ Page({
         const previous = resp.previous || null;
         self.setData({
           loading: false,
+          error: '',
           current: current,
           previous: previous,
-          avgScoreChange: (resp.avgScoreChange != null) ? resp.avgScoreChange : null,
+          avgScoreChange: resp.avgScoreChange != null ? toNum(resp.avgScoreChange, null) : null,
           improved: Array.isArray(resp.improvedSubjects) ? resp.improvedSubjects : [],
           declined: Array.isArray(resp.declinedSubjects) ? resp.declinedSubjects : [],
           rows: self.buildRows(current, previous)
         });
         self.animateAvgs(current, previous);
       })
-      .catch(function () {
-        self.setData({ loading: false, current: null, previous: null, rows: [] });
+      .catch(function (err) {
+        // 失败与“没有数据”分开：错误态可点击重试
+        self.setData({
+          loading: false,
+          error: (err && err.message) || '加载失败，请重试',
+          current: null,
+          previous: null,
+          rows: []
+        });
       })
-      .finally(function () { if (done) done(); });
+      .finally(function () { if (typeof done === 'function') done(); });
   },
 
   // 学期均分数字滚动：首次滚动，之后直接赋值避免闪动
   animateAvgs: function (current, previous) {
     const self = this;
-    const curT = current && typeof current.avgScore === 'number' ? current.avgScore : 0;
-    const prevT = previous && typeof previous.avgScore === 'number' ? previous.avgScore : 0;
+    const curT = current ? toNum(current.avgScore, 0) : 0;
+    const prevT = previous ? toNum(previous.avgScore, 0) : 0;
     this._cancelAvgs();
     if (!this._avgDone) {
       this._avgDone = true;
@@ -84,16 +93,16 @@ Page({
     }
     return current.subjects.map(function (s) {
       const p = prevMap[s.subject];
+      const cv = toNum(s.avgScore, null);
+      const pv = p ? toNum(p.avgScore, null) : null;
       let delta = null;
-      if (p && typeof p.avgScore === 'number' && typeof s.avgScore === 'number') {
-        delta = round1(s.avgScore - p.avgScore);
-      }
+      if (cv != null && pv != null) delta = round1(cv - pv);
       return {
         subject: s.subject,
-        cur: num(s.avgScore, '—'),
-        prev: p ? num(p.avgScore, '—') : '—',
+        cur: cv != null ? cv : '—',
+        prev: pv != null ? pv : '—',
         delta: delta,
-        gap: num(s.avgClassGap, '—')
+        gap: s.avgClassGap != null ? toNum(s.avgClassGap, '—') : '—'
       };
     });
   }

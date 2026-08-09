@@ -70,3 +70,41 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* 本场概览卡 */
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20rpx 0 0;
+}
+.summary-score {
+  font-size: 64rpx;
+  font-weight: 800;
+  color: var(--brand);
+  line-height: 1;
+}
+.summary-total {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-left: 8rpx;
+}
+.summary-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+/* 天梯入口 */
+.lb-btn {
+  width: 100%;
+  height: 84rpx;
+  margin: 18rpx 0 0;
+}
+
+/* 附加信息降级提示 */
+.extras-hint {
+  margin: 8rpx 4rpx 0;
+}

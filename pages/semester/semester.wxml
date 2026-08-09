@@ -6,7 +6,8 @@
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view></view>
   </view>
 
-  <view wx:if="{{!current && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学期对比数据</view>
+  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="load">{{error}} · 点击重试</view>
+  <view wx:elif="{{!current && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学期对比数据</view>
 
   <block wx:if="{{current}}">
     <view class="section-title">本学期 vs 上学期</view>
@@ -28,7 +29,7 @@
     </view>
 
     <view wx:if="{{improved.length > 0 || declined.length > 0}}" class="tags">
-      <view wx:for="{{improved}}" wx:key="*this" class="tag-pill green">{{item}} ↑</view>
+      <view wx:for="{{improved}}" wx:key="*this" class="tag-pill up">{{item}} ↑</view>
       <view wx:for="{{declined}}" wx:key="*this" class="tag-pill red">{{item}} ↓</view>
     </view>
 
@@ -45,7 +46,7 @@
         <text class="c1">{{item.subject}}</text>
         <text class="c2">{{item.cur}}</text>
         <text class="c2">{{item.prev}}</text>
-        <text class="c2 {{item.delta != null ? (item.delta >= 0 ? 'green' : 'red') : 'muted'}}">{{item.delta != null ? (item.delta >= 0 ? '+' : '') + item.delta : '—'}}</text>
+        <text class="c2 {{item.delta != null ? (item.delta >= 0 ? 'up' : 'red') : 'muted'}}">{{item.delta != null ? (item.delta >= 0 ? '+' : '') + item.delta : '—'}}</text>
         <text class="c2">{{item.gap}}</text>
       </view>
     </view>
