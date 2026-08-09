@@ -39,7 +39,12 @@ Page({
     if (cache) {
       this.applyData(cache, true);
     }
-    this.refresh();
+    // 自动刷新防抖：进行中或 5 秒内刚刷新过则跳过；下拉刷新不受限
+    const now = Date.now();
+    if (!this._refreshing && (!this._lastAutoRefresh || now - this._lastAutoRefresh > 5000)) {
+      this._lastAutoRefresh = now;
+      this.refresh();
+    }
   },
 
   onPullDownRefresh: function () {
@@ -122,6 +127,11 @@ Page({
 
   refresh: function (done) {
     const self = this;
+    if (this._refreshing) {
+      if (typeof done === 'function') done();
+      return;
+    }
+    this._refreshing = true;
     this.setData({ loading: true, error: '' });
     get('/scores/me')
       .then(function (resp) {
@@ -139,7 +149,10 @@ Page({
           self.setData({ loading: false, error: (err && err.message) || '加载失败' });
         }
       })
-      .finally(function () { if (done) done(); });
+      .finally(function () {
+        self._refreshing = false;
+        if (done) done();
+      });
   },
 
   onSearch: function (e) {

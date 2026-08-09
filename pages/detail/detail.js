@@ -113,7 +113,8 @@ Page({
 
     this._extrasCancelled = false;
     const CONCURRENCY = 3;
-    const results = [];
+    // 按请求顺序落位（results[idx]），并发完成顺序不影响最终图片顺序
+    const results = new Array(list.length).fill(null);
     let failed = false;
     let index = 0;
 
@@ -130,17 +131,19 @@ Page({
     const next = function () {
       if (self._extrasCancelled) return;
       if (index >= list.length) { finish(); return; }
-      const b = list[index++];
+      const idx = index;
+      const b = list[idx];
+      index++;
       wx.downloadFile({
         url: API_BASE + API_PREFIX + '/answer-block-crops/' + b.id + '/image',
         header: { 'Authorization': 'Bearer ' + token },
         success: function (res) {
           if (res.statusCode === 200 && res.tempFilePath) {
-            results.push({
+            results[idx] = {
               id: b.id,
               title: b.blockTitle || ('第' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
               url: res.tempFilePath
-            });
+            };
           } else {
             failed = true;
           }

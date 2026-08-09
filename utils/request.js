@@ -5,6 +5,7 @@ const { API_BASE, API_PREFIX } = require('./env');
 
 const DEFAULT_TIMEOUT = 20000;
 let handling401 = false;
+let handling428 = false;
 
 // 延迟 require 打破 auth.js <-> request.js 循环依赖
 function getToken() { return require('./auth').getToken(); }
@@ -29,6 +30,23 @@ function handleUnauthorized() {
   wx.reLaunch({
     url: '/pages/login/login',
     complete: function () { handling401 = false; }
+  });
+}
+
+// 428 = 后端要求先完成一次性改密（PASSWORD_CHANGE_REQUIRED），统一引导到改密页
+function handlePasswordRequired() {
+  if (handling428) return;
+  handling428 = true;
+  var pages = getCurrentPages();
+  var top = pages[pages.length - 1];
+  var onChange = top && top.route && top.route.indexOf('change-password') >= 0;
+  if (onChange) {
+    handling428 = false;
+    return;
+  }
+  wx.reLaunch({
+    url: '/pages/change-password/change-password',
+    complete: function () { handling428 = false; }
   });
 }
 
@@ -84,6 +102,7 @@ function request(method, path, data, opts) {
     .then(function (res) { return res.data; })
     .catch(function (err) {
       if (err.status === 401) handleUnauthorized();
+      else if (err.status === 428) handlePasswordRequired();
       throw err;
     });
 }

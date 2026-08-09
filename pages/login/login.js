@@ -36,8 +36,9 @@ Page({
     try {
       const res = await login(identifier, password, remember);
       if (res.passwordChangeRequired) {
-        // 尚无改密页面：如实提示初始密码，而不是声称“请先修改密码”后照常进入
-        wx.showToast({ title: '当前为初始密码，建议尽快联系管理员修改', icon: 'none' });
+        // 初始密码账号：先设置新密码，改密后需重新登录
+        wx.reLaunch({ url: '/pages/change-password/change-password' });
+        return;
       }
       wx.reLaunch({ url: '/pages/scores/scores' });
     } catch (err) {
