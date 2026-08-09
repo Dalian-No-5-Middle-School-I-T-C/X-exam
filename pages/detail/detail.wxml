@@ -26,7 +26,7 @@
     <view class="q-card anim {{ready ? 'show' : ''}}" wx:if="{{objective.length > 0}}">
       <view class="q-row" wx:for="{{objective}}" wx:key="question_number">
         <text class="q-no">Q{{item.question_number}}</text>
-        <text class="q-score {{item.score < item.max_score ? 'warn' : 'up'}}">{{item.score}}/{{item.max_score}}</text>
+        <text class="q-score {{item.max_score != null && item.score < item.max_score ? 'warn' : 'up'}}">{{item.max_score != null ? item.score + '/' + item.max_score : item.score}}</text>
         <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
       </view>
     </view>
@@ -37,7 +37,7 @@
     <view class="q-card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms" wx:if="{{subjective.length > 0}}">
       <view class="q-row" wx:for="{{subjective}}" wx:key="question_number">
         <text class="q-no">Q{{item.question_number}}</text>
-        <text class="q-score {{item.score < item.max_score ? 'warn' : 'up'}}">{{item.score}}/{{item.max_score}}</text>
+        <text class="q-score {{item.max_score != null && item.score < item.max_score ? 'warn' : 'up'}}">{{item.max_score != null ? item.score + '/' + item.max_score : item.score}}</text>
         <text class="q-avg muted" wx:if="{{item.classAvg != null}}">班均 {{item.classAvg}}</text>
       </view>
     </view>

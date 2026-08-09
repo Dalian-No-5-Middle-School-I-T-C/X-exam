@@ -42,6 +42,12 @@ Page({
     this.setData({ ready: true });
   },
 
+  onShow: function () {
+    // 下载被 onHide 取消后返回页面时自动恢复附加信息
+    if (this._extrasCancelled && this.data.examId && !this.data.loading && !this.data.error) {
+      this.loadExtras();
+    }
+  },
   onHide: function () { this._extrasCancelled = true; },
   onUnload: function () { this._extrasCancelled = true; },
 
@@ -96,7 +102,8 @@ Page({
     if (cached) studentId = normalizeScores(cached).studentId;
     if (!studentId) {
       const u = getUser() || {};
-      studentId = u.studentId || u.student_id || u.id || '';
+      // 只用明确的 studentId 字段，不拿账号 id 猜学生 id
+      studentId = u.studentId || u.student_id || '';
     }
     if (!studentId) {
       // 深链/直接进入时无缓存可依赖：明确提示，而不是静默缺失
@@ -132,12 +139,18 @@ Page({
     this._extrasCancelled = false;
     const CONCURRENCY = 3;
     const results = [];
+    let failed = false;
     let index = 0;
 
     const finish = function () {
       if (self._extrasCancelled) return;
       const ok = results.filter(Boolean);
-      if (ok.length > 0) self.setData({ images: ok, showImages: true });
+      if (ok.length > 0) {
+        self.setData({ images: ok, showImages: true });
+      } else if (failed) {
+        // 全部下载失败：给出可感知提示，而不是无声缺失
+        self.setData({ extrasUnavailable: true });
+      }
     };
     const next = function () {
       if (self._extrasCancelled) return;
@@ -153,10 +166,12 @@ Page({
               title: b.blockTitle || ('第' + ((b.questionNumbers && b.questionNumbers[0]) || '?') + ' 题'),
               url: res.tempFilePath
             });
+          } else {
+            failed = true;
           }
           next();
         },
-        fail: function () { next(); }
+        fail: function () { failed = true; next(); }
       });
     };
     for (let i = 0; i < Math.min(CONCURRENCY, list.length); i++) next();

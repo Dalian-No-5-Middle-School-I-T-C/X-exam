@@ -55,7 +55,7 @@ Page({
       const a = sorted[0];
       const b = sorted[1];
       // 只有同科目且满分一致时，总分差值才有可比性
-      if (a.subject && a.subject === b.subject && a.full_score === b.full_score) {
+      if (a.subject && a.subject === b.subject && a.full_score != null && a.full_score === b.full_score) {
         latestChange = toNum(a.total_score) - toNum(b.total_score);
       }
     }
