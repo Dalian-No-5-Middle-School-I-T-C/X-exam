@@ -22,7 +22,7 @@
 - 「较上次 ±X」仅在同科目且满分一致时显示，避免无意义对比。
 - 学科「最需加强」不再用第一个学科兜底猜测。
 - 401 统一清除 token 与 user，避免残留旧用户信息。
-- 天梯开关改为默认关闭，仅后端显式开启时展示。
+- 天梯规则明确：允许公布部分排名（前十名）；开关默认开启（`system_settings.ladder_enabled`），关闭时接口返回 403。
 - 我的排名缺失时显示「—」，不再伪造第 1 名。
 - 详情页/天梯缺失 examId 参数时给出错误提示，不再请求无效接口。
 - 关闭 `project.private.config.json` 的 `skylineRenderEnable`，消除「已开启 Skyline 却未声明 renderer」的误导配置，明确当前为 WebView 渲染。

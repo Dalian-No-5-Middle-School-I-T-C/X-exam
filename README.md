@@ -11,7 +11,7 @@
 - **极速体验**：静默登录 + 本地缓存，首屏即成绩，秒开无等待
 - **查分主线**：成绩总览、逐题小分、原卷图、班级均分对比
 - **学生端分析**（复刻主站）：趋势折线 / 学科雷达 / 学期对比
-- **成绩天梯**：Top3 领奖台 + 完整榜单 + 我的排名（合规无段位）
+- **成绩天梯**：Top3 领奖台 + 前十榜单 + 我的排名（合规：仅公布部分排名/前十名）
 - **订阅消息提醒**：授权收集 + 持久化开关（推送需后端补逻辑）
 - **AI 深度分析**：兼容纯文本与结构化两种后端响应
 - **editorial-brutalist 纸感蓝主题** + 克制动效（进场 / 数字滚动 / canvas 生长 / 骨架屏）
@@ -59,7 +59,7 @@ projectX-mini/
 │   ├── trends/                      # 趋势页：原生 canvas 折线（总分 / 班均 / 年段均）
 │   ├── subjects/                    # 学科对比：雷达（我的均分 vs 班级均分）+ 明细表 + 差距柱 + 薄弱学科
 │   ├── semester/                    # 学期对比：本学期 vs 上学期 + 进步/退步标签 + 学科明细 delta
-│   ├── leaderboard/                 # 成绩天梯：Top3 领奖台 + 完整榜单 + 我的排名（合规无段位）
+│   ├── leaderboard/                 # 成绩天梯：Top3 领奖台 + 前十榜单 + 我的排名（合规：仅公布前十名）
 │   └── profile/                     # 我的：个人信息 + 整体 AI 报告 + 订阅开关 + 退出
 │
 └── utils/
@@ -160,7 +160,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 ### 学科 / 学期 / 天梯响应兼容
 
 - **学科对比**：响应兼容「对象 `{subjects:[...]}`」与「纯数组」两种形态；每条取 `avgScore / avgClassAvg / gapToClass / examCount / trend`，雷达图需 ≥3 学科。
-- **天梯**：列表容器 `leaderboard/board/rankings/list/topTen`；单条 `studentName/name`、`totalScore/score`、`rank/ranking`；本人 `currentUser/me/self`；开关 `enabled/leaderboardEnabled`。
+- **天梯**：列表容器 `leaderboard/board/rankings/list/topTen`；单条 `studentName/name`、`totalScore/score`、`rank/ranking`；本人 `currentUser/me/self`；关闭时接口返回 403。
 
 ## 设计语言（editorial-brutalist）
 
