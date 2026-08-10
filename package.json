@@ -1,0 +1,13 @@
+{
+  "name": "project-x-mini",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Project-X native WeChat Mini Program frontend",
+  "scripts": {
+    "check": "node scripts/validate-project.mjs",
+    "test": "npm run check"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
