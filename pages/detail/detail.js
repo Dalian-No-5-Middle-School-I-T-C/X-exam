@@ -45,7 +45,7 @@ Page({
   onShow: function () {
     // 图片下载被 onHide 取消后，返回页面自动恢复
     if (this._extrasCancelled && this._answerBlocks && this._answerBlocks.length > 0 &&
-        !this._imagesDone && !this.data.loading && !this.data.error) {
+        !this._imagesDone && !this._extrasAllFailed && !this.data.loading && !this.data.error) {
       this.loadCropImages(this._answerBlocks);
     }
   },
@@ -121,6 +121,7 @@ Page({
 
     this._extrasCancelled = false;
     this._imagesDone = false;
+    this._extrasAllFailed = false;
     const CONCURRENCY = 3;
     // 按请求顺序落位（results[idx]），并发完成顺序不影响最终图片顺序
     const results = new Array(list.length).fill(null);
@@ -138,6 +139,7 @@ Page({
         }
       } else if (failed) {
         // 全部下载失败：给出可感知提示，而不是无声缺失
+        self._extrasAllFailed = true; // 本页会话不再自动重试，下拉刷新可手动重试
         self.setData({ extrasUnavailable: true });
       }
     };

@@ -3,15 +3,28 @@
 // key 带用户盐：401 换账号后不会展示上一个学生的成绩
 const { userSalt } = require('./auth');
 
+// 缓存 24 小时后视为过期，避免断网时永远展示旧成绩
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
 function scoresKey() {
   return 'px_cache_scores_me_' + userSalt();
 }
 
 function getCachedScores() {
-  try { return wx.getStorageSync(scoresKey()) || null; } catch (e) { return null; }
+  try {
+    const raw = wx.getStorageSync(scoresKey());
+    if (raw && raw.t) {
+      if (Date.now() - raw.t < CACHE_TTL) return raw.data;
+    } else if (raw && raw.scores) {
+      // 旧格式（无时间戳）：兼容并立即补写时间戳迁移，TTL 从此刻开始生效
+      wx.setStorageSync(scoresKey(), { t: Date.now(), data: raw });
+      return raw;
+    }
+  } catch (e) { /* ignore */ }
+  return null;
 }
 function setCachedScores(data) {
-  try { wx.setStorageSync(scoresKey(), data); } catch (e) { /* ignore */ }
+  try { wx.setStorageSync(scoresKey(), { t: Date.now(), data: data }); } catch (e) { /* ignore */ }
 }
 function clearCachedScores() {
   try { wx.removeStorageSync(scoresKey()); } catch (e) { /* ignore */ }
