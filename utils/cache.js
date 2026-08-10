@@ -16,7 +16,8 @@ function getCachedScores() {
     if (raw && raw.t) {
       if (Date.now() - raw.t < CACHE_TTL) return raw.data;
     } else if (raw && raw.scores) {
-      // 旧格式（无时间戳）：兼容升级前已存在的缓存，下次成功刷新会迁移为新格式
+      // 旧格式（无时间戳）：兼容并立即补写时间戳迁移，TTL 从此刻开始生效
+      wx.setStorageSync(scoresKey(), { t: Date.now(), data: raw });
       return raw;
     }
   } catch (e) { /* ignore */ }

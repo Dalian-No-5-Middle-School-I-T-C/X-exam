@@ -18,6 +18,7 @@ store.px_user = { studentId: 'salttest' }; // userSalt 优先取 px_user.student
 const legacy = { name: '张三', scores: [{ exam_id: 1, total_score: 100 }] };
 store[KEY] = legacy;
 assert.deepStrictEqual(getCachedScores(), legacy, '旧格式缓存应直接返回');
+assert.ok(store[KEY].t, '旧格式命中后应补写时间戳迁移为新格式');
 
 // 新格式未过期应返回 data
 setCachedScores({ name: '张三', scores: [{ exam_id: 1, total_score: 120 }] });
