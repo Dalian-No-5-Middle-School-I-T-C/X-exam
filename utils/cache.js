@@ -13,7 +13,12 @@ function scoresKey() {
 function getCachedScores() {
   try {
     const raw = wx.getStorageSync(scoresKey());
-    if (raw && raw.t && Date.now() - raw.t < CACHE_TTL) return raw.data;
+    if (raw && raw.t) {
+      if (Date.now() - raw.t < CACHE_TTL) return raw.data;
+    } else if (raw && raw.scores) {
+      // 旧格式（无时间戳）：兼容升级前已存在的缓存，下次成功刷新会迁移为新格式
+      return raw;
+    }
   } catch (e) { /* ignore */ }
   return null;
 }
