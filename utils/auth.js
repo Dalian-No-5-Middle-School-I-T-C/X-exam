@@ -50,7 +50,7 @@ function userSalt() {
   return t ? t.slice(-8) : '';
 }
 
-// 登录：identifier 支持 用户名 / 学号 / 邮箱；isPersistent=记住我 180 天
+// 登录：identifier 支持 用户名 / 学号；isPersistent=记住我 180 天
 function login(identifier, password, remember) {
   return requestRaw('POST', '/auth/login', {
     identifier: identifier,
