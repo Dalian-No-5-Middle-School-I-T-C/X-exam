@@ -27,7 +27,7 @@
 - 详情页/天梯缺失 examId 参数时给出错误提示，不再请求无效接口。
 - 关闭 `project.private.config.json` 的 `skylineRenderEnable`，消除「已开启 Skyline 却未声明 renderer」的误导配置，明确当前为 WebView 渲染。
 - 登录/改密按钮增加提交防重，避免双击重复提交。
-- 原卷图下载完成后返回页面不再重复下载；部分失败时给出失败张数提示。
+- 原卷图下载完成后返回页面不再重复下载；部分失败时给出失败张数提示，全部失败时本页会话不再自动重试（下拉刷新可手动重试）。
 - trends / subjects / semester 自动加载增加 5 秒防抖与进行中防重入；leaderboard / detail 增加加载防重入。
 - scores 刷新失败后允许下次进入页面自动重试，不再被防抖窗口挡住。
 
@@ -41,10 +41,14 @@
 - 天梯页对齐后端真实契约：`GET /api/ladder/exams/:examId`（`rows` / `myRank` / `myScore`，403=未开放），修正此前错误的 `/scores/me/leaderboard` 路径。
 - 详情页改为单请求：`/api/scores/me/exams/:examId` 直接返回班级均分与试卷图块，不再依赖教师侧 `/api/exams` 接口（配合后端 Project-X#232）。
 - 我的页（profile）UI 呼吸感优化：增大眉题/标题/学生卡/区块标题间距，退出登录按钮由 width:100% 改为水平居中（width:70% / max-width:480rpx / margin:auto）。
-- tabBar 文字尺寸显式设为 12px（`app.json` 的 `tabBar.fontSize`），解决默认过小、可读性差的问题。
+- 成绩缓存增加 24 小时 TTL：断网时不再无限展示旧成绩；升级前旧格式缓存命中即迁移为带时间戳的新格式。
 
 ### Removed
 - `utils/request.js` 的 `getBuffer`（被 downloadFile 方案取代）。
+- `app.json` 中无效的 `tabBar.fontSize` 配置；`project.private.config.json`（本地私有配置，已加入 `.gitignore`）。
+
+### Security
+- 微信搜索索引收紧：`sitemap.json` 改为 `disallow`，成绩页不再被微信搜索收录。
 
 ### Deferred
 - 成绩列表分页：当前全量返回可接受，数据量大时再加 limit/offset。
