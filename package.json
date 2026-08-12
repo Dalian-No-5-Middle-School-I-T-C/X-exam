@@ -1,0 +1,7 @@
+{
+  "name": "x-exam-mini",
+  "private": true,
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\" && node scripts/cache-selfcheck.js && node utils/response.js"
+  }
+}
