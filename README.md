@@ -109,6 +109,12 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 
 5. 全部 `.js` 已通过 `node --check` 语法校验；改动后若编译报错，先确认未引入 `.ts`。
 
+## 测试
+
+零依赖（Node 内置 `node:test` + `assert`），无需安装依赖：
+
+- `npm test` 运行 `tests/` 单测，并复用既有自检（`scripts/cache-selfcheck.js`、`utils/response.js` 自检块）。
+
 ## 启动与登录流程
 
 - 启动页为 `login`；本地已存 token 时自动 `reLaunch` 到成绩页（静默登录），无需重复输入账号密码。

@@ -5,7 +5,7 @@
   "description": "Project-X native WeChat Mini Program frontend",
   "scripts": {
     "check": "node scripts/validate-project.mjs",
-    "test": "npm run check"
+    "test": "npm run check && node --test \"tests/*.test.js\" && node scripts/cache-selfcheck.js && node utils/response.js"
   },
   "engines": {
     "node": ">=22"
