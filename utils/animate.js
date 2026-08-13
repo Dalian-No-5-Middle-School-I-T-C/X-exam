@@ -37,10 +37,12 @@ function animateNumber(opts) {
     var t = Math.min(elapsed / duration, 1);
     var eased = easeOutCubic(t);
     var val = from + (to - from) * eased;
-    onUpdate(Math.round(val));
     if (t >= 1) {
       clearInterval(timer);
+      onUpdate(to);
       onDone();
+    } else {
+      onUpdate(Math.round(val));
     }
   }, 16);
 

@@ -259,6 +259,28 @@ test('animateNumber eases toward target and clears its timer', () => {
   }
 });
 
+test('animateNumber settles exactly on decimal target', () => {
+  const realNow = Date.now;
+  const realSetInterval = global.setInterval;
+  const realClearInterval = global.clearInterval;
+  let now = 1000;
+  let timerCb = null;
+  Date.now = () => now;
+  global.setInterval = fn => { timerCb = fn; return 321; };
+  global.clearInterval = () => {};
+  try {
+    const updates = [];
+    animateNumber({ from: 0, to: 79.3, duration: 1000, onUpdate: v => updates.push(v) });
+    now = 2000;
+    timerCb();
+    assert.equal(updates[updates.length - 1], 79.3);
+  } finally {
+    Date.now = realNow;
+    global.setInterval = realSetInterval;
+    global.clearInterval = realClearInterval;
+  }
+});
+
 test('animateNumber cancel clears the timer', () => {
   const realNow = Date.now;
   const realSetInterval = global.setInterval;
