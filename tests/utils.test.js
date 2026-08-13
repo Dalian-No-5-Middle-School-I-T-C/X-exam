@@ -248,8 +248,8 @@ test('animateNumber eases toward target and clears its timer', () => {
     now = 1500;
     timerCb(); // t=0.5 -> eased 0.875 -> 88
     now = 2000;
-    timerCb(); // t=1 -> 100 + done（源码在 t>=1 时重复 onUpdate(to)）
-    assert.deepEqual(updates, [88, 100, 100]);
+    timerCb(); // t=1 -> 100 + done
+    assert.deepEqual(updates, [88, 100]);
     assert.equal(done, 1);
     assert.equal(cleared, 123);
   } finally {

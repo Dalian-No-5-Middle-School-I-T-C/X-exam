@@ -40,7 +40,6 @@ function animateNumber(opts) {
     onUpdate(Math.round(val));
     if (t >= 1) {
       clearInterval(timer);
-      onUpdate(to);
       onDone();
     }
   }, 16);
