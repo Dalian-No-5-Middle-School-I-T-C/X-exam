@@ -14,7 +14,7 @@ function easeOutCubic(t) {
  * @param {number} opts.from 起始值
  * @param {number} opts.to 目标值
  * @param {number} [opts.duration=600] 毫秒
- * @param {(val:number)=>void} opts.onUpdate 每帧回调（已取整）
+ * @param {(val:number)=>void} opts.onUpdate 每帧回调（中间帧取整，末帧为精确目标值）
  * @param {()=>void} [opts.onDone] 完成回调
  * @returns {() => void} cancel 清理函数
  */
