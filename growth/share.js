@@ -1,8 +1,8 @@
 // growth/share.js
 // 分享横切：统一构造“指向 landing 公开页”的分享路径（携带邀请人与学校参数），
 // 并提供 onShareAppMessage / onShareTimeline 工厂，避免各页重复实现。
-const invite = require('../invite');
-const auth = require('../../utils/auth');
+const invite = require('./invite');
+const auth = require('../utils/auth');
 
 function myInviterCode() {
   const u = auth.getUser();
