@@ -1,6 +1,7 @@
 // pages/subjects/subjects.js
 const { get } = require('../../utils/request');
 const { normalizeSubjects, toNum } = require('../../utils/response');
+const { getUser } = require('../../utils/auth');
 
 // 数值容错：响应中的字符串数字也参与绘图
 function val(v) { return toNum(v, 0); }
@@ -141,6 +142,20 @@ Page({
 
   onPullDownRefresh: function () {
     this.load(function () { wx.stopPullDownRefresh(); });
+  },
+
+  // 一键转发：组装学科对比模型交给分享组件生成图片
+  onShare: function () {
+    if (this.data.loading || this.data.error) return;
+    const user = getUser();
+    const model = {
+      type: 'subjects',
+      studentName: user && (user.name || '') || '',
+      subjects: this.data.subjects || [],
+      weakSubject: this.data.weakSubject || '',
+      totalExams: this.data.totalExams || 0
+    };
+    this.selectComponent('#poster').open(model);
   },
 
   load: function (done) {

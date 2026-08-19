@@ -1,0 +1,77 @@
+/* components/poster/poster.wxss */
+.poster-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 19, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 999;
+}
+.poster-sheet {
+  width: 100%;
+  max-width: 750rpx;
+  background: #F1EFE9;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  border-top: 1rpx solid #D8D5CB;
+}
+.poster-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 28rpx;
+  border-bottom: 1rpx solid #D8D5CB;
+}
+.poster-bar-t { font-size: 32rpx; font-weight: 800; color: #1A1917; }
+.poster-close { font-size: 36rpx; color: #8B887E; padding: 0 10rpx; }
+.poster-scroll {
+  flex: 1;
+  padding: 24rpx 28rpx;
+  min-height: 200rpx;
+}
+.poster-img {
+  width: 100%;
+  border: 1rpx solid #D8D5CB;
+  display: block;
+}
+.poster-state {
+  text-align: center;
+  color: #8B887E;
+  font-size: 26rpx;
+  padding: 80rpx 0;
+}
+.poster-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #D8D5CB;
+}
+.p-btn {
+  flex: 1;
+  height: 84rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+  border: none;
+  line-height: 1.2;
+}
+.p-btn::after { border: none; }
+.p-primary { background: #2E44FF; color: #fff; }
+.p-primary:active { background: #1F30C8; }
+.p-primary[disabled] { background: #C9CCE8; color: #fff; }
+.p-out { background: transparent; color: #1A1917; border: 1rpx solid #1A1917; }
+.p-out:active { background: #1A1917; color: #F1EFE9; }
+.p-out[disabled] { color: #B7B4AB; border-color: #D8D5CB; }
+.p-ghost { background: transparent; color: #8B887E; }
+/* 离屏画布：保持在渲染树内，但不可见，不影响导出 */
+.poster-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}

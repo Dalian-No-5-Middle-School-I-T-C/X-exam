@@ -1,6 +1,6 @@
 // pages/detail/detail.js
 const { get, post } = require('../../utils/request');
-const { getToken } = require('../../utils/auth');
+const { getToken, getUser } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
 const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { normalizeScores, normalizeQuestions } = require('../../utils/response');
@@ -173,6 +173,23 @@ Page({
   goLeaderboard: function () {
     const name = this.data.examName ? encodeURIComponent(this.data.examName) : '';
     wx.navigateTo({ url: '/pages/leaderboard/leaderboard?examId=' + this.data.examId + '&name=' + name });
+  },
+
+  // 一键转发：组装本场成绩报告模型交给分享组件生成图片
+  onShare: function () {
+    if (this.data.loading || this.data.error) return;
+    const user = getUser();
+    const model = {
+      type: 'detail',
+      examName: this.data.examName,
+      studentName: user && (user.name || '') || '',
+      date: (this.data.summary && this.data.summary.graded_at) || '',
+      summary: this.data.summary || null,
+      objective: this.data.objective || [],
+      subjective: this.data.subjective || [],
+      aiText: (this.data.aiReport && this.data.aiReport.isText) ? this.data.aiReport.text : ''
+    };
+    this.selectComponent('#poster').open(model);
   },
 
   onShareAppMessage: function () {

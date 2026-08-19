@@ -3,6 +3,11 @@
   width: 100%;
   height: 420rpx;
 }
+.share-btn {
+  width: 100%;
+  height: 84rpx;
+  margin: 8rpx 0 18rpx;
+}
 .radar { height: 460rpx; }
 
 .legend {
