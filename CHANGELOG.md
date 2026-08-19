@@ -17,6 +17,22 @@
 - 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate）与 scores / semester / leaderboard / detail / trends / subjects / change-password 的页面逻辑与 canvas 绘制；`npm test` 统一运行单测与既有自检。
 - 恢复 CI 校验工作流（`.github/workflows/ci.yml`），在语法/JSON 校验后纳入 `npm test`。
 
+## [2026-08-18]
+
+### Added
+- 一键转发：成绩报告（detail）与学科对比（subjects）页面新增「一键转发」按钮，将当前页面内容生成为图片并分享。
+- 新增分享弹层组件 `components/poster`（离屏 Canvas 2D + 预览 + 分享/保存动作）。
+- 新增 `utils/poster.js`：用 Canvas 2D 手工绘制海报，复用项目 editorial-brutalist 纸感蓝主题；按内容动态计算画布高度，长内容不截断。
+- 海报保留完整成绩数据、图表（雷达图 / 差距柱状图）与排版样式；含小程序来源水印（深色页脚「数据来自 X-exam 小程序 · 仅供个人参考」）。
+- 导出图默认 2 倍清晰度（750px 宽）；超高内容自动降系数以不超 4096px 画布上限。
+- 生成后支持「分享到微信」（`wx.showShareImageMenu`，可发好友/朋友圈）与「保存到相册」（`wx.saveImageToPhotosAlbum`，处理相册授权），并支持长按图片转发（`show-menu-by-longpress`）。
+
+### Changed
+- 异步渲染时机：按钮仅在数据加载完成（`!loading && !error`）后可用；海报绘制完全自包含、不依赖任何网络图片，确保截图时数据已全部就绪。
+- detail / subjects 页面按钮区新增 `.share-btn` 样式（复用 `.btn.out`），并各自登记 `poster` 组件。
+
+---
+
 ## [2026-08-09]
 
 ### Fixed

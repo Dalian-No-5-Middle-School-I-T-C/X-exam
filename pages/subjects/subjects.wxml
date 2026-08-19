@@ -1,6 +1,7 @@
 <!-- pages/subjects/subjects.wxml -->
 <view class="container">
   <view class="title">学科对比</view>
+  <button wx:if="{{subjects.length > 0 && !loading && !error}}" class="btn out share-btn" bindtap="onShare">一键转发对比 →</button>
   <view wx:if="{{loading}}" class="skeleton">
     <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-block"></view></view>
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
@@ -46,4 +47,6 @@
     <canvas type="2d" id="barCanvas" class="chart"></canvas>
     <view class="muted sub">蓝色=高于班级均分，红色=低于班级均分</view>
   </block>
+
+  <poster id="poster" />
 </view>

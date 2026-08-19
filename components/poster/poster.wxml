@@ -1,0 +1,24 @@
+<!-- components/poster/poster.wxml -->
+<view wx:if="{{visible}}" class="poster-mask" bindtap="close">
+  <view class="poster-sheet" catchtap="noop">
+    <view class="poster-bar">
+      <text class="poster-bar-t">一键转发</text>
+      <text class="poster-close" catchtap="close">✕</text>
+    </view>
+
+    <scroll-view scroll-y class="poster-scroll">
+      <image wx:if="{{posterPath}}" src="{{posterPath}}" mode="widthFix" class="poster-img" show-menu-by-longpress="{{true}}" />
+      <view wx:if="{{generating}}" class="poster-state">正在生成分享图…</view>
+      <view wx:if="{{!generating && !posterPath}}" class="poster-state">生成失败，请重试</view>
+    </scroll-view>
+
+    <view class="poster-actions">
+      <button class="p-btn p-primary" disabled="{{!posterPath}}" bindtap="doShare">分享到微信</button>
+      <button class="p-btn p-out" disabled="{{!posterPath}}" bindtap="doSave">保存到相册</button>
+      <button class="p-btn p-ghost" bindtap="close">关闭</button>
+    </view>
+
+    <!-- 离屏画布：用于生成海报（opacity 0 但仍处于渲染树，满足 canvasToTempFilePath 要求） -->
+    <canvas type="2d" id="posterCanvas" class="poster-canvas"></canvas>
+  </view>
+</view>
