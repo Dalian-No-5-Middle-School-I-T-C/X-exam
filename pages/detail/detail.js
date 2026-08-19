@@ -1,10 +1,13 @@
 // pages/detail/detail.js
-const { get, post } = require('../../utils/request');
+const { post } = require('../../utils/request');
 const { getToken, getUser } = require('../../utils/auth');
 const { getCachedScores } = require('../../utils/cache');
 const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { normalizeScores, normalizeQuestions } = require('../../utils/response');
 const { API_BASE, API_PREFIX } = require('../../utils/env');
+const scoresService = require('../../services/scoresService');
+const share = require('../../growth/share');
+const growthService = require('../../services/growthService');
 
 Page({
   data: {
@@ -27,6 +30,10 @@ Page({
   },
 
   onLoad: function (options) {
+    // 朋友圈/直接分享落地：解析邀请参数并落地，供登录后归因（已登录则忽略）
+    if (options && (options.inviter || options.school || options.examId)) {
+      growthService.onLandingLoad(options);
+    }
     const examId = parseInt(options.examId, 10) || 0;
     if (!examId) {
       this.setData({ error: '参数缺失，无法加载考试' });
@@ -40,6 +47,7 @@ Page({
 
   onReady: function () {
     this.setData({ ready: true });
+    share.enableShareMenu();
   },
 
   onShow: function () {
@@ -76,7 +84,7 @@ Page({
     }
     this._loadingDetail = true;
     this.setData({ loading: true, error: '' });
-    get('/scores/me/exams/' + this.data.examId)
+    scoresService.fetchExamDetail(this.data.examId)
       .then(function (resp) {
         self._answerBlocks = resp.answerBlocks || [];
         self.setData({
@@ -193,11 +201,17 @@ Page({
   },
 
   onShareAppMessage: function () {
-    return {
+    // 分享指向公开落地页（携带 examId + 邀请人），未登录用户也能落地并归因
+    growthService.onShareApp({ from: 'detail', examId: this.data.examId });
+    return share.makeShareAppMessage({
       title: this.data.examName || ('考试 #' + this.data.examId),
-      path: '/pages/detail/detail?examId=' + this.data.examId +
-        '&name=' + encodeURIComponent(this.data.examName || '')
-    };
+      query: { examId: this.data.examId }
+    });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'detail', examId: this.data.examId });
+    return share.makeShareTimeline({ title: this.data.examName || 'Project-X 成绩' });
   },
 
   onAi: function () {

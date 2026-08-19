@@ -17,6 +17,21 @@
 - 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate）与 scores / semester / leaderboard / detail / trends / subjects / change-password 的页面逻辑与 canvas 绘制；`npm test` 统一运行单测与既有自检。
 - 恢复 CI 校验工作流（`.github/workflows/ci.yml`），在语法/JSON 校验后纳入 `npm test`。
 
+## [2026-08-19]
+
+### Added
+- **获客扩展（分层架构落地）**：按审查报告分 4 期实现前端获客能力，架构为「视图 → 业务(services) → 网络(request) → 基础设施」，增长层（growth/）横切。
+  - **第1期（提审）**：新增公开落地页 `pages/landing`（承载 school + inviter + examId 参数，引导进入登录）；`sitemap.json` 仅 `landing` 放开 allow、其余 disallow；各内容页（scores/detail/subjects/trends/semester/leaderboard/profile）接入 `onShareAppMessage` / `onShareTimeline` / `showShareMenu`；scores 骨架屏（全局样式已就绪）；`utils/privacy.js` 隐私指引占位。
+  - **第2期**：`growth/poster.js` 原生离屏 canvas 绘制成绩卡 / 天梯卡并导出图片 → 保存相册（scores「保存成绩卡」、leaderboard「保存天梯卡」）；`utils/subscribe.js` 保留 TEMPLATE_ID 占位（获客订阅）；profile 订阅开关 + 查分成功（首次）引导开启订阅。
+  - **第3期**：`growth/invite.js` 可逆编/解码 inviterId / schoolCode；login 解析落地页邀请参数存 storage 并预留 `schoolCode` 字段；登录成功后消费待生效邀请并深链到具体考试详情。
+  - **第4期**：`growth/analytics.js` 封装 `wx.reportAnalytics`（事件需后台注册后启用，默认占位关闭）；在 landing 访问 / 进入 / 登录转化 / 分享 / 订阅 / 存卡 等关键节点埋点。
+- **services 业务层**：新增 `services/scoresService`（成绩/学科对比/趋势/学期/单场详情 + 缓存）、`services/leaderboardService`（天梯）、`services/growthService`（增长编排：邀请归因/分享/订阅引导/埋点）。页面只调 service，不直接 require request（AI 分析、登出、改密等三个命名服务之外的流程除外，已在代码注释标注）。
+- **growth 横切层**：`growth/share.js`（统一构造指向 landing 的分享路径 + 分享工厂）、`growth/poster.js`、`growth/subscribe.js`（复用 utils/subscribe + 查分引导）、`growth/invite.js`、`growth/analytics.js`。
+- **detail 分享改指 landing**：成绩详情页 `onShareAppMessage` 不再直链本页，改为指向公开落地页并携带 `examId + inviter`，未登录接收方也能落地并归因。
+
+### Changed
+- 各内容页网络请求统一收敛到 `services/*`（scores/subjects/trends/semester/leaderboard/detail 单场详情），页面不再直接 `require('../../utils/request')` 发起成绩/天梯类请求。
+
 ## [2026-08-18]
 
 ### Added

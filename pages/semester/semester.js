@@ -1,7 +1,9 @@
 // pages/semester/semester.js
-const { get } = require('../../utils/request');
+const scoresService = require('../../services/scoresService');
 const { animateNumber } = require('../../utils/animate');
 const { toNum } = require('../../utils/response');
+const share = require('../../growth/share');
+const growthService = require('../../services/growthService');
 
 function round1(n) { return Math.round(n * 10) / 10; }
 
@@ -29,7 +31,7 @@ Page({
     }
   },
 
-  onReady: function () { this.setData({ ready: true }); },
+  onReady: function () { this.setData({ ready: true }); share.enableShareMenu(); },
   onHide: function () { this._cancelAvgs(); },
   onUnload: function () { this._cancelAvgs(); },
 
@@ -45,7 +47,7 @@ Page({
     }
     this._loading = true;
     this.setData({ loading: true, error: '' });
-    get('/scores/me/semester-comparison')
+    scoresService.fetchSemesterComparison()
       .then(function (r) {
         const resp = r || {};
         const current = resp.current || null;
@@ -98,6 +100,16 @@ Page({
   _cancelAvgs: function () {
     if (this._cancelCur) { this._cancelCur(); this._cancelCur = null; }
     if (this._cancelPrev) { this._cancelPrev(); this._cancelPrev = null; }
+  },
+
+  onShareAppMessage: function () {
+    growthService.onShareApp({ from: 'semester' });
+    return share.makeShareAppMessage({ title: '我的学期对比', query: {} });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'semester' });
+    return share.makeShareTimeline({ title: 'Project-X 学期对比' });
   },
 
   // 学科明细：本学期各科均分 vs 上学期同科均分，算 delta

@@ -1,8 +1,9 @@
 // pages/scores/scores.js
-const { get } = require('../../utils/request');
-const { getCachedScores, setCachedScores } = require('../../utils/cache');
+const scoresService = require('../../services/scoresService');
 const { animateNumber } = require('../../utils/animate');
 const { normalizeScores, toNum } = require('../../utils/response');
+const growthService = require('../../services/growthService');
+const share = require('../../growth/share');
 
 function byDateDesc(a, b) {
   return (b.graded_at || '').localeCompare(a.graded_at || '');
@@ -29,13 +30,14 @@ Page({
 
   onReady: function () {
     this.setData({ ready: true });
+    share.enableShareMenu();
   },
 
   onHide: function () { if (this._cancelHero) { this._cancelHero(); this._cancelHero = null; } },
   onUnload: function () { if (this._cancelHero) { this._cancelHero(); this._cancelHero = null; } },
 
   onShow: function () {
-    const cache = getCachedScores();
+    const cache = scoresService.getCachedScores();
     if (cache) {
       this.applyData(cache, true);
     }
@@ -133,17 +135,21 @@ Page({
     }
     this._refreshing = true;
     this.setData({ loading: true, error: '' });
-    get('/scores/me')
+    scoresService.fetchScores()
       .then(function (resp) {
         const norm = normalizeScores(resp);
         self.applyData(norm, false);
-        setCachedScores(norm);
+        scoresService.setCachedScores(norm);
+        // 查分成功（非缓存）：首次引导开启成绩发布订阅
+        if (growthService.afterQueryGuide()) {
+          wx.showToast({ title: '开启成绩提醒，见「我的」', icon: 'none' });
+        }
         self.setData({ loading: false });
       })
       .catch(function (err) {
         // 失败后允许下次 onShow 立即重试（防抖窗口不阻断重试）
         self._lastAutoRefresh = 0;
-        const cache = getCachedScores();
+        const cache = scoresService.getCachedScores();
         if (cache) {
           self.setData({ loading: false, fromCache: true });
           wx.showToast({ title: '已显示缓存成绩', icon: 'none' });
@@ -195,5 +201,44 @@ Page({
 
   goSemester: function () {
     wx.navigateTo({ url: '/pages/semester/semester' });
+  },
+
+  // 保存成绩卡到相册（离屏绘制，获客分享）
+  onSaveScoreCard: function () {
+    const latest = this.data.latest;
+    if (!latest) return;
+    const poster = require('../../growth/poster');
+    const model = {
+      examName: latest.exam_name,
+      total: latest.total_score,
+      full: latest.full_score,
+      rank: latest.rank,
+      classSize: latest.class_size,
+      percentile: latest.percentile,
+      objective: latest.objective_score,
+      subjective: latest.subjective_score,
+      subjects: this.data.list.slice(0, 5).map(function (s) {
+        return { subject: s.subject, score: s.total_score, gap: null };
+      })
+    };
+    wx.showLoading({ title: '生成中' });
+    poster.drawAndSave('score', model).then(function () {
+      wx.hideLoading();
+      growthService.onPosterSave('score');
+      wx.showToast({ title: '已保存到相册', icon: 'success' });
+    }).catch(function () {
+      wx.hideLoading();
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    });
+  },
+
+  onShareAppMessage: function () {
+    growthService.onShareApp({ from: 'scores' });
+    return share.makeShareAppMessage({ title: '我的成绩报告', query: {} });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'scores' });
+    return share.makeShareTimeline({ title: 'Project-X 学生成绩' });
   }
 });

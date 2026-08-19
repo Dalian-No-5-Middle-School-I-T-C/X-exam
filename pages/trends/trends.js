@@ -1,6 +1,8 @@
 // pages/trends/trends.js
-const { get } = require('../../utils/request');
+const scoresService = require('../../services/scoresService');
 const { normalizeTrends } = require('../../utils/response');
+const share = require('../../growth/share');
+const growthService = require('../../services/growthService');
 
 // progress: 0→1 折线从底部生长（克制：缓出，无弹跳）
 function drawLine(ctx, w, h, pts, progress) {
@@ -76,6 +78,7 @@ Page({
 
   onReady: function () {
     this.setData({ ready: true });
+    share.enableShareMenu();
     // 兜底重绘：网络极快时 onShow 里的绘制可能早于 onReady
     this.drawLine();
   },
@@ -94,7 +97,7 @@ Page({
     }
     this._loading = true;
     this.setData({ loading: true, error: '' });
-    get('/scores/me/trends')
+    scoresService.fetchTrends()
       .then(function (r) {
         self.setData({ trends: normalizeTrends(r), error: '' });
         self.drawLine();
@@ -116,6 +119,16 @@ Page({
       this._trendCanvas.cancelAnimationFrame(this._trendRaf);
       this._trendRaf = null;
     }
+  },
+
+  onShareAppMessage: function () {
+    growthService.onShareApp({ from: 'trends' });
+    return share.makeShareAppMessage({ title: '我的成绩趋势', query: {} });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'trends' });
+    return share.makeShareTimeline({ title: 'Project-X 成绩趋势' });
   },
 
   drawLine: function () {

@@ -83,3 +83,5 @@
 .mine-row { display: flex; align-items: baseline; gap: 16rpx; }
 .mine-rank { font-size: 48rpx; font-weight: 800; color: var(--blue); font-variant-numeric: tabular-nums; }
 .mine-score { font-size: 32rpx; font-weight: 700; color: var(--text-1); }
+
+.lb-save { margin-top: 24rpx; }

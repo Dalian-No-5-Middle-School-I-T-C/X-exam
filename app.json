@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/login/login",
+    "pages/landing/landing",
     "pages/change-password/change-password",
     "pages/scores/scores",
     "pages/detail/detail",

@@ -49,6 +49,10 @@
     <button class="ghost-btn" bindtap="goLeaderboard">查看成绩天梯 ›</button>
   </view>
 
+  <view wx:if="{{latest}}" class="hero-actions">
+    <button class="ghost-btn" bindtap="onSaveScoreCard">保存成绩卡 ›</button>
+  </view>
+
   <!-- 总览统计卡 -->
   <view wx:if="{{overview}}" class="ovw card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms">
     <view class="ovw-item">

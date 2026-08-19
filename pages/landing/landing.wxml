@@ -1,0 +1,31 @@
+<!-- pages/landing/landing.wxml -->
+<view class="container landing">
+  <view class="hero-sec">
+    <view class="logo">PX</view>
+    <view class="h-title">学生成绩查询</view>
+    <view class="eyebrow">PROJECT-X / DALIAN NO.5</view>
+  </view>
+
+  <view wx:if="{{inviterHint}}" class="invite-badge">{{inviterHint}}</view>
+
+  <view class="card card--hard info">
+    <view class="info-row">
+      <text class="label">学校</text>
+      <text class="val">{{schoolName}}</text>
+    </view>
+    <view wx:if="{{examName}}" class="info-row">
+      <text class="label">考试</text>
+      <text class="val">{{examName}}</text>
+    </view>
+  </view>
+
+  <view class="h-feats">
+    <text class="h-feat">· 极速查分 · 仅本人可见</text>
+    <text class="h-feat">· 趋势 / 学科 / 学期分析</text>
+    <text class="h-feat">· 成绩发布订阅提醒</text>
+  </view>
+
+  <button class="btn-primary enter-btn" bindtap="onEnter">进入查询 →</button>
+
+  <view class="foot" bindtap="openPrivacy">《隐私保护指引》</view>
+</view>
