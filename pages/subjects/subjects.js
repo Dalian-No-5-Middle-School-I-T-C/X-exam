@@ -1,7 +1,9 @@
 // pages/subjects/subjects.js
-const { get } = require('../../utils/request');
+const scoresService = require('../../services/scoresService');
 const { normalizeSubjects, toNum } = require('../../utils/response');
 const { getUser } = require('../../utils/auth');
+const share = require('../../growth/share');
+const growthService = require('../../services/growthService');
 
 // 数值容错：响应中的字符串数字也参与绘图
 function val(v) { return toNum(v, 0); }
@@ -134,6 +136,7 @@ Page({
 
   onReady: function () {
     this.setData({ ready: true });
+    share.enableShareMenu();
     // 兜底重绘：网络极快时 onShow 里的绘制可能早于 onReady
     this.drawAll();
   },
@@ -158,6 +161,16 @@ Page({
     this.selectComponent('#poster').open(model);
   },
 
+  onShareAppMessage: function () {
+    growthService.onShareApp({ from: 'subjects' });
+    return share.makeShareAppMessage({ title: '我的学科对比', query: {} });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'subjects' });
+    return share.makeShareTimeline({ title: 'Project-X 学科对比' });
+  },
+
   load: function (done) {
     const self = this;
     if (this._loading) {
@@ -166,7 +179,7 @@ Page({
     }
     this._loading = true;
     this.setData({ loading: true, error: '' });
-    get('/scores/me/subject-comparison')
+    scoresService.fetchSubjectComparison()
       .then(function (r) {
         const d = normalizeSubjects(r);
         self.setData({

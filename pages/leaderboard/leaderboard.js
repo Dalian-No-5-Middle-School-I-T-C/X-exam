@@ -1,6 +1,8 @@
 // pages/leaderboard/leaderboard.js
-const { get } = require('../../utils/request');
+const leaderboardService = require('../../services/leaderboardService');
 const { animateNumber } = require('../../utils/animate');
+const growthService = require('../../services/growthService');
+const share = require('../../growth/share');
 
 function pickScore(it) {
   if (it.totalScore != null) return it.totalScore;
@@ -39,7 +41,7 @@ Page({
     this.loadBoard();
   },
 
-  onReady: function () { this.setData({ ready: true }); },
+  onReady: function () { this.setData({ ready: true }); share.enableShareMenu(); },
   onHide: function () { this._cancelMine(); },
   onUnload: function () { this._cancelMine(); },
 
@@ -59,7 +61,7 @@ Page({
     this.setData({ loading: true, error: '' });
     // 后端真实契约：GET /api/ladder/exams/:examId → { rows, myRank, myScore }；
     // 关闭时返回 403（"成绩天梯暂未开放"），开关状态见 /api/ladder/config
-    get('/ladder/exams/' + this.data.examId)
+    leaderboardService.fetchBoard(this.data.examId)
       .then(function (resp) {
         const data = resp || {};
         const raw = data.rows || data.leaderboard || data.board || data.rankings || data.list || data.topTen || data.top10 || [];
@@ -124,5 +126,35 @@ Page({
 
   onPullDownRefresh: function () {
     this.loadBoard(function () { wx.stopPullDownRefresh(); });
+  },
+
+  // 保存天梯卡到相册（离屏绘制，获客分享）
+  onSaveBoardCard: function () {
+    if (this.data.loading || this.data.error || !this.data.enabled) return;
+    const poster = require('../../growth/poster');
+    const model = {
+      examName: this.data.examName,
+      top: this.data.list.slice(0, 3).map(function (it) { return { rank: it.rank, name: it.name, score: it.score }; }),
+      mine: this.data.mine ? { rank: this.data.mine.rank, score: this.data.mine.score } : null
+    };
+    wx.showLoading({ title: '生成中' });
+    poster.drawAndSave('leaderboard', model).then(function () {
+      wx.hideLoading();
+      growthService.onPosterSave('leaderboard');
+      wx.showToast({ title: '已保存到相册', icon: 'success' });
+    }).catch(function () {
+      wx.hideLoading();
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    });
+  },
+
+  onShareAppMessage: function () {
+    growthService.onShareApp({ from: 'leaderboard', examId: this.data.examId });
+    return share.makeShareAppMessage({ title: this.data.examName || '成绩天梯', query: { examId: this.data.examId } });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'leaderboard', examId: this.data.examId });
+    return share.makeShareTimeline({ title: this.data.examName || 'Project-X 成绩天梯' });
   }
 });

@@ -51,12 +51,15 @@ function userSalt() {
 }
 
 // 登录：identifier 支持 用户名 / 学号；isPersistent=记住我 180 天
-function login(identifier, password, remember) {
-  return requestRaw('POST', '/auth/login', {
+// schoolCode 为获客预留字段（学校代码），后端暂未使用，忽略即可
+function login(identifier, password, remember, schoolCode) {
+  const payload = {
     identifier: identifier,
     password: password,
     isPersistent: remember
-  }).then(function (res) {
+  };
+  if (schoolCode) payload.schoolCode = schoolCode;
+  return requestRaw('POST', '/auth/login', payload).then(function (res) {
     if (res.data && res.data.token) {
       setToken(res.data.token, remember);
       setUser(res.data.user, remember);

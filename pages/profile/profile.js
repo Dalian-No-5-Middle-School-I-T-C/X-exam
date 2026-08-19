@@ -4,6 +4,8 @@ const { post, requestRaw } = require('../../utils/request');
 const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { getSubStatus, setSubStatus, requestSubscribe, TEMPLATE_ID } = require('../../utils/subscribe');
 const { clearCachedScores } = require('../../utils/cache');
+const growthService = require('../../services/growthService');
+const share = require('../../growth/share');
 
 Page({
   data: {
@@ -17,7 +19,7 @@ Page({
     ready: false
   },
 
-  onReady: function () { this.setData({ ready: true }); },
+  onReady: function () { this.setData({ ready: true }); share.enableShareMenu(); },
 
   onShow: function () {
     const u = getUser();
@@ -78,6 +80,7 @@ Page({
     requestSubscribe().then(function (r) {
       if (r.ok && r.accepted) {
         self.setData({ subOn: true });
+        growthService.onSubscribeOn();
         wx.showToast({ title: '已开启成绩提醒', icon: 'success' });
       } else if (r.reason === 'noTemplate') {
         self.setData({ subOn: false, subReady: false });
@@ -109,5 +112,15 @@ Page({
         }
       }
     });
+  },
+
+  onShareAppMessage: function () {
+    growthService.onShareApp({ from: 'profile' });
+    return share.makeShareAppMessage({ title: 'Project-X 学生成绩查询', query: {} });
+  },
+
+  onShareTimeline: function () {
+    growthService.onShareTimeline({ from: 'profile' });
+    return share.makeShareTimeline({ title: 'Project-X 学生成绩查询' });
   }
 });

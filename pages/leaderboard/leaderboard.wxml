@@ -49,6 +49,8 @@
         <text class="mine-score">{{mine.score}}</text>
       </view>
     </view>
+
+    <button wx:if="{{enabled}}" class="btn out lb-save" bindtap="onSaveBoardCard">保存天梯卡 ›</button>
   </block>
 
   <view wx:else class="empty {{ready ? 'show' : ''}}">
