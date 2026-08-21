@@ -92,6 +92,7 @@ function drawBar(ctx, w, h, items, progress) {
   const n = items.length;
   const gap = plotW / n;
   const bw = gap * 0.6;
+  ctx.fillStyle = '#8B887E'; ctx.font = '9px sans-serif';
   items.forEach(function (it, i) {
     const v = val(it.gapToClass);
     const x = padL + gap * i + (gap - bw) / 2;
@@ -101,11 +102,13 @@ function drawBar(ctx, w, h, items, progress) {
     const finalTop = Math.min(yTop, yZero);
     ctx.fillStyle = v >= 0 ? '#2E44FF' : '#C00F28';
     ctx.fillRect(x, top, bw, hgt);
-    ctx.fillStyle = '#8B887E'; ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
     let s = it.subject || ''; if (s.length > 4) s = s.slice(0, 4);
-    ctx.fillText(s, x, h - 22);
-    ctx.fillText(String(v), x, finalTop - 4);
+    ctx.fillText(s, x + bw / 2, h - 22);
+    // 数值标签居中于柱子，保留 1 位小数避免长小数溢出
+    ctx.fillText((Math.round(v * 10) / 10).toFixed(1), x + bw / 2, finalTop - 4);
   });
+  ctx.textAlign = 'left';
 }
 
 function setupCanvas(canvas, ctx, w, h) {
@@ -182,8 +185,13 @@ Page({
     scoresService.fetchSubjectComparison()
       .then(function (r) {
         const d = normalizeSubjects(r);
+        // 差距值统一保留 1 位小数，避免表格/图表出现长小数
+        const subjects = (d.subjects || []).map(function (s) {
+          if (s.gapToClass != null) s.gapToClass = Math.round(val(s.gapToClass) * 10) / 10;
+          return s;
+        });
         self.setData({
-          subjects: d.subjects || [],
+          subjects: subjects,
           weakSubject: d.weakSubject || '',
           totalExams: d.totalExams || 0,
           loading: false,
@@ -231,6 +239,9 @@ Page({
     };
     this[rafKey] = canvas.requestAnimationFrame(frame);
   },
+
+  // 重试按钮入口：wxml bindtap 会把事件对象当首参传入，这里包一层保证 load(done) 契约干净
+  onRetry: function () { this.load(); },
 
   _cancelAll: function () {
     if (this._radarCanvas && this._radarRaf) { this._radarCanvas.cancelAnimationFrame(this._radarRaf); this._radarRaf = null; }

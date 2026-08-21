@@ -8,7 +8,7 @@
   border: 1rpx solid var(--ink); box-shadow: var(--shadow-hard);
 }
 .h-title { font-size: 48rpx; font-weight: 800; color: var(--text-1); margin: 24rpx 0 8rpx; }
-.eyebrow { font-family: var(--mono); font-size: 22rpx; letter-spacing: 2rpx; color: var(--text-3); }
+.eyebrow { font-family: var(--font-mono); font-size: 22rpx; letter-spacing: 2rpx; color: var(--text-3); }
 
 .invite-badge {
   display: block; text-align: center; margin: 0 0 24rpx;

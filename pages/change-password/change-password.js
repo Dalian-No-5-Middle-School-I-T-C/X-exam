@@ -56,8 +56,13 @@ Page({
       await post('/auth/change-password', { oldPassword: oldPassword, newPassword: newPassword });
       clearToken();
       clearUser();
-      wx.showToast({ title: '修改成功，请重新登录', icon: 'none' });
-      wx.reLaunch({ url: '/pages/login/login' });
+      // showModal 等用户确认后再跳转：toast 会随 reLaunch 页面销毁被吞掉
+      wx.showModal({
+        title: '修改成功',
+        content: '请使用新密码重新登录',
+        showCancel: false,
+        success: function () { wx.reLaunch({ url: '/pages/login/login' }); }
+      });
     } catch (err) {
       this.setData({ error: (err && err.message) || '修改失败' });
     } finally {

@@ -7,7 +7,7 @@
   </view>
 
   <view class="section-title">成绩走势</view>
-  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="load">{{error}} · 点击重试</view>
+  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
   <view wx:elif="{{trends.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无成绩数据</view>
   <canvas wx:if="{{trends.length > 0}}" type="2d" id="lineCanvas" class="chart"></canvas>
   <view wx:if="{{trends.length > 0}}" class="legend anim {{ready ? 'show' : ''}}">

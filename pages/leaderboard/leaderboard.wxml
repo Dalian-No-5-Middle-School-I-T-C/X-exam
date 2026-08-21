@@ -9,7 +9,7 @@
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
   </view>
 
-  <view wx:elif="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="loadBoard">{{error}} · 点击重试</view>
+  <view wx:elif="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
 
   <block wx:elif="{{enabled && list.length > 0}}">
     <!-- Top3 领奖台 -->

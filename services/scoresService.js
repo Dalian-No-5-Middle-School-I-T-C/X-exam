@@ -7,7 +7,8 @@ function fetchScores() {
   return request.get('/scores/me');
 }
 function fetchExamDetail(examId) {
-  return request.get('/scores/me/exams/' + examId);
+  // encodeURIComponent：examId 来自页面 options，防止路径/查询串注入
+  return request.get('/scores/me/exams/' + encodeURIComponent(examId));
 }
 function fetchSubjectComparison() {
   return request.get('/scores/me/subject-comparison');

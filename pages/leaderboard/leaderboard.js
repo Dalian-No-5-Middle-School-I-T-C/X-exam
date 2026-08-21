@@ -120,6 +120,9 @@ Page({
     }
   },
 
+  // 重试按钮入口：wxml bindtap 会把事件对象当首参传入，这里包一层保证 loadBoard(done) 契约干净
+  onRetry: function () { this.loadBoard(); },
+
   _cancelMine: function () {
     if (this._cancelMineFn) { this._cancelMineFn(); this._cancelMineFn = null; }
   },
