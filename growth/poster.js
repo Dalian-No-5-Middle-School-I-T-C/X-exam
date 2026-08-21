@@ -9,6 +9,8 @@ const RED = '#C00F28';
 const LINE = '#D8D5CB';
 
 function roundRect(ctx, x, y, w, h, r) {
+  // 钳制半径：r 超过宽高一半时 arcTo 会绘制异常
+  r = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -28,6 +30,12 @@ function clipText(ctx, text, maxWidth) {
 }
 
 function createCanvas(w, h) {
+  // 能力检测：离屏 Canvas 2D 需较高基础库，低版本直接抛出可识别错误而非原始异常
+  if (typeof wx.createOffscreenCanvas !== 'function') {
+    var e = new Error('当前微信版本过低，无法生成图片，请升级微信后重试');
+    e.code = 'CANVAS_UNSUPPORTED';
+    throw e;
+  }
   return wx.createOffscreenCanvas({ type: '2d', width: w, height: h });
 }
 
@@ -159,7 +167,8 @@ function saveToAlbum(path) {
       filePath: path,
       success: function () { resolve(true); },
       fail: function (err) {
-        if (err && err.errMsg && err.errMsg.indexOf('auth deny') >= 0) {
+        // 宽松匹配：不同基础库返回 auth deny / authorize:fail / fail auth denied 等变体
+        if (err && err.errMsg && /auth|authorize|deny/i.test(err.errMsg)) {
           wx.showModal({
             title: '需要相册权限',
             content: '请在设置中开启“保存到相册”权限后重试',

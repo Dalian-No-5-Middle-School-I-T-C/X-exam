@@ -21,7 +21,8 @@ function easeOutCubic(t) {
 function animateNumber(opts) {
   var from = Number(opts.from) || 0;
   var to = Number(opts.to) || 0;
-  var duration = opts.duration || 600;
+  // 负数 duration 会导致 t 永远到不了 1、interval 泄漏，钳制为正
+  var duration = Math.max(Number(opts.duration) || 600, 1);
   var onUpdate = opts.onUpdate || function () {};
   var onDone = opts.onDone || function () {};
 

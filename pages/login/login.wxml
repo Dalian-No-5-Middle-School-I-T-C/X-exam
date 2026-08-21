@@ -17,7 +17,7 @@
     </view>
     <view class="field">
       <text class="label">密码</text>
-      <input class="input" password placeholder="请输入密码" placeholder-class="ph" value="{{password}}" bindinput="onPassword" />
+      <input class="input" password placeholder="请输入密码" placeholder-class="ph" value="{{password}}" bindinput="onPassword" confirm-type="done" bindconfirm="onLogin" />
     </view>
 
     <checkbox-group bindchange="onRememberChange" class="remember">

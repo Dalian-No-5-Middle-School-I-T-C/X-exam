@@ -110,7 +110,7 @@
   <view class="list">
     <block wx:if="{{viewList.length > 0}}">
       <view wx:for="{{viewList}}" wx:key="exam_id" class="anim {{ready ? 'show' : ''}}" style="animation-delay: {{index < 12 ? index * 45 : 0}}ms">
-        <score-card score="{{item}}" bind:tap="goDetail" />
+        <score-card score="{{item}}" bind:cardtap="goDetail" />
       </view>
     </block>
     <view wx:elif="{{!loading}}" class="empty {{ready ? 'show' : ''}}">没有匹配的成绩</view>

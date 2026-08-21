@@ -61,6 +61,8 @@ Page({
   onUnload: function () { this._extrasCancelled = true; },
 
   onPullDownRefresh: function () {
+    // 概览卡来自成绩列表缓存，冷启动直入时可能缺失，刷新时一并补齐
+    this.loadSummary();
     this.loadDetail(function () { wx.stopPullDownRefresh(); });
   },
 
@@ -94,6 +96,8 @@ Page({
         });
         self.buildLists();
         self.setData({ loading: false });
+        // 冷启动直入且无成绩缓存时概览卡缺失，详情加载成功后再补一次
+        if (!self.data.summary) self.loadSummary();
         self.loadCropImages(self._answerBlocks);
       })
       .catch(function (err) {

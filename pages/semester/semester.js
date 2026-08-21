@@ -97,6 +97,9 @@ Page({
     }
   },
 
+  // 重试按钮入口：wxml bindtap 会把事件对象当首参传入，这里包一层保证 load(done) 契约干净
+  onRetry: function () { this.load(); },
+
   _cancelAvgs: function () {
     if (this._cancelCur) { this._cancelCur(); this._cancelCur = null; }
     if (this._cancelPrev) { this._cancelPrev(); this._cancelPrev = null; }

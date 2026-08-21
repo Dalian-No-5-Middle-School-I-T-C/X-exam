@@ -7,7 +7,7 @@
     <view class="sk-card"><view class="sk sk-line w-80"></view><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
   </view>
 
-  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="load">{{error}} · 点击重试</view>
+  <view wx:if="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
   <view wx:elif="{{subjects.length === 0 && !loading}}" class="empty {{ready ? 'show' : ''}}">暂无学科对比数据</view>
 
   <block wx:if="{{subjects.length > 0}}">

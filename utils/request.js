@@ -9,8 +9,25 @@ let handling428 = false;
 
 // 延迟 require 打破 auth.js <-> request.js 循环依赖
 function getToken() { return require('./auth').getToken(); }
+// 清理本地用户数据缓存（成绩/AI 报告/待生效邀请）：
+// 401 被动登出时也必须清，否则前一学生的成绩明文残留在设备 storage 中
+function clearLocalUserData() {
+  var PREFIXES = ['px_cache_scores_me_', 'px_ai_'];
+  try {
+    var info = wx.getStorageInfoSync();
+    var keys = (info && info.keys) || [];
+    keys.forEach(function (k) {
+      var hit = k === 'px_pending_invite';
+      for (var i = 0; i < PREFIXES.length; i++) {
+        if (k.indexOf(PREFIXES[i]) === 0) { hit = true; break; }
+      }
+      if (hit) { try { wx.removeStorageSync(k); } catch (e) { /* ignore */ } }
+    });
+  } catch (e) { /* ignore */ }
+}
 function clearLogin() {
   var auth = require('./auth');
+  clearLocalUserData();
   auth.clearToken();
   auth.clearUser();
 }
@@ -21,7 +38,7 @@ function handleUnauthorized() {
   clearLogin();
   var pages = getCurrentPages();
   var top = pages[pages.length - 1];
-  var onLogin = top && top.route && top.route.indexOf('login') >= 0;
+  var onLogin = top && top.route === 'pages/login/login';
   if (onLogin) {
     handling401 = false;
     return;
@@ -39,7 +56,7 @@ function handlePasswordRequired() {
   handling428 = true;
   var pages = getCurrentPages();
   var top = pages[pages.length - 1];
-  var onChange = top && top.route && top.route.indexOf('change-password') >= 0;
+  var onChange = top && top.route === 'pages/change-password/change-password';
   if (onChange) {
     handling428 = false;
     return;
@@ -55,7 +72,7 @@ function apiError(res) {
   var body = null;
   try {
     body = res.data;
-    if (body && body.message) message = body.message;
+    if (body && typeof body.message === 'string' && body.message) message = body.message;
   } catch (e) { /* ignore */ }
   var err = new Error(message);
   err.status = res.statusCode;
@@ -115,4 +132,4 @@ function post(path, data, opts) {
   return request('POST', path, data, opts);
 }
 
-module.exports = { requestRaw: requestRaw, get: get, post: post };
+module.exports = { requestRaw: requestRaw, get: get, post: post, clearLocalUserData: clearLocalUserData };

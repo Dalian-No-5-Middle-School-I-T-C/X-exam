@@ -72,6 +72,8 @@ function login(identifier, password, remember, schoolCode) {
 }
 
 function logout() {
+  // 主动登出同样清理本地用户数据缓存（成绩/AI 报告/待生效邀请）
+  require('./request').clearLocalUserData();
   clearToken();
   clearUser();
 }

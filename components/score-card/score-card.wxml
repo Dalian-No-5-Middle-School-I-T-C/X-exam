@@ -1,5 +1,5 @@
 <!-- components/score-card/score-card.wxml -->
-<view class="sc-card" bindtap="onTap">
+<view class="sc-card" catchtap="onTap">
   <view class="sc-head">
     <view class="sc-name">{{score.exam_name}}</view>
     <view wx:if="{{score.subject}}" class="tag sc-subject">{{score.subject}}</view>

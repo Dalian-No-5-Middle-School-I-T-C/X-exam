@@ -389,7 +389,8 @@ test('change-password.onSubmit validates input', async () => {
 
 test('change-password.onSubmit clears login and reLaunches on success', async () => {
   const relaunchUrls = [];
-  global.wx = { ...baseWx, reLaunch: opts => { relaunchUrls.push(opts.url); } };
+  // 改密成功后先弹 modal 确认，用户点击确认才 reLaunch（避免 toast 被页面销毁吞掉）
+  global.wx = { ...baseWx, reLaunch: opts => { relaunchUrls.push(opts.url); }, showModal: opts => { if (opts.success) opts.success({ confirm: true }); } };
   auth.setToken('t', true);
   postStub = async () => ({ ok: true });
   const page = changePasswordPage();

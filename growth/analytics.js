@@ -19,4 +19,10 @@ function report(name, data) {
 }
 function setEnabled(v) { ENABLED = !!v; }
 
-module.exports = { report: report, setEnabled: setEnabled, EVENTS: EVENTS, ENABLED: ENABLED };
+module.exports = {
+  report: report,
+  setEnabled: setEnabled,
+  EVENTS: EVENTS,
+  // getter：保证 setEnabled 后外部读到最新值（值导出只是快照）
+  get ENABLED() { return ENABLED; }
+};

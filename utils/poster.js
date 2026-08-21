@@ -19,8 +19,10 @@ function setFont(ctx, size, weight) {
 }
 function num(v, d) { const n = Number(v); return isFinite(n) ? n : (d == null ? 0 : d); }
 function tw(ctx, t) { return ctx.measureText(t == null ? '' : String(t)).width; }
-function trunc(ctx, text, maxW) {
+function trunc(ctx, text, maxW, size, weight) {
   text = text == null ? '' : String(text);
+  // 测量前先设置与绘制一致的字体，否则宽度判断会偏差导致溢出或过早截断
+  if (size != null) setFont(ctx, size, weight);
   if (tw(ctx, text) <= maxW) return text;
   let s = text;
   while (s.length > 1 && tw(ctx, s + '…') > maxW) s = s.slice(0, -1);
@@ -145,9 +147,9 @@ function buildSections(model, W) {
       brand(ctx, L, y + 24);
       txt(ctx, 'X-exam', L + 24, y + 24, { size: 15, weight: '800', color: '#fff' });
       const title = model.type === 'subjects' ? '学科对比分析' : (model.examName || '成绩报告');
-      txt(ctx, trunc(ctx, title, W - 2 * L - 8), L, y + 56, { size: 16, weight: '800', color: '#fff' });
+      txt(ctx, trunc(ctx, title, W - 2 * L - 8, 16, '800'), L, y + 56, { size: 16, weight: '800', color: '#fff' });
       const meta = (model.studentName ? model.studentName : '') + (model.date ? '  ·  ' + model.date : '');
-      txt(ctx, trunc(ctx, meta, W - 2 * L), R, y + 56, { size: 11, color: C.grayOnDark, align: 'right' });
+      txt(ctx, trunc(ctx, meta, W - 2 * L, 11), R, y + 56, { size: 11, color: C.grayOnDark, align: 'right' });
     }
   });
 
@@ -297,7 +299,7 @@ function buildSections(model, W) {
         for (let i = 0; i < showN; i++) {
           const it = subjects[i]; const ry = top + 28 + i * 28 + 14;
           if (i % 2 === 1) { ctx.fillStyle = C.zebra; ctx.fillRect(L, top + 28 + i * 28, CW, 28); }
-          txt(ctx, trunc(ctx, it.subject, 0.30 * CW), cols[0].x, ry, { size: 12, weight: '600', color: C.ink });
+          txt(ctx, trunc(ctx, it.subject, 0.30 * CW, 12, '600'), cols[0].x, ry, { size: 12, weight: '600', color: C.ink });
           txt(ctx, String(num(it.examCount)), cols[1].x, ry, { size: 12, align: 'center' });
           txt(ctx, String(num(it.avgScore)), cols[2].x, ry, { size: 12, align: 'center' });
           txt(ctx, String(num(it.avgClassAvg)), cols[3].x, ry, { size: 12, align: 'center' });

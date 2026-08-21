@@ -7,7 +7,7 @@ const auth = require('../utils/auth');
 function myInviterCode() {
   const u = auth.getUser();
   if (!u) return '';
-  const id = u.studentId || u.student_id || u.id || '';
+  const id = u.studentId || u.student_id || u.id || u.student_number || '';
   return id ? invite.encodeInviter(id) : '';
 }
 function mySchoolCode() {
@@ -22,7 +22,7 @@ function buildShareQuery(extra) {
   const sc = mySchoolCode(); if (sc) q.push('school=' + encodeURIComponent(sc));
   if (extra) {
     for (const k in extra) {
-      if (extra[k] != null && extra[k] !== '') q.push(k + '=' + encodeURIComponent(extra[k]));
+      if (extra[k] != null && extra[k] !== '') q.push(encodeURIComponent(k) + '=' + encodeURIComponent(extra[k]));
     }
   }
   return q.join('&');

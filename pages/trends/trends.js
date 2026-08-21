@@ -55,8 +55,12 @@ function drawLine(ctx, w, h, pts, progress) {
     const x = xAt(i);
     let lbl = p.examName || ('#' + (i + 1));
     if (lbl.length > 5) lbl = lbl.slice(0, 5);
-    ctx.fillText(lbl, x - 12, h - 22);
+    // 以数据点为中心绘制并钳制在画布内，避免多点时标签越界/重叠出界
+    const lx = Math.min(Math.max(x, 20), w - 20);
+    ctx.textAlign = 'center';
+    ctx.fillText(lbl, lx, h - 22);
   });
+  ctx.textAlign = 'left';
 }
 
 Page({
@@ -114,6 +118,9 @@ Page({
       });
   },
 
+  // 重试按钮入口：wxml bindtap 会把事件对象当首参传入，这里包一层保证 load(done) 契约干净
+  onRetry: function () { this.load(); },
+
   _cancelTrend: function () {
     if (this._trendCanvas && this._trendRaf) {
       this._trendCanvas.cancelAnimationFrame(this._trendRaf);
@@ -140,14 +147,16 @@ Page({
     this._cancelTrend();
     wx.createSelectorQuery().select('#lineCanvas').fields({ node: true, size: true }).exec(function (res) {
       if (!res || !res[0] || !res[0].node) return;
+      const w = res[0].width, h = res[0].height;
+      // 画布尚未插入渲染树或页面隐藏时尺寸可能为 0，直接绘制会得到负坐标图形
+      if (!w || !h) return;
       const canvas = res[0].node;
       const ctx = canvas.getContext('2d');
       const dpr = (wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : wx.getSystemInfoSync().pixelRatio) || 2;
-      canvas.width = res[0].width * dpr;
-      canvas.height = res[0].height * dpr;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
       ctx.scale(dpr, dpr);
       self._trendCanvas = canvas;
-      const w = res[0].width, h = res[0].height;
       const dur = 500;
       const start = Date.now();
       const frame = function () {
