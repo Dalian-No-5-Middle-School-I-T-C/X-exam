@@ -6,7 +6,6 @@
     <view class="eyebrow">PROJECT-X / DALIAN NO.5</view>
   </view>
 
-  <view wx:if="{{inviterHint}}" class="invite-badge">{{inviterHint}}</view>
 
   <view class="card card--hard info">
     <view class="info-row">

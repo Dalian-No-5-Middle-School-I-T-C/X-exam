@@ -29,5 +29,5 @@
     <button class="btn-primary login-btn" loading="{{loading}}" bindtap="onLogin">登 录</button>
   </view>
 
-  <view class="foot">数据由学校 Project-X 系统提供</view>
+  <view class="foot">数据由学校 Project-X 系统提供 · <text bindtap="openPrivacy">《隐私保护指引》</text></view>
 </view>

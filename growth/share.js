@@ -1,24 +1,16 @@
 // growth/share.js
-// 分享横切：统一构造“指向 landing 公开页”的分享路径（携带邀请人与学校参数），
+// 分享横切：统一构造指向 landing 公开页的分享路径，
 // 并提供 onShareAppMessage / onShareTimeline 工厂，避免各页重复实现。
-const invite = require('./invite');
 const auth = require('../utils/auth');
 
-function myInviterCode() {
-  const u = auth.getUser();
-  if (!u) return '';
-  const id = u.studentId || u.student_id || u.id || u.student_number || '';
-  return id ? invite.encodeInviter(id) : '';
-}
 function mySchoolCode() {
   const u = auth.getUser();
   return (u && u.schoolCode) || '';
 }
 
-// 构造分享查询串：inviter + school + 调用方额外参数（如 examId）
+// 构造分享查询串：仅携带学校与调用方额外参数（如 examId）。
 function buildShareQuery(extra) {
   const q = [];
-  const inv = myInviterCode(); if (inv) q.push('inviter=' + encodeURIComponent(inv));
   const sc = mySchoolCode(); if (sc) q.push('school=' + encodeURIComponent(sc));
   if (extra) {
     for (const k in extra) {
@@ -57,7 +49,6 @@ function makeShareTimeline(opts) {
 }
 
 module.exports = {
-  myInviterCode: myInviterCode,
   buildShareQuery: buildShareQuery,
   buildLandingPath: buildLandingPath,
   enableShareMenu: enableShareMenu,

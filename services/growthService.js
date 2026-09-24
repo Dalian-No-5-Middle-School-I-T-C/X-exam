@@ -6,14 +6,13 @@ const analytics = require('../growth/analytics');
 const subscribe = require('../growth/subscribe');
 const auth = require('../utils/auth');
 
-// 落地页加载：解析分享参数，落地待生效邀请（供登录后归因/深链）
+// 落地页加载：解析学校与考试参数，保留登录后的考试深链。
 function onLandingLoad(options) {
   options = options || {};
-  const inviter = options.inviter ? invite.decodeInviter(options.inviter) : '';
   const school = options.school || (auth.getUser() && auth.getUser().schoolCode) || '';
   const examId = options.examId ? (parseInt(options.examId, 10) || 0) : 0;
-  invite.savePending({ inviterId: inviter, schoolCode: school, examId: examId });
-  analytics.report(analytics.EVENTS.LANDING_VIEW, { school: school, hasInviter: !!inviter });
+  invite.savePending({ schoolCode: school, examId: examId });
+  analytics.report(analytics.EVENTS.LANDING_VIEW, { school: school });
 }
 
 function onLandingEnter() {
@@ -25,10 +24,10 @@ function afterQueryGuide() {
   return subscribe.guideAfterQuery();
 }
 
-// 登录成功：上报转化并返回待生效邀请（用于深链到具体考试）
+// 登录成功：上报转化并返回待生效落地参数（用于深链到具体考试）
 function onLoginSuccess() {
   const p = invite.getPending();
-  analytics.report(analytics.EVENTS.LOGIN_CONVERT, { hasInviter: !!(p && p.inviterId) });
+  analytics.report(analytics.EVENTS.LOGIN_CONVERT, {});
   return p;
 }
 

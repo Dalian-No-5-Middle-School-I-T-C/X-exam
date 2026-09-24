@@ -30,8 +30,8 @@ Page({
   },
 
   onLoad: function (options) {
-    // 朋友圈/直接分享落地：解析邀请参数并落地，供登录后归因（已登录则忽略）
-    if (options && (options.inviter || options.school || options.examId)) {
+    // 朋友圈/直接分享落地：解析学校和考试参数，供登录后深链（已登录则忽略）
+    if (options && (options.school || options.examId)) {
       growthService.onLandingLoad(options);
     }
     const examId = parseInt(options.examId, 10) || 0;

@@ -2,12 +2,13 @@
 const { login, isLoggedIn } = require('../../utils/auth');
 const growthService = require('../../services/growthService');
 const invite = require('../../growth/invite');
+const privacy = require('../../utils/privacy');
 
 Page({
   data: {
     identifier: '',
     password: '',
-    remember: true,
+    remember: false,
     loading: false,
     error: '',
     ready: false,
@@ -17,7 +18,7 @@ Page({
     // 读取落地页落地的待生效邀请；若直接带参进入（防御）也落地一次
     const p = invite.getPending();
     this.setData({ schoolCode: (p && p.schoolCode) || '' });
-    if (options && (options.inviter || options.school || options.examId)) {
+    if (options && (options.school || options.examId)) {
       growthService.onLandingLoad(options);
     }
   },
@@ -45,14 +46,17 @@ Page({
       return;
     }
     this.setData({ loading: true, error: '' });
+    let privacyAuthorized = false;
     try {
+      await new Promise(function (resolve, reject) {
+        privacy.requirePrivacyAuthorize(resolve, reject);
+      });
+      privacyAuthorized = true;
       const res = await login(identifier, password, remember, this.data.schoolCode);
       if (res.passwordChangeRequired) {
-        // 初始密码账号：先设置新密码，改密后需重新登录
         wx.reLaunch({ url: '/pages/change-password/change-password' });
         return;
       }
-      // 登录成功：上报转化并消费待生效邀请（深链到具体考试）
       const pending = growthService.onLoginSuccess();
       invite.clearPending();
       if (pending && pending.examId) {
@@ -61,9 +65,12 @@ Page({
         wx.reLaunch({ url: '/pages/scores/scores' });
       }
     } catch (err) {
-      this.setData({ error: (err && err.message) || '登录失败' });
+      this.setData({ error: privacyAuthorized ? ((err && err.message) || '登录失败') : '需同意隐私保护指引后才能登录' });
     } finally {
       this.setData({ loading: false });
     }
+  },
+  openPrivacy: function () {
+    privacy.openPrivacyContract();
   }
 });

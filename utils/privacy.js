@@ -22,14 +22,17 @@ function openPrivacyContract() {
   wx.showModal({ title: '隐私保护指引', content: PRIVACY_POLICY_URL || DEFAULT_TEXT, showCancel: false });
 }
 
-// 请求隐私授权（占位：正式上线前接入 wx.requirePrivacyAuthorize）
+// 请求隐私授权；旧基础库不支持时维持兼容。
 function requirePrivacyAuthorize(resolve, reject) {
   try {
     if (wx.requirePrivacyAuthorize) {
       wx.requirePrivacyAuthorize({ success: resolve, fail: reject });
       return;
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    if (reject) reject(e);
+    return;
+  }
   if (resolve) resolve();
 }
 

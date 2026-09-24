@@ -1,5 +1,5 @@
 // pages/landing/landing.js
-// 公开落地页：承载 school + inviter + examId 参数，引导进入登录。
+// 公开落地页：承载 school + examId 参数，引导进入登录。
 // 不要求登录即可访问；已登录用户直接跳成绩页（或深链考试详情）。
 const auth = require('../../utils/auth');
 const invite = require('../../growth/invite');
@@ -11,7 +11,6 @@ Page({
   data: {
     schoolName: '大连第五中学',
     examName: '',
-    inviterHint: '',
     examId: 0,
     ready: false
   },
@@ -28,12 +27,11 @@ Page({
       }
       return;
     }
-    // 未登录：落地分享参数，用于登录后归因/深链
+    // 未登录：落地分享参数，用于登录后深链。
     growthService.onLandingLoad(options);
     this.setData({
       schoolName: invite.schoolName(options.school || ''),
       examName: options.examId ? ('考试 #' + options.examId) : '',
-      inviterHint: options.inviter ? '好友推荐 · 一起查成绩' : '',
       examId: options.examId ? (parseInt(options.examId, 10) || 0) : 0
     });
   },
