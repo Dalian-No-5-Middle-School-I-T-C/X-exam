@@ -27,6 +27,7 @@ Page({
     aiError: '',
     loading: false,
     error: '',
+    posterMounted: false,
     ready: false
   },
 
@@ -209,7 +210,20 @@ Page({
       subjective: this.data.subjective || [],
       aiText: (this.data.aiReport && this.data.aiReport.isText) ? this.data.aiReport.text : ''
     };
-    this.selectComponent('#poster').open(model);
+    // 海报组件开了用时注入：先挂载，等 ready 换掉占位组件后才拿得到 open()
+    this._posterModel = model;
+    if (this.data.posterMounted) this._openPoster();
+    else this.setData({ posterMounted: true });
+  },
+
+  onPosterReady: function () { this._openPoster(); },
+
+  _openPoster: function () {
+    const el = this.selectComponent('#poster');
+    // 仍是占位组件时拿不到 open()，交给随后的 ready 事件
+    if (!el || !el.open || !this._posterModel) return;
+    el.open(this._posterModel);
+    this._posterModel = null;
   },
 
   onShareAppMessage: function () {

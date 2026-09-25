@@ -202,14 +202,6 @@ Page({
     wx.navigateTo({ url: '/pages/exam-paper/exam-paper?examId=' + id + '&name=' + name });
   },
 
-  goSubjects: function () {
-    wx.navigateTo({ url: '/pages/subjects/subjects' });
-  },
-
-  goSemester: function () {
-    wx.navigateTo({ url: '/pages/semester/semester' });
-  },
-
   // 保存成绩卡到相册（离屏绘制，获客分享）
   onSaveScoreCard: function () {
     const latest = this.data.latest;

@@ -4,5 +4,8 @@
   "backgroundColor": "#F1EFE9",
   "usingComponents": {
     "poster": "/components/poster/poster"
+  },
+  "componentPlaceholder": {
+    "poster": "view"
   }
 }

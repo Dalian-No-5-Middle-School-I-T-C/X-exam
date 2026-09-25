@@ -1,6 +1,11 @@
 {
-  "navigationBarTitleText": "趋势",
+  "navigationBarTitleText": "分析",
   "enablePullDownRefresh": true,
   "backgroundColor": "#F1EFE9",
-  "usingComponents": {}
+  "usingComponents": {
+    "poster": "/components/poster/poster"
+  },
+  "componentPlaceholder": {
+    "poster": "view"
+  }
 }

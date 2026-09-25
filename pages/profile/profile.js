@@ -15,6 +15,25 @@ function isAdmin(user) {
   return role === 'admin' || role === 'administrator' || displayName.indexOf('管理员') >= 0;
 }
 
+// 学生只看结论，HTTP 状态 / 微信 errno 只进 console（真机 vConsole 可定位到底是
+// 后端没部署（404）、未配环境变量（503）还是用户自己取消）。
+function subFailText(r) {
+  if (r.reason === 'rejected') {
+    if (r.detail === 'setting=ban') return '请先在右上角设置中允许订阅消息';
+    if (r.detail === 'setting=filter') return '当前暂不支持该提醒，请稍后再试';
+    return '已取消开启';
+  }
+  if (r.reason === 'denied') return '订阅窗口未弹出，请稍后重试';
+  if (r.reason === 'loginFailed') return '微信登录失败，请重试';
+  if (r.reason === 'bindFailed') {
+    if (r.status === 401 || r.status === 403) return '登录已过期，请重新登录';
+    if (r.status === 0) return '网络异常，请稍后重试';
+    if (r.status === 404 || r.status === 503) return '服务尚未就绪，请稍后再试';
+    return '绑定失败，请重试';
+  }
+  return '开启失败，请稍后再试';
+}
+
 Page({
   data: {
     user: null,
@@ -92,13 +111,18 @@ Page({
         self.setData({ subOn: true });
         growthService.onSubscribeOn();
         wx.showToast({ title: '已开启成绩提醒', icon: 'success' });
-      } else if (r.reason === 'noTemplate') {
+        return;
+      }
+      if (r.reason === 'noTemplate') {
         self.setData({ subOn: false, subReady: false });
         wx.showModal({ title: '功能筹备中', content: '成绩发布提醒模板尚未配置，暂不可开启。', showCancel: false });
-      } else {
-        self.setData({ subOn: false });
-        wx.showToast({ title: r.reason === 'bindFailed' ? '绑定失败，请重试' : '授权未开启', icon: 'none' });
+        return;
       }
+      if (r.reason !== 'rejected') {
+        console.warn('[subscribe] ' + r.reason + ' status=' + r.status + ' errno=' + r.errno + ' ' + r.detail);
+      }
+      self.setData({ subOn: false });
+      wx.showToast({ title: subFailText(r), icon: 'none' });
     });
   },
 

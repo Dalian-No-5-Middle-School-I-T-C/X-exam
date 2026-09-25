@@ -16,16 +16,12 @@ function fetchSubjectComparison() {
 function fetchTrends() {
   return request.get('/scores/me/trends');
 }
-function fetchSemesterComparison() {
-  return request.get('/scores/me/semester-comparison');
-}
 
 module.exports = {
   fetchScores: fetchScores,
   fetchExamDetail: fetchExamDetail,
   fetchSubjectComparison: fetchSubjectComparison,
   fetchTrends: fetchTrends,
-  fetchSemesterComparison: fetchSemesterComparison,
   getCachedScores: cache.getCachedScores,
   setCachedScores: cache.setCachedScores
 };

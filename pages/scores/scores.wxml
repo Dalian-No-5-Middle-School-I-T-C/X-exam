@@ -73,26 +73,6 @@
     </view>
   </view>
 
-  <!-- 分析入口 -->
-  <view class="entry-row anim {{ready ? 'show' : ''}}" style="animation-delay: 100ms">
-    <view class="entry" bindtap="goSubjects">
-      <view class="entry-ico entry-ico--subj"></view>
-      <view class="entry-txt">
-        <view class="entry-title">学科对比</view>
-        <view class="muted">雷达 · 明细</view>
-      </view>
-      <text class="entry-arrow">›</text>
-    </view>
-    <view class="entry" bindtap="goSemester">
-      <view class="entry-ico entry-ico--sem"></view>
-      <view class="entry-txt">
-        <view class="entry-title">学期对比</view>
-        <view class="muted">进步 · 退步</view>
-      </view>
-      <text class="entry-arrow">›</text>
-    </view>
-  </view>
-
   <!-- 搜索 + 学科筛选 -->
   <view class="toolbar">
     <view class="search-box">

@@ -36,14 +36,13 @@ let getStub = async () => { throw new Error('get 未打桩'); };
 let postStub = async () => { throw new Error('post 未打桩'); };
 
 const scoresDef = capture('../pages/scores/scores.js');
-const semesterDef = capture('../pages/semester/semester.js');
 const detailDef = capture('../pages/detail/detail.js');
 const trendsDef = capture('../pages/trends/trends.js');
-const subjectsDef = capture('../pages/subjects/subjects.js');
 request.get = (...args) => getStub(...args);
 request.post = (...args) => postStub(...args);
 const leaderboardDef = capture('../pages/leaderboard/leaderboard.js');
 const changePasswordDef = capture('../pages/change-password/change-password.js');
+const profileDef = capture('../pages/profile/profile.js');
 
 function makeCanvas() {
   const calls = [];
@@ -60,12 +59,13 @@ function makeCanvas() {
   });
   return {
     calls,
+    get pending() { return !!rafCb; },
     canvas: {
       width: 0,
       height: 0,
       getContext: () => ctx,
       requestAnimationFrame: fn => { rafCb = fn; return 1; },
-      cancelAnimationFrame: () => {}
+      cancelAnimationFrame: () => { rafCb = null; }
     },
     run() {
       assert.ok(rafCb, 'requestAnimationFrame was not scheduled');
@@ -175,30 +175,6 @@ test('scores.goPaper 用列表里的考试名跳原卷页，列表缺失也不�
   assert.deepEqual(urls, ['/pages/exam-paper/exam-paper?examId=2&name=' + encodeURIComponent('周测')]);
   page.goPaper({ detail: { id: 99 } });
   assert.equal(urls[1], '/pages/exam-paper/exam-paper?examId=99&name=');
-});
-
-// ---------- pages/semester ----------
-test('semester.buildRows computes deltas with em-dash fallbacks', () => {
-  const page = makePage(semesterDef);
-  const rows = page.buildRows(
-    {
-      subjects: [
-        { subject: '数学', avgScore: 88, avgClassGap: '2.5' },
-        { subject: '语文', avgScore: '79.3' }
-      ]
-    },
-    { subjects: [{ subject: '数学', avgScore: '80.4' }] }
-  );
-  assert.deepEqual(rows, [
-    { subject: '数学', cur: 88, prev: 80.4, delta: 7.6, gap: 2.5 },
-    { subject: '语文', cur: 79.3, prev: '—', delta: null, gap: '—' }
-  ]);
-});
-
-test('semester.buildRows returns empty without current subjects', () => {
-  const page = makePage(semesterDef);
-  assert.deepEqual(page.buildRows(null, null), []);
-  assert.deepEqual(page.buildRows({}, null), []);
 });
 
 // ---------- pages/leaderboard ----------
@@ -495,7 +471,24 @@ test('detail.loadDetail 记录后端 paperVisible 作为「查看答案解析」
   assert.equal(page2.data.paperVisible, 0); // 后端没给就是不可见
 });
 
-// ---------- pages/trends ----------
+// ---------- pages/trends（分析页：成绩走势 + 学科对比） ----------
+const trendRows = { trends: [{ examName: '月考', total_score: 90, class_avg: 80, grade_avg: 70 }] };
+const subjectRows = {
+  subjects: ['数学', '语文', '英语'].map((subject, i) => ({
+    subject, avg_score: 80 + i, avg_class_avg: 70 + i, gap_to_class: 10 - i, exam_count: 3, trend: 'up'
+  })),
+  weak_subject: '英语'
+};
+
+function stubUrls(map) {
+  getStub = async (url) => {
+    const key = Object.keys(map).filter(k => url.indexOf(k) >= 0)[0];
+    if (!key) throw new Error('未打桩的接口: ' + url);
+    if (map[key] instanceof Error) throw map[key];
+    return map[key];
+  };
+}
+
 test('trends.drawLine renders grid and series for a single point', () => {
   const realNow = Date.now;
   let now = 1000;
@@ -524,20 +517,19 @@ test('trends.drawLine skips empty data', () => {
   assert.deepEqual(selects, []);
 });
 
-// ---------- pages/subjects ----------
-test('subjects.drawAll skips radar with <3 subjects and draws bar', () => {
+test('trends.drawSubjects skips radar with <3 subjects and draws bar', () => {
   const realNow = Date.now;
   let now = 1000;
   Date.now = () => now;
   try {
     const bar = makeCanvas();
     const selects = installCanvasQuery({ '#barCanvas': { node: bar.canvas, width: 300, height: 200 } });
-    const page = makePage(subjectsDef);
+    const page = makePage(trendsDef);
     page.setData({ subjects: [
       { subject: '数学', avgScore: 88, avgClassAvg: 80, gapToClass: 8 },
       { subject: '语文', avgScore: 75, avgClassAvg: 70, gapToClass: 5 }
     ] });
-    page.drawAll();
+    page.drawSubjects();
     assert.deepEqual(selects, ['#barCanvas']);
     now += 1000;
     bar.run();
@@ -549,7 +541,7 @@ test('subjects.drawAll skips radar with <3 subjects and draws bar', () => {
   }
 });
 
-test('subjects.drawAll draws radar and bar with >=3 subjects', () => {
+test('trends.drawSubjects draws radar and bar with >=3 subjects', () => {
   const realNow = Date.now;
   let now = 1000;
   Date.now = () => now;
@@ -560,13 +552,13 @@ test('subjects.drawAll draws radar and bar with >=3 subjects', () => {
       '#radarCanvas': { node: radar.canvas, width: 300, height: 200 },
       '#barCanvas': { node: bar.canvas, width: 300, height: 200 }
     });
-    const page = makePage(subjectsDef);
+    const page = makePage(trendsDef);
     page.setData({
       subjects: ['数学', '语文', '英语', '物理'].map((subject, i) => ({
         subject, avgScore: 80 + i, avgClassAvg: 70 + i, gapToClass: 10 - i
       }))
     });
-    page.drawAll();
+    page.drawSubjects();
     assert.deepEqual(selects, ['#radarCanvas', '#barCanvas']);
     now += 1000;
     radar.run();
@@ -576,6 +568,140 @@ test('subjects.drawAll draws radar and bar with >=3 subjects', () => {
     assert.ok(bar.calls.some(c => c[0] === 'fillRect'));
     assertFiniteArgs(radar.calls);
     assertFiniteArgs(bar.calls);
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('trends.drawSubjects leaves an in-flight 成绩走势 animation running', () => {
+  const line = makeCanvas();
+  const radar = makeCanvas();
+  const bar = makeCanvas();
+  installCanvasQuery({
+    '#lineCanvas': { node: line.canvas, width: 300, height: 200 },
+    '#radarCanvas': { node: radar.canvas, width: 300, height: 200 },
+    '#barCanvas': { node: bar.canvas, width: 300, height: 200 }
+  });
+  const page = makePage(trendsDef);
+  page.setData({
+    trends: [{ examName: '月考', total: 90, classAvg: 80, gradeAvg: 70 }],
+    subjects: ['数学', '语文', '英语'].map(subject => ({ subject, avgScore: 80, avgClassAvg: 70, gapToClass: 10 }))
+  });
+  page.drawLine();
+  assert.equal(line.pending, true);
+  // 两段数据各自回来、各自重绘：学科这一段刷新不能把折线的动画掐在半路
+  page.drawSubjects();
+  assert.equal(line.pending, true, '折线动画被学科重绘取消了');
+  assert.equal(radar.pending, true);
+  assert.equal(bar.pending, true);
+});
+
+test('trends.onHide cancels every running animation', () => {
+  const line = makeCanvas();
+  installCanvasQuery({ '#lineCanvas': { node: line.canvas, width: 300, height: 200 } });
+  const page = makePage(trendsDef);
+  page.setData({ trends: [{ examName: '月考', total: 90, classAvg: 80, gradeAvg: 70 }] });
+  page.drawLine();
+  assert.equal(line.pending, true);
+  page.onHide();
+  assert.equal(line.pending, false);
+});
+
+test('trends skips a canvas that reports zero size', () => {
+  const line = makeCanvas();
+  installCanvasQuery({ '#lineCanvas': { node: line.canvas, width: 0, height: 0 } });
+  const page = makePage(trendsDef);
+  page.setData({ trends: [{ examName: '月考', total: 90, classAvg: 80, gradeAvg: 70 }] });
+  // 尺寸为 0 时按 dpr 缩放会得到退化画布，画出来全是越界图形，不如不画
+  page.drawLine();
+  assert.equal(line.pending, false);
+  assert.equal(line.canvas.width, 0);
+});
+
+test('trends.load fills both sections from their own endpoints', async () => {
+  stubUrls({ '/scores/me/trends': trendRows, '/scores/me/subject-comparison': subjectRows });
+  installCanvasQuery({});
+  const page = makePage(trendsDef);
+  page.load();
+  assert.equal(page.data.loading, true);
+  await flush();
+  assert.equal(page.data.loading, false);
+  assert.deepEqual(page.data.trends.map(p => p.total), [90]);
+  assert.equal(page.data.subjects.length, 3);
+  assert.equal(page.data.weakSubject, '英语');
+  assert.equal(page.data.error, '');
+  assert.equal(page.data.subjectsError, '');
+});
+
+test('trends.load keeps the 成绩走势 section when 学科对比 fails', async () => {
+  stubUrls({ '/scores/me/trends': trendRows, '/scores/me/subject-comparison': new Error('学科接口挂了') });
+  installCanvasQuery({});
+  const page = makePage(trendsDef);
+  page.load();
+  await flush();
+  assert.deepEqual(page.data.trends.map(p => p.total), [90]);
+  assert.equal(page.data.error, '');
+  assert.equal(page.data.subjectsError, '学科接口挂了');
+  assert.deepEqual(page.data.subjects, []);
+  assert.equal(page.data.loading, false);
+});
+
+test('trends.load keeps the 学科对比 section when 成绩走势 fails', async () => {
+  stubUrls({ '/scores/me/trends': new Error('趋势接口挂了'), '/scores/me/subject-comparison': subjectRows });
+  installCanvasQuery({});
+  const page = makePage(trendsDef);
+  page.load();
+  await flush();
+  assert.equal(page.data.error, '趋势接口挂了');
+  assert.deepEqual(page.data.trends, []);
+  assert.equal(page.data.subjectsError, '');
+  assert.equal(page.data.subjects.length, 3);
+});
+
+test('trends.load ignores a second call while one is in flight', async () => {
+  const urls = [];
+  getStub = async (url) => { urls.push(url); return url.indexOf('trends') >= 0 ? trendRows : subjectRows; };
+  installCanvasQuery({});
+  const page = makePage(trendsDef);
+  page.load();
+  page.load();
+  await flush();
+  assert.deepEqual(urls.sort(), ['/scores/me/subject-comparison', '/scores/me/trends']);
+  assert.equal(page.data.loading, false);
+});
+
+test('trends.onShare mounts the poster first and opens it only once injected', async () => {
+  const realNow = Date.now;
+  let now = 1000;
+  Date.now = () => now;
+  try {
+    stubUrls({ '/scores/me/trends': trendRows, '/scores/me/subject-comparison': subjectRows });
+    installCanvasQuery({});
+    let opened = null;
+    const page = makePage(trendsDef);
+    // 用时注入：占位阶段 selectComponent 拿不到 open()
+    let injected = false;
+    page.selectComponent = () => (injected ? { open: (m) => { opened = m; } } : null);
+    page.onShare();
+    assert.equal(opened, null, '无数据时不该挂载海报');
+    assert.equal(page.data.posterMounted, false);
+
+    page.load();
+    await flush();
+    page.onShare();
+    assert.equal(page.data.posterMounted, true, '点一键转发才挂载组件');
+    assert.equal(opened, null, '占位组件还没换成真组件，不该调用 open');
+
+    injected = true;
+    page.onPosterReady();
+    assert.equal(opened.type, 'subjects');
+    assert.equal(opened.subjects.length, 3);
+    assert.equal(opened.weakSubject, '英语');
+
+    // 组件已在时直接开，不必等 ready
+    opened = null;
+    page.onShare();
+    assert.equal(opened.type, 'subjects');
   } finally {
     Date.now = realNow;
   }
@@ -608,6 +734,55 @@ test('change-password.onSubmit validates input', async () => {
   page.setData({ oldPassword: '123456', newPassword: '123456', confirm: '123456' });
   await page.onSubmit();
   assert.equal(page.data.error, '新密码不能与当前密码相同');
+});
+
+// ---------- pages/profile 成绩发布提醒开关 ----------
+const { TEMPLATE_ID } = require('../utils/subscribe');
+
+// 走真实 request.js（statusCode → err.status、body.message → err.message），
+// 因此这里打的是 wx.request 而不是 request.post：subscribe.js 在 scores 页
+// 经 growthService 就已加载，捕获的是原始的 request.post 引用。
+async function toggleSub(http, setting) {
+  const titles = [];
+  global.wx = {
+    ...baseWx,
+    showToast: opts => { titles.push(opts.title); },
+    showModal: () => {},
+    reportAnalytics: () => {},
+    requestSubscribeMessage: opts => opts.success({ [TEMPLATE_ID]: setting === undefined ? 'accept' : setting }),
+    login: opts => opts.success({ code: 'c' }),
+    request: opts => {
+      if (http.transportFail) { opts.fail({ errMsg: 'request:fail' }); return; }
+      opts.success({ statusCode: http.status, data: http.body || {} });
+    }
+  };
+  const page = makePage(profileDef);
+  await page.onToggleSub({ detail: { value: true } });
+  await flush();
+  return { page, titles };
+}
+
+test('profile 开关按后端状态码给不同文案，而不是笼统的绑定失败', async () => {
+  // 503 = 环境变量没配；404 = 这一版后端还没上线。两者都不该让用户以为是自己操作错了
+  assert.match((await toggleSub({ status: 503, body: { message: '服务端未配置成绩发布订阅模板' } })).titles[0], /服务尚未就绪/);
+  assert.match((await toggleSub({ status: 404 })).titles[0], /服务尚未就绪/);
+  assert.match((await toggleSub({ status: 403, body: { message: '仅学生账号可订阅成绩发布通知' } })).titles[0], /登录已过期/);
+  assert.match((await toggleSub({ transportFail: true })).titles[0], /网络异常/);
+  assert.equal((await toggleSub({ status: 500, body: { message: '订阅绑定保存失败，请稍后重试' } })).titles[0], '绑定失败，请重试');
+});
+
+test('profile 开关区分用户取消与订阅总开关被关闭', async () => {
+  assert.equal((await toggleSub({}, 'reject')).titles[0], '已取消开启');
+  assert.equal((await toggleSub({}, 'ban')).titles[0], '请先在右上角设置中允许订阅消息');
+  assert.equal((await toggleSub({}, 'filter')).titles[0], '当前暂不支持该提醒，请稍后再试');
+});
+
+test('profile 开关成功后写本机关授权状态', async () => {
+  const r = await toggleSub({ status: 200 });
+  assert.equal(r.titles[0], '已开启成绩提醒');
+  assert.equal(r.page.data.subOn, true);
+  r.page.onToggleSub({ detail: { value: false } });
+  assert.equal(r.page.data.subOn, false);
 });
 
 test('change-password.onSubmit clears login and reLaunches on success', async () => {
