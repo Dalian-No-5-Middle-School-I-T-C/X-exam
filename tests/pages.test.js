@@ -208,10 +208,44 @@ test('leaderboard.loadBoard maps rows with fallbacks and myRank', async () => {
   await flush();
   assert.equal(page.data.loading, false);
   assert.equal(page.data.list.length, 2);
-  assert.deepEqual(page.data.list[0], { studentId: 1, rank: 2, name: '甲', score: 95, isMe: false });
+  assert.deepEqual(page.data.list[0], { studentId: 1, rank: 1, name: '甲', score: 95, isMe: false });
   assert.deepEqual(page.data.list[1], { studentId: 2, rank: 2, name: '乙', score: 90, isMe: true });
-  assert.deepEqual(page.data.mine, { rank: 3, score: 90, name: '我' });
+  // myScore 在榜内 → 用榜内并列名次，而不是后端位置序 myRank=3
+  assert.deepEqual(page.data.mine, { rank: 2, score: 90, name: '我' });
   assert.equal(page.data.enabled, true);
+});
+
+test('leaderboard.loadBoard 同分并列（满分不独占第一）', async () => {
+  getStub = async () => ({
+    rows: [
+      { studentId: 1, student_name: '李昕泽', total_score: 30, rank: 1 },
+      { studentId: 2, student_name: '陈艺昕', total_score: 30, rank: 2 },
+      { studentId: 3, student_name: '王若熙', total_score: 30, rank: 3 },
+      { studentId: 4, student_name: '杨钊霖', total_score: 29, rank: 4 }
+    ],
+    myRank: 4,
+    myScore: 30
+  });
+  const page = leaderboardPage();
+  page.setData({ examId: 5 });
+  page.loadBoard();
+  await flush();
+  assert.deepEqual(page.data.list.map(x => x.rank), [1, 1, 1, 4]);
+  assert.deepEqual(page.data.mine, { rank: 1, score: 30, name: '我' });
+});
+
+test('leaderboard.loadBoard 缺分数的行保留后端名次', async () => {
+  getStub = async () => ({
+    rows: [
+      { studentId: 1, name: '甲', rank: 2 },
+      { studentId: 2, name: '乙', score: 90, rank: 3 }
+    ]
+  });
+  const page = leaderboardPage();
+  page.setData({ examId: 5 });
+  page.loadBoard();
+  await flush();
+  assert.deepEqual(page.data.list.map(x => x.rank), [2, 2]);
 });
 
 test('leaderboard.loadBoard falls back to isMe row', async () => {

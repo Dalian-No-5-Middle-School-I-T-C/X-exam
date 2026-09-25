@@ -17,6 +17,9 @@
 - 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate）与 scores / semester / leaderboard / detail / trends / subjects / change-password 的页面逻辑与 canvas 绘制；`npm test` 统一运行单测与既有自检。
 - 恢复 CI 校验工作流（`.github/workflows/ci.yml`），在语法/JSON 校验后纳入 `npm test`。
 
+### Fixed
+- 天梯名次按分数重算竞赛排名（同分并列 1,1,1,4）：此前直接采用后端位置序名次，导致同为满分的同学只有一人排第一；「我的排名」在分数落于榜单时同样取榜内并列名次。
+
 ## [2026-08-19]
 
 ### Added

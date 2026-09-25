@@ -17,6 +17,20 @@ function pickRank(it, i) {
   return it.rank != null ? it.rank : (it.ranking != null ? it.ranking : (i + 1));
 }
 
+// 同分并列：后端名次是按位置发的（满分也排 1/2/3），这里按分数重算竞赛排名（1,1,1,4）。
+// 缺分数的行保留后端名次，不猜。
+function applyTiedRanks(list) {
+  let prevScore = null;
+  let rank = 0;
+  list.forEach(function (it, i) {
+    const hasScore = it.score !== '' && it.score != null;
+    if (hasScore && it.score !== prevScore) rank = i + 1;
+    if (hasScore) it.rank = rank;
+    prevScore = hasScore ? it.score : null;
+  });
+  return list;
+}
+
 Page({
   data: {
     examId: 0,
@@ -65,7 +79,7 @@ Page({
       .then(function (resp) {
         const data = resp || {};
         const raw = data.rows || data.leaderboard || data.board || data.rankings || data.list || data.topTen || data.top10 || [];
-        const list = raw.map(function (it, i) {
+        const list = applyTiedRanks(raw.map(function (it, i) {
           return {
             // 后端竞赛排名允许并列（1,2,2,4），studentId 才是稳定 key
             studentId: it.studentId || it.student_id || ('r' + i),
@@ -74,12 +88,15 @@ Page({
             score: pickScore(it),
             isMe: !!it.isCurrentUser || !!it.isMe || !!it.isSelf
           };
-        });
+        }));
 
         let mine = null;
         if (data.myRank != null) {
-          // 后端直接给当前用户的全量排名/总分，缺失时不伪造
-          mine = { rank: data.myRank, score: data.myScore != null ? data.myScore : '', name: '我' };
+          // 后端 myRank 同为位置序：我的分数若在榜内，用榜内并列名次，避免「榜上第1、我的排名第5」
+          const hit = list.filter(function (x) {
+            return x.score !== '' && x.score != null && String(x.score) === String(data.myScore);
+          })[0];
+          mine = { rank: hit ? hit.rank : data.myRank, score: data.myScore != null ? data.myScore : '', name: '我' };
         } else {
           const me = list.filter(function (x) { return x.isMe; })[0];
           if (me) mine = { rank: me.rank, score: me.score, name: '我' };
