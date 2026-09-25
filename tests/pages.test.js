@@ -42,6 +42,7 @@ request.get = (...args) => getStub(...args);
 request.post = (...args) => postStub(...args);
 const leaderboardDef = capture('../pages/leaderboard/leaderboard.js');
 const changePasswordDef = capture('../pages/change-password/change-password.js');
+const profileDef = capture('../pages/profile/profile.js');
 
 function makeCanvas() {
   const calls = [];
@@ -733,6 +734,55 @@ test('change-password.onSubmit validates input', async () => {
   page.setData({ oldPassword: '123456', newPassword: '123456', confirm: '123456' });
   await page.onSubmit();
   assert.equal(page.data.error, '新密码不能与当前密码相同');
+});
+
+// ---------- pages/profile 成绩发布提醒开关 ----------
+const { TEMPLATE_ID } = require('../utils/subscribe');
+
+// 走真实 request.js（statusCode → err.status、body.message → err.message），
+// 因此这里打的是 wx.request 而不是 request.post：subscribe.js 在 scores 页
+// 经 growthService 就已加载，捕获的是原始的 request.post 引用。
+async function toggleSub(http, setting) {
+  const titles = [];
+  global.wx = {
+    ...baseWx,
+    showToast: opts => { titles.push(opts.title); },
+    showModal: () => {},
+    reportAnalytics: () => {},
+    requestSubscribeMessage: opts => opts.success({ [TEMPLATE_ID]: setting === undefined ? 'accept' : setting }),
+    login: opts => opts.success({ code: 'c' }),
+    request: opts => {
+      if (http.transportFail) { opts.fail({ errMsg: 'request:fail' }); return; }
+      opts.success({ statusCode: http.status, data: http.body || {} });
+    }
+  };
+  const page = makePage(profileDef);
+  await page.onToggleSub({ detail: { value: true } });
+  await flush();
+  return { page, titles };
+}
+
+test('profile 开关按后端状态码给不同文案，而不是笼统的绑定失败', async () => {
+  // 503 = 环境变量没配；404 = 这一版后端还没上线。两者都不该让用户以为是自己操作错了
+  assert.match((await toggleSub({ status: 503, body: { message: '服务端未配置成绩发布订阅模板' } })).titles[0], /服务尚未就绪/);
+  assert.match((await toggleSub({ status: 404 })).titles[0], /服务尚未就绪/);
+  assert.match((await toggleSub({ status: 403, body: { message: '仅学生账号可订阅成绩发布通知' } })).titles[0], /登录已过期/);
+  assert.match((await toggleSub({ transportFail: true })).titles[0], /网络异常/);
+  assert.equal((await toggleSub({ status: 500, body: { message: '订阅绑定保存失败，请稍后重试' } })).titles[0], '绑定失败，请重试');
+});
+
+test('profile 开关区分用户取消与订阅总开关被关闭', async () => {
+  assert.equal((await toggleSub({}, 'reject')).titles[0], '已取消开启');
+  assert.equal((await toggleSub({}, 'ban')).titles[0], '请先在右上角设置中允许订阅消息');
+  assert.equal((await toggleSub({}, 'filter')).titles[0], '当前暂不支持该提醒，请稍后再试');
+});
+
+test('profile 开关成功后写本机关授权状态', async () => {
+  const r = await toggleSub({ status: 200 });
+  assert.equal(r.titles[0], '已开启成绩提醒');
+  assert.equal(r.page.data.subOn, true);
+  r.page.onToggleSub({ detail: { value: false } });
+  assert.equal(r.page.data.subOn, false);
 });
 
 test('change-password.onSubmit clears login and reLaunches on success', async () => {

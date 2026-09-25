@@ -82,7 +82,7 @@ projectX-mini/
     ├── auth.js                      # 登录态管理（token / user 存取、login / logout / isLoggedIn）
     ├── cache.js                     # 成绩本地缓存（秒开）
     ├── ai.js                        # AI 响应归一化（兼容纯文本 / 结构化对象）
-    ├── subscribe.js                 # 订阅消息授权封装（含 TEMPLATE_ID 占位常量）
+    ├── subscribe.js                 # 订阅消息授权封装（TEMPLATE_ID + 带 status/errno/detail 的失败结果）
     └── animate.js                   # 数字滚动补间工具（缓出，含 cancel 清理）
 ```
 
@@ -210,7 +210,7 @@ TabBar 三项：`成绩`（scores）/ `分析`（trends）/ `我的`（profile�
 
 ## 待办与后端依赖（非代码阻塞项）
 
-1. **订阅消息正式生效**需两步：小程序后台申请「成绩发布通知」模板并填入 `utils/subscribe.js` 的 `TEMPLATE_ID`；后端补充成绩发布时 `subscribeMessage.send` 推送逻辑。
+1. **订阅消息正式生效**：小程序端与后端（Project-X v2.6.0）代码均已完成，剩下的全在部署侧 —— 小程序后台选用「考试成绩通知」模板并核对 `utils/subscribe.js` 的 `TEMPLATE_ID`，服务端配置三项环境变量、把 IP 加进白名单、按体验版→线上版灰度。逐步命令见后端仓库 `readus/WECHAT-GRADE-RELEASE-开发者上线清单.md`。**提审前务必先把该版本部署上线**，否则审核员打开「我的 → 成绩发布提醒」会看到失败提示。
 2. **天梯管理员开关**：后端对 `GET/PUT /api/ladder/config` 执行管理员鉴权；开关关闭时学生端天梯接口返回 403，前端显示「天梯功能暂未开启」。
 3. **原卷图域名**：`downloadFile` 合法域名需含 `dl5zx.cn`。
 4. **指纹/面容解锁（Soter）**：留待后续版本。
@@ -248,6 +248,7 @@ TabBar 三项：`成绩`（scores）/ `分析`（trends）/ `我的`（profile�
 - 雷达图需 ≥3 个学科，学科数不足时自动降级为纯表格并提示。
 - 图表使用原生 canvas，复杂交互（如双指缩放）暂不支持。
 - 海报组件开了用时注入：首帧它是占位 `view`，`selectComponent('#poster')` 取不到实例方法。页面须先 `wx:if` 挂载、收到组件 `ready` 后再 `open(model)`（`pages/detail`、`pages/trends` 均按此实现），新增页面复用海报时照抄这段时序。
+- 订阅开关的失败文案按原因分类（`utils/subscribe.js` 返回 `reason` + `status` / `errno` / `detail`），但**面向学生只显示中文结论，不含 HTTP 状态码与 `errMsg` 原文**；技术细节走 `console.warn('[subscribe] …')`，真机 vConsole 与开发者工具可直接定位是后端未部署（404）、未配环境变量（503）还是用户自己取消。
 
 ## 许可证
 

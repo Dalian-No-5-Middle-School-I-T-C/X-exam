@@ -220,7 +220,7 @@ test('requestSubscribe binds an accepted template to the current user', async ()
     captured = opts;
     opts.success({ statusCode: 200, data: {} });
   };
-  assert.deepEqual(await requestSubscribe(), { ok: true, accepted: true, reason: '' });
+  assert.deepEqual(await requestSubscribe(), { ok: true, accepted: true, reason: '', status: 0, errno: 0, detail: '' });
   assert.equal(captured.url, 'https://dl5zx.cn/api/wechat/subscriptions/grade-release');
   assert.equal(captured.method, 'POST');
   assert.deepEqual(captured.data, { code: 'login-code', templateId: TEMPLATE_ID });
@@ -234,11 +234,56 @@ test('requestSubscribe does not bind when the user declines', async () => {
   let loginCalled = false;
   global.wx.requestSubscribeMessage = opts => opts.success({ [TEMPLATE_ID]: 'reject' });
   global.wx.login = () => { loginCalled = true; };
-  assert.deepEqual(await requestSubscribe(), { ok: true, accepted: false, reason: 'rejected' });
+  assert.deepEqual(await requestSubscribe(), {
+    ok: true, accepted: false, reason: 'rejected', status: 0, errno: 0, detail: 'setting=reject'
+  });
   assert.equal(loginCalled, false);
   assert.equal(getSubStatus(), false);
   delete global.wx.requestSubscribeMessage;
   delete global.wx.login;
+});
+
+test('requestSubscribe reports the HTTP status and backend message on bind failure', async () => {
+  global.wx.requestSubscribeMessage = opts => opts.success({ [TEMPLATE_ID]: 'accept' });
+  global.wx.login = opts => opts.success({ code: 'login-code' });
+  global.wx.request = opts => opts.success({
+    statusCode: 503, data: { message: '服务端未配置成绩发布订阅模板' }
+  });
+  const r = await requestSubscribe();
+  assert.equal(r.reason, 'bindFailed');
+  assert.equal(r.status, 503);
+  assert.equal(r.detail, '服务端未配置成绩发布订阅模板');
+  assert.equal(getSubStatus(), false);
+  delete global.wx.requestSubscribeMessage;
+  delete global.wx.login;
+  delete global.wx.request;
+});
+
+// 传输层失败没有状态码，靠 status === 0 区分「网络不通」与「服务端明确拒绝」
+test('requestSubscribe marks transport failures with status 0', async () => {
+  global.wx.requestSubscribeMessage = opts => opts.success({ [TEMPLATE_ID]: 'accept' });
+  global.wx.login = opts => opts.success({ code: 'login-code' });
+  global.wx.request = opts => opts.fail({ errMsg: 'request:fail' });
+  const r = await requestSubscribe();
+  assert.equal(r.reason, 'bindFailed');
+  assert.equal(r.status, 0);
+  assert.equal(r.detail, 'request:fail');
+  delete global.wx.requestSubscribeMessage;
+  delete global.wx.login;
+  delete global.wx.request;
+});
+
+// 弹窗没出来时微信的 errno/errMsg 是唯一线索（模板 ID 不属于当前 AppID 等）
+test('requestSubscribe keeps the WeChat errno when the popup fails', async () => {
+  global.wx.requestSubscribeMessage = opts => opts.fail({
+    errno: 20004, errMsg: 'requestSubscribeMessage:fail invalid template_id'
+  });
+  const r = await requestSubscribe();
+  assert.equal(r.reason, 'denied');
+  assert.equal(r.errno, 20004);
+  assert.equal(r.detail, 'requestSubscribeMessage:fail invalid template_id');
+  assert.equal(getSubStatus(), false);
+  delete global.wx.requestSubscribeMessage;
 });
 
 // ---------- utils/animate.js ----------

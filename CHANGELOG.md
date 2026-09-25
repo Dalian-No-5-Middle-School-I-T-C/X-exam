@@ -19,17 +19,19 @@
   - `utils/examPaper.js`：响应归一化与渲染模型（纯函数，兼容 snake/camel 字段、空白折叠、题号缺失不伪造、下载失败的条目剔除因而不留破图）。
   - `services/examPaperService.js`：原卷页与作答图块图片走 `wx.downloadFile` + `Authorization: Bearer`（token 不进 URL），并发 3，页面卸载即取消且不再回写 `setData`。
   - 原卷页支持下拉刷新；图片全部下载失败时提示「试卷图片暂不可用，可下拉重试」，逐题答案不受影响照常显示。
-- 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate / examPaper）、`examPaperService` 的下载并发与取消、scores / leaderboard / detail / trends / change-password 的页面逻辑与 canvas 绘制；`npm test` 统一运行单测与既有自检。
+- 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate / examPaper）、`examPaperService` 的下载并发与取消、scores / leaderboard / detail / trends / change-password / profile 的页面逻辑与 canvas 绘制；`subscribe` 一侧断言失败结果的 `status` / `errno` / `detail` 三个字段与开关文案分类（404 与 503 与「用户取消」互不混用）；`npm test` 统一运行单测与既有自检。
 - 恢复 CI 校验工作流（`.github/workflows/ci.yml`），在语法/JSON 校验后纳入 `npm test`。
 - 管理员专属的成绩天梯管理页，依赖后端管理员鉴权的开关读取与更新接口。
 
 ### Changed
+- **订阅开关说清为什么失败**：`utils/subscribe.js` 原先把四类失败压成三个 `reason` 且丢尽细节——HTTP 状态与后端 `message` 被扔掉，微信的 `errno` / `errMsg` 也被扔掉，结果「后端没部署（404）」「服务端没配环境变量（503）」「网络不通」「用户自己点了取消」在界面上长得一模一样，只能靠猜。现结果统一为 `{ ok, accepted, reason, status, errno, detail }`；`pages/profile` 按状态码分文案（403/401 → 登录已过期，404/503 → 服务尚未就绪，`status === 0` → 网络异常，其余 → 绑定失败），并按弹窗返回值区分「已取消开启」与「请先在右上角设置中允许订阅消息」（`setting=ban`）、「当前暂不支持该提醒」（`setting=filter`）。面向学生不出现任何状态码或英文 `errMsg`，技术细节统一 `console.warn('[subscribe] …')`，真机 vConsole 直接可定位。
 - **成绩天梯不再切开同分并列**：天梯仍默认只展示前十，但第 10 条若与后面的人同名次，该并列组一并列出（Project-X 三条天梯接口统一按 `takeLadder` 截断）。前端按后端返回条数整表渲染、不自行截断，多于 10 条时副标题改为「前十 · 同分并列全显（共 N 人）」。后端未升级时仍是硬切 10 条。
 - **领奖台不再挑「三个代表」**：并列第 1 多于 3 人时，领奖台三个位置装不下整组第 1 名，摆哪三个都是任意取舍；此时改为整行「第 1 名 N 人」，全部第 1 名由下方完整榜单逐条列出。第 1 名不超过 3 人（含恰好 3 人）时领奖台照常摆放。
 - **保存天梯卡同守领奖台规则**：`growth/poster.js` 的天梯卡此前固定 `slice(0, 3)`，并列第 1 超过 3 人时导出的图片仍会凭空画出「前三」，把同分的人切成上卡/不上卡两半。现由页面把 `tiedFirst` 传给海报，多于 3 人时整条横幅只写「第 1 名 N 人」，不再画三张卡。
 - **学科对比并入趋势页，页面改名「分析」**：`pages/trends` 一屏给出「成绩走势」（总分 / 班均 / 年段均折线）与「学科对比」（雷达 + 明细表 + 差距柱 + 最需加强学科 + 一键转发）。TabBar、导航栏标题与页内标题同步由「趋势 / 成绩趋势」改为「分析」。两段数据各自请求 `/scores/me/trends` 与 `/scores/me/subject-comparison`、各自持有错误态与空态，任一接口异常只显示本段提示，不清空另一段；`load()` 等两个请求都回来才收 loading，避免先回来的那个提前结束下拉刷新。
 
 ### Fixed
+- **「功能筹备中」分支此前永远走不到**：`pages/profile` 判断 `r.reason === 'noTemplate'`，但 `utils/subscribe.js` 从不返回该值——模板常量为空时照样去调弹窗，最后弹一句「授权未开启」，与页面上「开关仅管理本机授权」的禁用态自相矛盾。现 `requestSubscribe()` 在 `TEMPLATE_ID` 为空时直接返回 `noTemplate`，页面据此关掉 `subReady`。
 - **合并后折线不再被学科重绘掐断**：并入一页时三张图先共用了 `_cancelAll()`，而两段数据各自异步回来各自重绘——`drawSubjects()` 会顺手取消折线仍在跑的动画，折线常停在半路（同一画布上还可能新旧两轮交错闪绘）。现改为每张图只取消自己那一轮（`_cancel`），页面隐藏/卸载时才全停。
 - **画布零尺寸守卫补到共用入口**：这道判断原先只在趋势页取折线画布的路上，雷达与柱状（原 `pages/subjects`）没有，宽高为 0 时仍把 `canvas.width` 置 0 再按 dpr 缩放，画出来是退化图形。现守卫上移到 `_queryCanvas`，三张图一并受益。
 - **重试时不再叠加骨架屏**：`loading` 为真即渲染骨架，已加载好的那段内容仍在下方，页面变成「骨架 + 旧数据」两层（原页面只有一段，不易看出；合并成两段后重试必现）。现只在两段都还没有数据时显示骨架。
