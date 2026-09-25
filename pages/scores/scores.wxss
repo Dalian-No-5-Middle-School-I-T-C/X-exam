@@ -57,21 +57,25 @@
 
 .hero-stats {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   margin-top: 20rpx;
   padding-top: 22rpx;
   border-top: 1rpx solid rgba(255, 255, 255, 0.22);
 }
-.hero-stat { text-align: center; flex: 1; }
+.hero-stat { flex: 1; min-width: 0; text-align: center; }
 .hero-num {
   font-size: 40rpx;
   font-weight: 800;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 .hero-stat .muted {
+  display: block;
   color: rgba(255, 255, 255, 0.82);
   font-size: 22rpx;
-  margin-top: 4rpx;
+  line-height: 1.4;
+  margin-top: 8rpx;
 }
 
 /* 工具栏 */
@@ -116,9 +120,15 @@
 }
 .list { margin-top: 12rpx; }
 
-.hero-actions { margin-top: 18rpx; }
+.hero-actions { display: flex; justify-content: center; margin-top: 18rpx; }
 /* 天梯入口：蓝色描边胶囊 */
 .ghost-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62%;
+  min-width: 360rpx;
+  margin: 0;
   background: #fff;
   color: var(--blue);
   border: 1rpx solid var(--blue);
@@ -126,7 +136,7 @@
   font-size: 28rpx;
   font-weight: 600;
   height: 84rpx;
-  line-height: 84rpx;
+  line-height: 1.2;
 }
 .ghost-btn::after { border: none; }
 .ghost-btn:active { background: var(--blue-soft); transform: scale(0.98); }
@@ -134,23 +144,25 @@
 /* 总览统计卡（复用 .card 直角） */
 .ovw {
   display: flex;
+  align-items: stretch;
   justify-content: space-between;
   margin-top: 20rpx;
 }
-.ovw-item { flex: 1; text-align: center; position: relative; }
+.ovw-item { flex: 1; min-width: 0; text-align: center; position: relative; }
 .ovw-item::after {
   content: ''; position: absolute; right: 0; top: 14rpx; bottom: 14rpx;
   width: 1rpx; background: var(--border);
 }
 .ovw-item:last-child::after { display: none; }
 .ovw-num { font-size: 40rpx; font-weight: 800; color: var(--text-1); line-height: 1.1; font-variant-numeric: tabular-nums; }
-.ovw-num.sm { font-size: 28rpx; font-weight: 700; }
-.ovw-item .muted { margin-top: 6rpx; }
+.ovw-num.sm { font-size: 40rpx; font-weight: 800; }
+.ovw-item .muted { display: block; margin-top: 8rpx; line-height: 1.4; }
 
 /* 分析入口 */
 .entry-row { display: flex; gap: 18rpx; margin-top: 20rpx; }
 .entry {
-  flex: 1; display: flex; align-items: center; gap: 16rpx;
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 16rpx;
+  min-height: 132rpx;
   background: var(--card-bg); border: 1rpx solid var(--border);
   border-radius: 0; padding: 24rpx; box-shadow: none;
 }

@@ -36,7 +36,7 @@ test('normalizeScores maps snake/camel fields and parses numbers', () => {
       exam_id: '5', examName: '月考', subject: '数学',
       totalScore: '78.5', full_score: '100', gradedAt: '2026-08-01',
       rank: 3, class_size: 40, percentile: 91,
-      objectiveScore: '20', subjective_score: '58.5'
+      objectiveScore: '20', subjective_score: '58.5', paper_visible: 1
     }]
   });
   assert.equal(r.name, '张三');
@@ -45,8 +45,13 @@ test('normalizeScores maps snake/camel fields and parses numbers', () => {
     exam_id: 5, exam_name: '月考', subject: '数学',
     total_score: 78.5, full_score: 100, graded_at: '2026-08-01',
     rank: 3, class_size: 40, percentile: 91,
-    objective_score: 20, subjective_score: 58.5
+    objective_score: 20, subjective_score: 58.5, paper_visible: 1
   });
+});
+
+test('normalizeScores defaults paper_visible to 0 when absent', () => {
+  const r = normalizeScores({ scores: [{ exam_id: 1, total_score: 100 }] });
+  assert.equal(r.scores[0].paper_visible, 0);
 });
 
 test('normalizeScores keeps null full_score and empty list', () => {
@@ -196,7 +201,7 @@ test('AI cache ignores storage errors', () => {
 });
 
 // ---------- utils/subscribe.js ----------
-const { getSubStatus, setSubStatus, requestSubscribe } = require('../utils/subscribe');
+const { TEMPLATE_ID, getSubStatus, setSubStatus, requestSubscribe } = require('../utils/subscribe');
 
 test('subscribe status round-trips storage', () => {
   setSubStatus(true);
@@ -207,8 +212,33 @@ test('subscribe status round-trips storage', () => {
   assert.equal(getSubStatus(), true);
 });
 
-test('requestSubscribe resolves noTemplate while TEMPLATE_ID is empty', async () => {
-  assert.deepEqual(await requestSubscribe(), { ok: false, accepted: false, reason: 'noTemplate' });
+test('requestSubscribe binds an accepted template to the current user', async () => {
+  let captured;
+  global.wx.requestSubscribeMessage = opts => opts.success({ [TEMPLATE_ID]: 'accept' });
+  global.wx.login = opts => opts.success({ code: 'login-code' });
+  global.wx.request = opts => {
+    captured = opts;
+    opts.success({ statusCode: 200, data: {} });
+  };
+  assert.deepEqual(await requestSubscribe(), { ok: true, accepted: true, reason: '' });
+  assert.equal(captured.url, 'https://dl5zx.cn/api/wechat/subscriptions/grade-release');
+  assert.equal(captured.method, 'POST');
+  assert.deepEqual(captured.data, { code: 'login-code', templateId: TEMPLATE_ID });
+  assert.equal(getSubStatus(), true);
+  delete global.wx.requestSubscribeMessage;
+  delete global.wx.login;
+  delete global.wx.request;
+});
+
+test('requestSubscribe does not bind when the user declines', async () => {
+  let loginCalled = false;
+  global.wx.requestSubscribeMessage = opts => opts.success({ [TEMPLATE_ID]: 'reject' });
+  global.wx.login = () => { loginCalled = true; };
+  assert.deepEqual(await requestSubscribe(), { ok: true, accepted: false, reason: 'rejected' });
+  assert.equal(loginCalled, false);
+  assert.equal(getSubStatus(), false);
+  delete global.wx.requestSubscribeMessage;
+  delete global.wx.login;
 });
 
 // ---------- utils/animate.js ----------

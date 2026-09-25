@@ -74,3 +74,11 @@
   border-top: 1rpx solid var(--border);
 }
 .sc-dot { opacity: 0.5; }
+/* 「查看原卷」入口：右侧文字链，蓝色区分于灰色分数明细 */
+.sc-paper {
+  margin-left: auto;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--brand);
+}
+.sc-paper:active { opacity: 0.6; }

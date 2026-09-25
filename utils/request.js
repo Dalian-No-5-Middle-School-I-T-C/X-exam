@@ -131,5 +131,8 @@ function get(path, opts) {
 function post(path, data, opts) {
   return request('POST', path, data, opts);
 }
+function put(path, data, opts) {
+  return request('PUT', path, data, opts);
+}
 
-module.exports = { requestRaw: requestRaw, get: get, post: post, clearLocalUserData: clearLocalUserData };
+module.exports = { requestRaw: requestRaw, get: get, post: post, put: put, clearLocalUserData: clearLocalUserData };

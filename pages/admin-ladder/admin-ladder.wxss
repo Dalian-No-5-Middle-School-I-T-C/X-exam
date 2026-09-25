@@ -1,0 +1,12 @@
+.title { margin-top: 8rpx; }
+.sub { margin-top: 12rpx; }
+.setting-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  margin-top: 32rpx;
+}
+.setting-copy { flex: 1; }
+.setting-title { font-size: 32rpx; font-weight: 700; color: var(--text-1); }
+.setting-copy .muted { display: block; margin-top: 8rpx; line-height: 1.55; }

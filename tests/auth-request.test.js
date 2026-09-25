@@ -178,6 +178,18 @@ test('post sends method and data', async () => {
   assert.deepEqual(captured.data, { x: 1 });
 });
 
+test('put sends method, data, and Bearer token', async () => {
+  auth.setToken('admin-token', false);
+  let captured;
+  global.wx.request = opts => { captured = opts; opts.success({ statusCode: 200, data: { enabled: true } }); };
+  const data = await request.put('/ladder/config', { enabled: true });
+  assert.equal(captured.method, 'PUT');
+  assert.deepEqual(captured.data, { enabled: true });
+  assert.equal(captured.header.Authorization, 'Bearer admin-token');
+  assert.deepEqual(data, { enabled: true });
+  auth.clearToken();
+});
+
 test('401 clears login and reLaunches once', async () => {
   auth.setToken('t', true);
   auth.setUser({ id: 1 }, true);

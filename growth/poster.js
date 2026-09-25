@@ -75,7 +75,7 @@ function drawScoreCard(ctx, W, H, m) {
 
   // 统计行
   const stats = [
-    { k: '班排', v: (m.rank != null ? m.rank : '—') + (m.classSize != null ? '/' + m.classSize : '') },
+    { k: '年排', v: (m.rank != null ? m.rank : '—') + (m.classSize != null ? '/' + m.classSize : '') },
     { k: '超越', v: (m.percentile != null ? m.percentile + '%' : '—') },
     { k: '客观', v: (m.objective != null ? m.objective : '—') },
     { k: '主观', v: (m.subjective != null ? m.subjective : '—') }
@@ -121,21 +121,30 @@ function drawLeaderboardCard(ctx, W, H, m) {
   ctx.font = '20px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.fillText(clipText(ctx, m.examName || '考试', W - 80), 40, 80);
 
-  const top = (m.top || []).slice(0, 3);
-  const cardW = (W - 80 - 40) / 3;
-  top.forEach(function (it, i) {
-    const x = 40 + cardW * i + (i > 0 ? 20 : 0);
-    const y = 170;
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
-    roundRect(ctx, x, y, cardW, 150, 0); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = i === 0 ? BLUE : INK; ctx.textAlign = 'center';
-    ctx.font = 'bold 40px sans-serif';
-    ctx.fillText('#' + (it.rank != null ? it.rank : (i + 1)), x + cardW / 2, y + 50);
-    ctx.fillStyle = INK; ctx.font = '24px sans-serif';
-    ctx.fillText(clipText(ctx, it.name || '同学', cardW - 20), x + cardW / 2, y + 92);
-    ctx.fillStyle = MUTED; ctx.font = '20px sans-serif';
-    ctx.fillText(String(it.score != null ? it.score : '—'), x + cardW / 2, y + 124);
-  });
+  // 并列第 1 多于 3 人时不挑「三个代表」：三张卡放不进，硬选三个只会凭空漏掉同分的人
+  if (Number(m.tieCount) > 3) {
+    ctx.fillStyle = BLUE; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    roundRect(ctx, 40, 170, W - 80, 150, 0); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText('第 1 名 ' + m.tieCount + ' 人', W / 2, 245);
+  } else {
+    const top = (m.top || []).slice(0, 3);
+    const cardW = (W - 80 - 40) / 3;
+    top.forEach(function (it, i) {
+      const x = 40 + cardW * i + (i > 0 ? 20 : 0);
+      const y = 170;
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+      roundRect(ctx, x, y, cardW, 150, 0); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = i === 0 ? BLUE : INK; ctx.textAlign = 'center';
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('#' + (it.rank != null ? it.rank : (i + 1)), x + cardW / 2, y + 50);
+      ctx.fillStyle = INK; ctx.font = '24px sans-serif';
+      ctx.fillText(clipText(ctx, it.name || '同学', cardW - 20), x + cardW / 2, y + 92);
+      ctx.fillStyle = MUTED; ctx.font = '20px sans-serif';
+      ctx.fillText(String(it.score != null ? it.score : '—'), x + cardW / 2, y + 124);
+    });
+  }
 
   // 我的位置
   if (m.mine) {

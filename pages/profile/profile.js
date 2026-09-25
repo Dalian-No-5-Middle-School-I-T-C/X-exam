@@ -7,6 +7,14 @@ const { clearCachedScores } = require('../../utils/cache');
 const growthService = require('../../services/growthService');
 const share = require('../../growth/share');
 
+function isAdmin(user) {
+  if (!user) return false;
+  if (user.isAdmin === true || user.is_admin === true) return true;
+  const role = String(user.role || user.roleCode || user.role_code || '').toLowerCase();
+  const displayName = String(user.role_display_name || '');
+  return role === 'admin' || role === 'administrator' || displayName.indexOf('管理员') >= 0;
+}
+
 Page({
   data: {
     user: null,
@@ -16,6 +24,7 @@ Page({
     aiError: '',
     subOn: false,
     subReady: false,
+    isAdmin: false,
     ready: false
   },
 
@@ -27,7 +36,8 @@ Page({
       user: u,
       nameInitial: (u && u.name) ? String(u.name).charAt(0) : '?',
       subOn: getSubStatus(),
-      subReady: !!TEMPLATE_ID
+      subReady: !!TEMPLATE_ID,
+      isAdmin: isAdmin(u)
     });
     this.syncSubAuth();
   },
@@ -87,9 +97,13 @@ Page({
         wx.showModal({ title: '功能筹备中', content: '成绩发布提醒模板尚未配置，暂不可开启。', showCancel: false });
       } else {
         self.setData({ subOn: false });
-        wx.showToast({ title: '授权未开启', icon: 'none' });
+        wx.showToast({ title: r.reason === 'bindFailed' ? '绑定失败，请重试' : '授权未开启', icon: 'none' });
       }
     });
+  },
+
+  onAdminLadder: function () {
+    wx.navigateTo({ url: '/pages/admin-ladder/admin-ladder' });
   },
 
   onLogout: function () {

@@ -48,6 +48,19 @@
 .pod-score { font-size: 32rpx; font-weight: 800; color: var(--text-1); margin-top: 4rpx; }
 .pod-1 .pod-score { color: #fff; }
 
+/* 并列第 1 多于 3 人：沿用第一名的蓝实底 + 黑硬阴影，只报规模，名单交给下方榜单 */
+.tie-head {
+  margin: 30rpx 0 10rpx;
+  padding: 30rpx 24rpx;
+  background: var(--blue);
+  border: 1rpx solid var(--ink);
+  box-shadow: var(--shadow-hard);
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #fff;
+}
+
 .lb-list { padding: 8rpx 0; }
 .lb-row {
   display: flex;

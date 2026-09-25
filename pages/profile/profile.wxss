@@ -55,6 +55,10 @@
 .sub-t { font-size: 30rpx; font-weight: 600; color: var(--text-1); }
 .sub-d { font-size: 24rpx; margin-top: 6rpx; }
 
+.admin-entry { display: flex; align-items: center; justify-content: space-between; }
+.admin-title { font-size: 30rpx; font-weight: 700; color: var(--text-1); }
+.admin-entry .muted { display: block; margin-top: 6rpx; }
+.admin-arrow { color: var(--text-3); font-size: 40rpx; line-height: 1; }
 .about { font-size: 24rpx; color: var(--text-3); }
 .logout-btn {
   margin-top: 36rpx;

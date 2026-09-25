@@ -2,9 +2,9 @@
 // 微信订阅消息：前端只负责收集用户授权，真实推送由后端在成绩发布时
 // 调用 subscribeMessage.send 完成。前端无法独立完成推送。
 //
-// TODO（需你操作）：在微信公众平台「订阅消息」中申请"成绩发布通知"类模板，
-// 将模板 ID 填入下方 TEMPLATE_ID 常量，订阅开关即可正式生效。
-const TEMPLATE_ID = '';
+const { post } = require('./request');
+
+const TEMPLATE_ID = 'A2bLYK2r2_t56N0emFQ-ptdlEQqPnj7ZtI5TLn7zeJE';
 
 function getSubStatus() {
   try { return wx.getStorageSync('subAccepted') === true; } catch (e) { return false; }
@@ -14,21 +14,42 @@ function setSubStatus(v) {
   try { wx.setStorageSync('subAccepted', !!v); } catch (e) { /* ignore */ }
 }
 
-// 发起授权请求；返回 Promise<{ ok, accepted, reason }>
+// 发起授权并将当前微信用户绑定到当前学生账号。
 function requestSubscribe() {
   return new Promise(function (resolve) {
-    if (!TEMPLATE_ID) {
-      resolve({ ok: false, accepted: false, reason: 'noTemplate' });
-      return;
-    }
     wx.requestSubscribeMessage({
       tmplIds: [TEMPLATE_ID],
       success: function (res) {
-        var accepted = res[TEMPLATE_ID] === 'accept';
-        setSubStatus(accepted);
-        resolve({ ok: true, accepted: accepted, reason: accepted ? '' : 'rejected' });
+        if (res[TEMPLATE_ID] !== 'accept') {
+          setSubStatus(false);
+          resolve({ ok: true, accepted: false, reason: 'rejected' });
+          return;
+        }
+        wx.login({
+          success: function (loginResult) {
+            if (!loginResult.code) {
+              setSubStatus(false);
+              resolve({ ok: false, accepted: false, reason: 'loginFailed' });
+              return;
+            }
+            post('/wechat/subscriptions/grade-release', { code: loginResult.code, templateId: TEMPLATE_ID })
+              .then(function () {
+                setSubStatus(true);
+                resolve({ ok: true, accepted: true, reason: '' });
+              })
+              .catch(function () {
+                setSubStatus(false);
+                resolve({ ok: false, accepted: false, reason: 'bindFailed' });
+              });
+          },
+          fail: function () {
+            setSubStatus(false);
+            resolve({ ok: false, accepted: false, reason: 'loginFailed' });
+          }
+        });
       },
       fail: function () {
+        setSubStatus(false);
         resolve({ ok: false, accepted: false, reason: 'denied' });
       }
     });

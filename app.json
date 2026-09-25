@@ -5,8 +5,10 @@
     "pages/change-password/change-password",
     "pages/scores/scores",
     "pages/detail/detail",
+    "pages/exam-paper/exam-paper",
     "pages/trends/trends",
     "pages/profile/profile",
+    "pages/admin-ladder/admin-ladder",
     "pages/leaderboard/leaderboard",
     "pages/subjects/subjects",
     "pages/semester/semester"

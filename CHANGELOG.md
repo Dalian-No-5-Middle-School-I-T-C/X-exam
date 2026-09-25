@@ -14,8 +14,24 @@
 ## [Unreleased]
 
 ### Added
-- 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate）与 scores / semester / leaderboard / detail / trends / subjects / change-password 的页面逻辑与 canvas 绘制；`npm test` 统一运行单测与既有自检。
+- **原卷与逐题正确答案**（依赖后端 Project-X v2.6.0）：新增 `pages/exam-paper/exam-paper` 页面，成绩公布且教师开启「显示原卷」后可进入 —— 先看逐题答案与每张原卷页图片（图片下方按题号渲染老师保存的答案文字，不判对错），末尾展示本人作答图块。入口两处：成绩卡片「查看原卷 ›」与详情页「查看答案解析」，两者均由后端 `paper_visible` / `paperVisible` 控制，前端不自行推断公布状态；老师从未上传原卷图片时显示「原卷未上传」。
+  - `utils/examPaper.js`：响应归一化与渲染模型（纯函数，兼容 snake/camel 字段、空白折叠、题号缺失不伪造、下载失败的条目剔除因而不留破图）。
+  - `services/examPaperService.js`：原卷页与作答图块图片走 `wx.downloadFile` + `Authorization: Bearer`（token 不进 URL），并发 3，页面卸载即取消且不再回写 `setData`。
+  - 原卷页支持下拉刷新；图片全部下载失败时提示「试卷图片暂不可用，可下拉重试」，逐题答案不受影响照常显示。
+- 新增零依赖测试套件（`node:test`）：覆盖 `utils`（response / ai / auth / request / subscribe / animate / examPaper）、`examPaperService` 的下载并发与取消、scores / semester / leaderboard / detail / trends / subjects / change-password 的页面逻辑与 canvas 绘制；`npm test` 统一运行单测与既有自检。
 - 恢复 CI 校验工作流（`.github/workflows/ci.yml`），在语法/JSON 校验后纳入 `npm test`。
+- 管理员专属的成绩天梯管理页，依赖后端管理员鉴权的开关读取与更新接口。
+
+### Changed
+- **成绩天梯不再切开同分并列**：天梯仍默认只展示前十，但第 10 条若与后面的人同名次，该并列组一并列出（Project-X 三条天梯接口统一按 `takeLadder` 截断）。前端按后端返回条数整表渲染、不自行截断，多于 10 条时副标题改为「前十 · 同分并列全显（共 N 人）」。后端未升级时仍是硬切 10 条。
+- **领奖台不再挑「三个代表」**：并列第 1 多于 3 人时，领奖台三个位置装不下整组第 1 名，摆哪三个都是任意取舍；此时改为整行「第 1 名 N 人」，全部第 1 名由下方完整榜单逐条列出。第 1 名不超过 3 人（含恰好 3 人）时领奖台照常摆放。
+- **保存天梯卡同守领奖台规则**：`growth/poster.js` 的天梯卡此前固定 `slice(0, 3)`，并列第 1 超过 3 人时导出的图片仍会凭空画出「前三」，把同分的人切成上卡/不上卡两半。现由页面把 `tiedFirst` 传给海报，多于 3 人时整条横幅只写「第 1 名 N 人」，不再画三张卡。
+
+### Fixed
+- 天梯榜单中「我」那一行的高亮此前从未生效：后端天梯条目不带任何本人标记，前端 `isMe` 恒为 `false`，`.lb-row.me` 样式无对象可套。现由后端按 token 身份下发 `isCurrentUser`，前端原有映射本就兼容该字段，底色直接生效。
+- 单场天梯的「我的排名」卡此前从不出现：后端把天梯名次读成 `score-table` 并不产出的 `rank` 字段，`rows[].rank` 与 `myRank` / `myScore` 一起被序列化丢弃，而天梯条目又不带本人标记；随 Project-X 改用年排 `gradeRank` 修复，前端逻辑不变。
+- 成绩页、成绩卡与详情页统一显示年级排名；天梯同分学生显示相同名次。
+- 统一成绩页按钮、统计卡与分析入口的对齐和字号。
 
 ## [2026-08-19]
 

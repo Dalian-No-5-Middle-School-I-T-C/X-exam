@@ -40,7 +40,9 @@ function normalizeScores(resp) {
       class_size: pick(s, ['class_size', 'classSize'], null),
       percentile: pick(s, ['percentile'], null),
       objective_score: toNum(pick(s, ['objective_score', 'objectiveScore'], 0)),
-      subjective_score: toNum(pick(s, ['subjective_score', 'subjectiveScore'], 0))
+      subjective_score: toNum(pick(s, ['subjective_score', 'subjectiveScore'], 0)),
+      // v53: 原卷/答案解析入口开关（后端已合并 已公布 + 显示原卷 两道门）
+      paper_visible: toNum(pick(s, ['paper_visible', 'paperVisible'], 0), 0)
     };
   });
   return {
@@ -125,6 +127,7 @@ if (typeof require !== 'undefined' && require.main === module) {
   assert.strictEqual(s.scores[0].total_score, 78.5);
   assert.strictEqual(s.scores[0].objective_score, 20);
   assert.strictEqual(s.scores[0].full_score, 100);
+  assert.strictEqual(s.scores[0].paper_visible, 0);
 
   const t = normalizeTrends([{ total_score: '90', class_avg: 80, grade_avg: '70' }]);
   assert.strictEqual(t[0].total, 90);

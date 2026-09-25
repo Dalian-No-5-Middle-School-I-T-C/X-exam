@@ -111,6 +111,13 @@
   margin: 14rpx 0 0;
 }
 
+/* 查看答案解析入口 */
+.paper-btn {
+  width: 100%;
+  height: 84rpx;
+  margin: 14rpx 0 0;
+}
+
 /* 附加信息降级提示 */
 .extras-hint {
   margin: 8rpx 4rpx 0;
