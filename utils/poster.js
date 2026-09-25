@@ -169,7 +169,7 @@ function buildSections(model, W) {
         if (s.subject) txt(ctx, s.subject, x + 16, top + 68, { size: 12, weight: '600', color: C.blueDeep });
         ctx.textAlign = 'right';
         let rank = '';
-        if (s.rank != null) rank = '班排 ' + s.rank + (s.class_size != null ? '/' + s.class_size : '');
+        if (s.rank != null) rank = '年排 ' + s.rank + (s.class_size != null ? '/' + s.class_size : '');
         if (s.percentile != null) rank += (rank ? '\n' : '') + '超过 ' + s.percentile + '%';
         if (rank) {
           rank.split('\n').forEach(function (ln, i) { txt(ctx, ln, x + w - 16, top + 30 + i * 22, { size: 13, weight: '600', color: C.ink, align: 'right' }); });

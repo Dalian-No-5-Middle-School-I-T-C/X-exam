@@ -28,7 +28,7 @@
     <view class="hero-stats">
       <view class="hero-stat">
         <view class="hero-num">{{latest.rank != null ? latest.rank : '—'}}</view>
-        <view class="muted">班排 / {{latest.class_size}}</view>
+        <view class="muted">年排 / {{latest.class_size}}</view>
       </view>
       <view class="hero-stat">
         <view class="hero-num">{{latest.percentile != null ? latest.percentile + '%' : '—'}}</view>
@@ -110,7 +110,7 @@
   <view class="list">
     <block wx:if="{{viewList.length > 0}}">
       <view wx:for="{{viewList}}" wx:key="exam_id" class="anim {{ready ? 'show' : ''}}" style="animation-delay: {{index < 12 ? index * 45 : 0}}ms">
-        <score-card score="{{item}}" bind:cardtap="goDetail" />
+        <score-card score="{{item}}" bind:cardtap="goDetail" bind:papertap="goPaper" />
       </view>
     </block>
     <view wx:elif="{{!loading}}" class="empty {{ready ? 'show' : ''}}">没有匹配的成绩</view>

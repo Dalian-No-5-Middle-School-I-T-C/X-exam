@@ -1,0 +1,57 @@
+<!-- pages/exam-paper/exam-paper.wxml -->
+<view class="container">
+  <view class="eyebrow">PAPER · 原卷与答案解析</view>
+  <view class="title">{{examName || ('考试 #' + examId)}}</view>
+  <view wx:if="{{subject}}" class="sub"><text class="tag">{{subject}}</text></view>
+
+  <view wx:if="{{loading}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-block"></view><view class="sk sk-line w-80"></view></view>
+    <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-block"></view></view>
+  </view>
+  <view wx:elif="{{error}}" class="empty">{{error}}</view>
+
+  <block wx:else>
+    <!-- 逐题答案汇总（无论原卷是否上传都可先看） -->
+    <view class="section-title">逐题答案</view>
+    <view wx:if="{{rows.length > 0}}" class="card answers anim {{ready ? 'show' : ''}}">
+      <view class="ans-row" wx:for="{{rows}}" wx:key="key">
+        <text class="ans-label num">{{item.label}}</text>
+        <text class="ans-text">{{item.text}}</text>
+      </view>
+    </view>
+    <view wx:else class="muted sub">老师尚未录入逐题答案。</view>
+
+    <!-- 原卷图片：每张图下方按题号渲染本页答案 -->
+    <view class="section-title">原卷</view>
+    <view wx:if="{{imagesUnavailable}}" class="empty">试卷图片暂不可用，可下拉重试</view>
+    <view wx:elif="{{!hasOriginalPaper}}" class="empty">原卷未上传</view>
+    <block wx:else>
+      <view class="page anim {{ready ? 'show' : ''}}" wx:for="{{pages}}" wx:key="pageIndex" style="animation-delay: {{index < 8 ? index * 50 : 0}}ms">
+        <view class="page-head">
+          <text class="page-no num">P{{item.pageIndex}}</text>
+          <text class="muted">{{item.filename}}</text>
+        </view>
+        <image wx:if="{{item.isImage}}" class="page-img" src="{{item.url}}" mode="widthFix"
+               data-index="{{index}}" bindtap="onPreview" show-menu-by-longpress="true" />
+        <view wx:else class="page-file">
+          <text class="muted">该页为 {{item.mimeType || '非图片'}} 文件，小程序内暂不能预览。</text>
+        </view>
+        <view wx:if="{{item.rows.length > 0}}" class="page-answers">
+          <view class="pa-row" wx:for="{{item.rows}}" wx:for-item="ans" wx:key="key">
+            <text class="pa-label num">{{ans.label}}</text>
+            <text class="pa-text">{{ans.text}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 本人作答图块：先看卷，再看作答 -->
+    <view wx:if="{{blocks.length > 0}}" class="section-title">我的作答</view>
+    <scroll-view wx:if="{{blocks.length > 0}}" scroll-x class="imgs">
+      <view class="img-wrap" wx:for="{{blocks}}" wx:key="id">
+        <image class="crop" src="{{item.url}}" mode="widthFix" show-menu-by-longpress="true" />
+        <text class="img-title">{{item.title}}</text>
+      </view>
+    </scroll-view>
+  </block>
+</view>

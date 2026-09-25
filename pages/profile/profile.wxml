@@ -55,6 +55,15 @@
     </view>
   </view>
 
+  <view wx:if="{{isAdmin}}" class="section-title">管理</view>
+  <view wx:if="{{isAdmin}}" class="card admin-entry" bindtap="onAdminLadder">
+    <view>
+      <view class="admin-title">成绩天梯管理</view>
+      <view class="muted">开启或关闭学生端成绩天梯</view>
+    </view>
+    <text class="admin-arrow">›</text>
+  </view>
+
   <view class="section-title">关于</view>
   <view class="card about anim {{ready ? 'show' : ''}}" style="animation-delay: 100ms">
     <view class="muted">Project-X 学生成绩小程序</view>

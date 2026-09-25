@@ -16,6 +16,31 @@ function pickName(it, i) {
 function pickRank(it, i) {
   return it.rank != null ? it.rank : (it.ranking != null ? it.ranking : (i + 1));
 }
+function normalizeTieRanks(list) {
+  const ranksByScore = {};
+  list.forEach(function (item, i) {
+    if (item.score === '' || item.score == null) return;
+    const key = String(item.score);
+    const rank = Number(item.rank);
+    const normalizedRank = Number.isFinite(rank) ? rank : (i + 1);
+    if (ranksByScore[key] == null || normalizedRank < ranksByScore[key]) ranksByScore[key] = normalizedRank;
+  });
+  return list.map(function (item) {
+    if (item.score === '' || item.score == null) return item;
+    return Object.assign({}, item, { rank: ranksByScore[String(item.score)] });
+  });
+}
+// 后端截断线不切开同分并列，榜单可能超过 10 条；标题要说明多出来的人从哪来
+function describeBoard(list) {
+  if (list.length > 10) return '前十 · 同分并列全显（共 ' + list.length + ' 人）';
+  return '前十';
+}
+// 领奖台只有三个位置；并列第 1 多于 3 人时不挑「三个代表」，改为一行说明，名单全在下方榜单里
+function countTiedFirst(list) {
+  let n = 0;
+  while (n < list.length && Number(list[n].rank) === 1) n++;
+  return n;
+}
 
 Page({
   data: {
@@ -27,7 +52,9 @@ Page({
     loading: true,
     error: '',
     ready: false,
-    mineRank: 0
+    mineRank: 0,
+    boardDesc: '前十',
+    tiedFirst: 0
   },
 
   onLoad: function (options) {
@@ -65,29 +92,30 @@ Page({
       .then(function (resp) {
         const data = resp || {};
         const raw = data.rows || data.leaderboard || data.board || data.rankings || data.list || data.topTen || data.top10 || [];
-        const list = raw.map(function (it, i) {
+        const list = normalizeTieRanks(raw.map(function (it, i) {
           return {
-            // 后端竞赛排名允许并列（1,2,2,4），studentId 才是稳定 key
             studentId: it.studentId || it.student_id || ('r' + i),
             rank: pickRank(it, i),
             name: pickName(it, i),
             score: pickScore(it),
             isMe: !!it.isCurrentUser || !!it.isMe || !!it.isSelf
           };
-        });
+        }));
 
+        const me = list.filter(function (x) { return x.isMe; })[0];
         let mine = null;
         if (data.myRank != null) {
-          // 后端直接给当前用户的全量排名/总分，缺失时不伪造
           mine = { rank: data.myRank, score: data.myScore != null ? data.myScore : '', name: '我' };
-        } else {
-          const me = list.filter(function (x) { return x.isMe; })[0];
-          if (me) mine = { rank: me.rank, score: me.score, name: '我' };
+        } else if (me) {
+          mine = { rank: me.rank, score: me.score, name: '我' };
         }
 
         // 200 说明后端放行（后端开关默认开，管理员可预览）
         const enabled = true;
-        self.setData({ list: list, mine: mine, enabled: enabled, loading: false, error: '' });
+        self.setData({
+          list: list, mine: mine, enabled: enabled, loading: false, error: '',
+          boardDesc: describeBoard(list), tiedFirst: countTiedFirst(list)
+        });
         self.animateMine(mine);
       })
       .catch(function (err) {
@@ -138,6 +166,8 @@ Page({
     const model = {
       examName: this.data.examName,
       top: this.data.list.slice(0, 3).map(function (it) { return { rank: it.rank, name: it.name, score: it.score }; }),
+      // 并列第 1 的人数：海报据此决定画三张卡还是只报规模
+      tieCount: this.data.tiedFirst,
       mine: this.data.mine ? { rank: this.data.mine.rank, score: this.data.mine.score } : null
     };
     wx.showLoading({ title: '生成中' });

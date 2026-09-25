@@ -195,6 +195,13 @@ Page({
     wx.navigateTo({ url: '/pages/detail/detail?examId=' + id + '&name=' + name });
   },
 
+  goPaper: function (e) {
+    const id = e.detail.id;
+    const item = this.data.viewList.filter(function (s) { return s.exam_id === id; })[0];
+    const name = item && item.exam_name ? encodeURIComponent(item.exam_name) : '';
+    wx.navigateTo({ url: '/pages/exam-paper/exam-paper?examId=' + id + '&name=' + name });
+  },
+
   goSubjects: function () {
     wx.navigateTo({ url: '/pages/subjects/subjects' });
   },

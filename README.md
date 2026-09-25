@@ -11,11 +11,11 @@
 - **极速体验**：静默登录 + 本地缓存，首屏即成绩，秒开无等待
 - **查分主线**：成绩总览、逐题小分、原卷图、班级均分对比
 - **学生端分析**（复刻主站）：趋势折线 / 学科雷达 / 学期对比
-- **成绩天梯**：Top3 领奖台 + 前十榜单 + 我的排名（合规：仅公布部分排名/前十名）
+- **成绩天梯**：Top3 领奖台（并列第 1 多于 3 人时不挑代表，改为一行「第 1 名 N 人」）+ 前十榜单 + 本人高亮 + 我的排名（合规：仅公布部分排名/前十名，同分并列跨截断线时该组一并公布）
 - **订阅消息提醒**：授权收集 + 持久化开关（推送需后端补逻辑）
 - **AI 深度分析**：兼容纯文本与结构化两种后端响应
 - **一键转发**：成绩报告 / 学科对比页一键生成海报图片，可分享微信好友·朋友圈或保存到相册，含小程序来源水印
-- **获客扩展（分层架构）**：公开落地页（landing）+ 分享菜单全页覆盖 + 成绩/天梯卡离屏绘制存相册 + 邀请归因（inviter/schoolCode 编解码、登录后深链）+ 订阅引导 + 数据埋点；业务层 `services/` 与增长横切层 `growth/` 解耦
+- **获客扩展（分层架构）**：公开落地页（landing）+ 分享菜单全页覆盖 + 成绩/天梯卡离屏绘制存相册（天梯卡与页面同规则：并列第 1 超 3 人时只写「第 1 名 N 人」，不硬凑前三）+ 邀请归因（inviter/schoolCode 编解码、登录后深链）+ 订阅引导 + 数据埋点；业务层 `services/` 与增长横切层 `growth/` 解耦
 - **editorial-brutalist 纸感蓝主题** + 克制动效（进场 / 数字滚动 / canvas 生长 / 骨架屏）
 
 ## 最近更新（2026-08-19）
@@ -72,7 +72,7 @@ projectX-mini/
 │   ├── trends/                      # 趋势页：原生 canvas 折线（总分 / 班均 / 年段均）
 │   ├── subjects/                    # 学科对比：雷达（我的均分 vs 班级均分）+ 明细表 + 差距柱 + 薄弱学科
 │   ├── semester/                    # 学期对比：本学期 vs 上学期 + 进步/退步标签 + 学科明细 delta
-│   ├── leaderboard/                 # 成绩天梯：Top3 领奖台 + 前十榜单 + 我的排名（合规：仅公布前十名）
+│   ├── leaderboard/                 # 成绩天梯：领奖台（第 1 名超 3 人时只报规模）+ 前十榜单 + 我的排名
 │   └── profile/                     # 我的：个人信息 + 整体 AI 报告 + 订阅开关 + 退出
 │
 └── utils/
@@ -162,7 +162,11 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 | GET | `/api/scores/me/semester-comparison` | 学期对比（本学期 vs 上学期、进步/退步学科） | `pages/semester` |
 | POST | `/api/scores/me/ai-analysis` | 整体 AI 分析，请求体 `{}` | `pages/profile` |
 | POST | `/api/scores/me/exams/:examId/ai-analysis` | 单场 AI 分析，请求体 `{}` | `pages/detail` |
-| GET | `/api/ladder/exams/:examId` | 年级天梯前十 + 我的排名（关闭时返回 403） | `pages/leaderboard`（scores 最新考试 / detail） |
+| GET | `/api/ladder/exams/:examId` | 年级天梯前十 + 我的排名（同分并列跨截断线时该组一并返回，可能多于 10 条；关闭时返回 403） | `pages/leaderboard`（scores 最新考试 / detail） |
+| GET | `/api/ladder/config` | 仅管理员：`{enabled}`，读取天梯开关 | `pages/admin-ladder` |
+| PUT | `/api/ladder/config` | 仅管理员：请求 `{enabled}`，更新天梯开关 | `pages/admin-ladder` |
+
+> 登录响应的 `user` 须包含 `isAdmin: true`（或 `role: "admin"` / `role_display_name` 含“管理员”）以显示管理入口；实际权限必须由后端接口鉴权。
 
 ### AI 响应兼容（`utils/ai.js` 的 `normalizeReport`）
 
@@ -179,7 +183,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 ### 学科 / 学期 / 天梯响应兼容
 
 - **学科对比**：响应兼容「对象 `{subjects:[...]}`」与「纯数组」两种形态；每条取 `avgScore / avgClassAvg / gapToClass / examCount / trend`，雷达图需 ≥3 学科。
-- **天梯**：列表容器 `leaderboard/board/rankings/list/topTen`；单条 `studentName/name`、`totalScore/score`、`rank/ranking`；本人 `currentUser/me/self`；关闭时接口返回 403。
+- **天梯**：列表容器 `leaderboard/board/rankings/list/topTen`；单条 `studentName/name`、`totalScore/score`、`rank/ranking`；同分学生使用相同竞赛排名，且后端截断线不切开同分并列——榜单可能多于 10 条，前端按返回条数全量渲染、副标题改为「前十 · 同分并列全显（共 N 人）」；本人由单条 `isCurrentUser` 标记（后端按 token 身份下发，客户端不自判），`myRank`/`myScore` 为全量年排；领奖台只在并列第 1 ≤3 人时摆位，多于 3 人时按 `tiedFirst` 改显示「第 1 名 N 人」，全部第 1 名仍由下方榜单逐条列出，「保存天梯卡」把同一个 `tiedFirst` 传给 `growth/poster.js`、走一样的分支；关闭时接口返回 403。
 
 ## 设计语言（editorial-brutalist）
 
@@ -206,7 +210,7 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 ## 待办与后端依赖（非代码阻塞项）
 
 1. **订阅消息正式生效**需两步：小程序后台申请「成绩发布通知」模板并填入 `utils/subscribe.js` 的 `TEMPLATE_ID`；后端补充成绩发布时 `subscribeMessage.send` 推送逻辑。
-2. **天梯管理员开关**：后端开关默认开启（`system_settings.ladder_enabled`），关闭时接口返回 403，前端显示「天梯功能暂未开启」。
+2. **天梯管理员开关**：后端对 `GET/PUT /api/ladder/config` 执行管理员鉴权；开关关闭时学生端天梯接口返回 403，前端显示「天梯功能暂未开启」。
 3. **原卷图域名**：`downloadFile` 合法域名需含 `dl5zx.cn`。
 4. **指纹/面容解锁（Soter）**：留待后续版本。
 

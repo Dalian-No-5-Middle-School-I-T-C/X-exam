@@ -2,7 +2,7 @@
 <view class="container">
   <view class="eyebrow">LEADERBOARD · 年级天梯</view>
   <view class="title">{{examName || ('考试 #' + examId)}}</view>
-  <view class="sub lb-sub">年级成绩天梯 · 前十</view>
+  <view class="sub lb-sub">年级成绩天梯 · {{boardDesc}}</view>
 
   <view wx:if="{{loading}}" class="skeleton">
     <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-num"></view></view>
@@ -12,8 +12,8 @@
   <view wx:elif="{{error}}" class="empty {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
 
   <block wx:elif="{{enabled && list.length > 0}}">
-    <!-- Top3 领奖台 -->
-    <view class="podium anim {{ready ? 'show' : ''}}">
+    <!-- Top3 领奖台；并列第 1 多于 3 人时不挑「三个代表」，只写规模，名单全在下方榜单里 -->
+    <view wx:if="{{tiedFirst <= 3}}" class="podium anim {{ready ? 'show' : ''}}">
       <view class="pod pod-2" wx:if="{{list[1]}}">
         <view class="pod-medal">{{list[1].rank}}</view>
         <view class="pod-name">{{list[1].name}}</view>
@@ -30,6 +30,7 @@
         <view class="pod-score">{{list[2].score}}</view>
       </view>
     </view>
+    <view wx:else class="tie-head anim {{ready ? 'show' : ''}}">第 1 名 {{tiedFirst}} 人</view>
 
     <!-- 完整榜单 -->
     <view class="section-title">完整榜单</view>

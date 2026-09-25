@@ -1,0 +1,102 @@
+/* pages/exam-paper/exam-paper.wxss */
+.answers {
+  padding: 4rpx 28rpx;
+  margin-bottom: 10rpx;
+}
+.ans-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+.ans-row:last-child { border-bottom: none; }
+.ans-label {
+  flex-shrink: 0;
+  min-width: 150rpx;
+  font-size: 26rpx;
+  color: var(--text-3);
+}
+.ans-text {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  word-break: break-word;
+}
+
+/* 每张原卷页卡：图片 + 本页答案 */
+.page {
+  background: var(--card-bg);
+  border: 1rpx solid var(--border);
+  border-radius: 0;
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 14rpx;
+}
+.page-no {
+  font-size: 24rpx;
+  color: var(--brand);
+  font-weight: 700;
+}
+.page-img {
+  width: 100%;
+  border-radius: 0;
+  background: #fff;
+  border: 1rpx solid var(--border);
+}
+.page-file {
+  padding: 28rpx 0;
+  text-align: center;
+}
+.page-answers {
+  margin-top: 16rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed var(--border);
+}
+.pa-row {
+  display: flex;
+  align-items: baseline;
+  gap: 18rpx;
+  padding: 12rpx 0;
+}
+.pa-label {
+  flex-shrink: 0;
+  min-width: 140rpx;
+  font-size: 24rpx;
+  color: var(--text-3);
+}
+.pa-text {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  word-break: break-word;
+}
+
+/* 本人作答图块（横向滚动，复用 detail 规格） */
+.imgs { white-space: nowrap; margin: 16rpx 0; }
+.img-wrap {
+  display: inline-block;
+  width: 360rpx;
+  margin-right: 18rpx;
+  vertical-align: top;
+}
+.crop {
+  width: 360rpx;
+  border-radius: 0;
+  background: #fff;
+  border: 1rpx solid var(--border);
+}
+.img-title {
+  display: block;
+  font-size: 22rpx;
+  color: var(--text-3);
+  margin-top: 10rpx;
+  text-align: center;
+}

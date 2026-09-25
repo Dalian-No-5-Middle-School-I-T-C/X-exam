@@ -1,0 +1,19 @@
+<view class="container">
+  <view class="eyebrow">ADMIN · 管理设置</view>
+  <view class="title">成绩天梯</view>
+  <view class="sub">仅管理员可修改；关闭后学生无法查看本场成绩天梯。</view>
+
+  <view wx:if="{{loading}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-60"></view></view>
+  </view>
+
+  <view wx:elif="{{error}}" class="empty">{{error}}</view>
+
+  <view wx:else class="card setting-card">
+    <view class="setting-copy">
+      <view class="setting-title">开放成绩天梯</view>
+      <view class="muted">开启后，学生可查看本场考试的年级天梯。</view>
+    </view>
+    <switch checked="{{enabled}}" disabled="{{saving}}" color="#2E44FF" bindchange="onToggle" />
+  </view>
+</view>

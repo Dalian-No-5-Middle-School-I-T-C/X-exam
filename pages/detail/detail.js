@@ -14,6 +14,7 @@ Page({
     examId: 0,
     examName: '',
     summary: null,
+    paperVisible: 0,
     extrasUnavailable: false,
     rawQuestions: [],
     objective: [],
@@ -92,6 +93,8 @@ Page({
         self.setData({
           rawQuestions: normalizeQuestions(resp),
           classAvgMap: resp.classQuestionStats || {},
+          // /exams/:examId 的 paperVisible 与 /paper 接口同一道门，比列表缓存新
+          paperVisible: resp.paperVisible == 1 ? 1 : 0,
           extrasUnavailable: false
         });
         self.buildLists();
@@ -185,6 +188,11 @@ Page({
   goLeaderboard: function () {
     const name = this.data.examName ? encodeURIComponent(this.data.examName) : '';
     wx.navigateTo({ url: '/pages/leaderboard/leaderboard?examId=' + this.data.examId + '&name=' + name });
+  },
+
+  goPaper: function () {
+    const name = this.data.examName ? encodeURIComponent(this.data.examName) : '';
+    wx.navigateTo({ url: '/pages/exam-paper/exam-paper?examId=' + this.data.examId + '&name=' + name });
   },
 
   // 一键转发：组装本场成绩报告模型交给分享组件生成图片

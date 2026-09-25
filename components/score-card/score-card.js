@@ -11,6 +11,10 @@ Component({
     onTap: function () {
       // 事件名避开原生 tap：原生 tap 会冒泡到父级，同名会导致 goDetail 双触发
       this.triggerEvent('cardtap', { id: this.data.score.exam_id });
+    },
+    onPaperTap: function () {
+      // 「查看原卷」用 catchtap 拦住整卡跳转，只触发原卷事件
+      this.triggerEvent('papertap', { id: this.data.score.exam_id });
     }
   }
 });
