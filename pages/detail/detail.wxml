@@ -86,5 +86,6 @@
     </view>
   </block>
 
-  <poster id="poster" />
+  <!-- 用时注入：没点过「一键转发」就不注入海报组件，占位期为空 view -->
+  <poster wx:if="{{posterMounted}}" id="poster" bind:ready="onPosterReady" />
 </view>

@@ -11,8 +11,15 @@ Component({
     posterPath: ''
   },
 
+  lifetimes: {
+    attached: function () {
+      // 用时注入下 attached 才代表真实组件已替换占位并可用；页面靠这个事件再调 open()
+      this.triggerEvent('ready');
+    }
+  },
+
   methods: {
-    // 父页面通过 selectComponent('#poster').open(model) 调用
+    // 父页面在收到 ready 事件后 selectComponent('#poster').open(model) 调用
     open: function (model) {
       if (!model || !model.type) {
         wx.showToast({ title: '暂无可转发的数据', icon: 'none' });

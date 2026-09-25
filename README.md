@@ -10,11 +10,11 @@
 
 - **极速体验**：静默登录 + 本地缓存，首屏即成绩，秒开无等待
 - **查分主线**：成绩总览、逐题小分、原卷图、班级均分对比
-- **学生端分析**（复刻主站）：趋势折线 / 学科雷达 / 学期对比
+- **学生端分析**（复刻主站）：分析页一屏给出趋势折线 + 学科雷达 / 明细表 / 差距柱 / 薄弱学科
 - **成绩天梯**：Top3 领奖台（并列第 1 多于 3 人时不挑代表，改为一行「第 1 名 N 人」）+ 前十榜单 + 本人高亮 + 我的排名（合规：仅公布部分排名/前十名，同分并列跨截断线时该组一并公布）
 - **订阅消息提醒**：授权收集 + 持久化开关（推送需后端补逻辑）
 - **AI 深度分析**：兼容纯文本与结构化两种后端响应
-- **一键转发**：成绩报告 / 学科对比页一键生成海报图片，可分享微信好友·朋友圈或保存到相册，含小程序来源水印
+- **一键转发**：成绩报告（detail）与学科对比（分析页）一键生成海报图片，可分享微信好友·朋友圈或保存到相册，含小程序来源水印
 - **获客扩展（分层架构）**：公开落地页（landing）+ 分享菜单全页覆盖 + 成绩/天梯卡离屏绘制存相册（天梯卡与页面同规则：并列第 1 超 3 人时只写「第 1 名 N 人」，不硬凑前三）+ 邀请归因（inviter/schoolCode 编解码、登录后深链）+ 订阅引导 + 数据埋点；业务层 `services/` 与增长横切层 `growth/` 解耦
 - **editorial-brutalist 纸感蓝主题** + 克制动效（进场 / 数字滚动 / canvas 生长 / 骨架屏）
 
@@ -38,7 +38,7 @@
 
 ## 截图
 
-> 待补充。建议放：`login` 登录页 / `scores` 成绩首屏 / `trends` 趋势 / `subjects` 学科对比 / `leaderboard` 天梯 五张。
+> 待补充。建议放：`login` 登录页 / `scores` 成绩首屏 / `trends` 分析（趋势 + 学科对比） / `leaderboard` 天梯 四张。
 
 ## 技术栈与约束
 
@@ -50,6 +50,7 @@
 | 图表 | 原生 `<canvas type="2d">` 手绘折线 / 雷达 / 柱状（不依赖 echarts，规避 CDN 超时） |
 | 样式 | editorial-brutalist 纸感蓝主题；设计令牌集中在 `app.wxss` 的 `page` CSS 变量 |
 | 鉴权 | `Authorization: Bearer <token>`，token 存于 `wx.StorageSync` |
+| 代码注入 | `app.json` 开「按需注入」（`lazyCodeLoading: "requiredComponents"`，基础库 ≥2.11.1）；`pages/detail`、`pages/trends` 的海报组件再叠「用时注入」（`componentPlaceholder: { "poster": "view" }`，≥2.11.2），未点「一键转发」就不注入 `components/poster` 与 `utils/poster.js`。低于对应版本兼容但无优化效果 |
 | 合法域名 | 开发期可勾「不校验合法域名」；正式发布需在小程序后台配置 |
 
 ## 目录结构
@@ -63,15 +64,14 @@ projectX-mini/
 ├── README.md / LICENSE / .gitignore # 仓库说明与元数据
 │
 ├── components/
+│   ├── poster/                      # 一键转发弹层：离屏绘制海报，用时注入（占位组件 view）
 │   └── score-card/                  # 成绩卡片组件：直角白卡 + 品牌蓝分数 + 学科标签
 │
 ├── pages/
 │   ├── login/                       # 账号密码登录：记住我 + 静默登录
-│   ├── scores/                      # 成绩首屏：总览卡 + 最新大卡 + 列表 + 搜索 + 学科筛选 + 天梯/分析入口
+│   ├── scores/                      # 成绩首屏：总览卡 + 最新大卡 + 列表 + 搜索 + 学科筛选 + 天梯入口
 │   ├── detail/                      # 成绩详情：逐题小分 + 班级均分 + 原卷图 + 本场 AI 分析
-│   ├── trends/                      # 趋势页：原生 canvas 折线（总分 / 班均 / 年段均）
-│   ├── subjects/                    # 学科对比：雷达（我的均分 vs 班级均分）+ 明细表 + 差距柱 + 薄弱学科
-│   ├── semester/                    # 学期对比：本学期 vs 上学期 + 进步/退步标签 + 学科明细 delta
+│   ├── trends/                      # 分析页：折线（总分 / 班均 / 年段均）+ 学科雷达 + 明细表 + 差距柱 + 薄弱学科
 │   ├── leaderboard/                 # 成绩天梯：领奖台（第 1 名超 3 人时只报规模）+ 前十榜单 + 我的排名
 │   └── profile/                     # 我的：个人信息 + 整体 AI 报告 + 订阅开关 + 退出
 │
@@ -86,22 +86,24 @@ projectX-mini/
     └── animate.js                   # 数字滚动补间工具（缓出，含 cancel 清理）
 ```
 
-`app.json` 页面注册（8 个页面，启动页为 `login`）：
+`app.json` 页面注册（10 个页面，启动页为 `login`）：
 
 ```json
 "pages": [
   "pages/login/login",
+  "pages/landing/landing",
+  "pages/change-password/change-password",
   "pages/scores/scores",
   "pages/detail/detail",
+  "pages/exam-paper/exam-paper",
   "pages/trends/trends",
   "pages/profile/profile",
-  "pages/leaderboard/leaderboard",
-  "pages/subjects/subjects",
-  "pages/semester/semester"
+  "pages/admin-ladder/admin-ladder",
+  "pages/leaderboard/leaderboard"
 ]
 ```
 
-TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile），选中色 `#2E44FF`（亮蓝）。
+TabBar 三项：`成绩`（scores）/ `分析`（trends）/ `我的`（profile），选中色 `#2E44FF`（亮蓝）。
 
 ## 快速开始
 
@@ -157,9 +159,8 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 | POST | `/api/auth/login` | `{identifier,password,isPersistent}` → `{token,user}` | `utils/auth.js` |
 | GET | `/api/scores/me` | 本人全部成绩（含 `exam_id/exam_name/subject/total_score/graded_at`） | `pages/scores` |
 | GET | `/api/scores/me/exams/:examId` | 单场详情：逐题小分 + 班级均分 + 原卷图块 | `pages/detail` |
-| GET | `/api/scores/me/trends` | 趋势数据（总分 + 班均 + 年段均） | `pages/trends` |
-| GET | `/api/scores/me/subject-comparison` | 学科对比（我的均分 / 班级均分 / 差距 / 趋势 / 薄弱学科） | `pages/subjects` |
-| GET | `/api/scores/me/semester-comparison` | 学期对比（本学期 vs 上学期、进步/退步学科） | `pages/semester` |
+| GET | `/api/scores/me/trends` | 趋势数据（总分 + 班均 + 年段均） | `pages/trends`（分析页 · 成绩走势） |
+| GET | `/api/scores/me/subject-comparison` | 学科对比（我的均分 / 班级均分 / 差距 / 趋势 / 薄弱学科） | `pages/trends`（分析页 · 学科对比） |
 | POST | `/api/scores/me/ai-analysis` | 整体 AI 分析，请求体 `{}` | `pages/profile` |
 | POST | `/api/scores/me/exams/:examId/ai-analysis` | 单场 AI 分析，请求体 `{}` | `pages/detail` |
 | GET | `/api/ladder/exams/:examId` | 年级天梯前十 + 我的排名（同分并列跨截断线时该组一并返回，可能多于 10 条；关闭时返回 403） | `pages/leaderboard`（scores 最新考试 / detail） |
@@ -180,9 +181,9 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
   - `teachingSuggestions`：教学/学习建议
   - `caveats`：说明事项
 
-### 学科 / 学期 / 天梯响应兼容
+### 学科 / 天梯响应兼容
 
-- **学科对比**：响应兼容「对象 `{subjects:[...]}`」与「纯数组」两种形态；每条取 `avgScore / avgClassAvg / gapToClass / examCount / trend`，雷达图需 ≥3 学科。
+- **学科对比**：响应兼容「对象 `{subjects:[...]}`」与「纯数组」两种形态；每条取 `avgScore / avgClassAvg / gapToClass / examCount / trend`，雷达图需 ≥3 学科。分析页内与「成绩走势」各自独立请求、各自持有错误态，学科对比接口异常只在本段显示错误与「点击重试」，不影响折线。
 - **天梯**：列表容器 `leaderboard/board/rankings/list/topTen`；单条 `studentName/name`、`totalScore/score`、`rank/ranking`；同分学生使用相同竞赛排名，且后端截断线不切开同分并列——榜单可能多于 10 条，前端按返回条数全量渲染、副标题改为「前十 · 同分并列全显（共 N 人）」；本人由单条 `isCurrentUser` 标记（后端按 token 身份下发，客户端不自判），`myRank`/`myScore` 为全量年排；领奖台只在并列第 1 ≤3 人时摆位，多于 3 人时按 `tiedFirst` 改显示「第 1 名 N 人」，全部第 1 名仍由下方榜单逐条列出，「保存天梯卡」把同一个 `tiedFirst` 传给 `growth/poster.js`、走一样的分支；关闭时接口返回 403。
 
 ## 设计语言（editorial-brutalist）
@@ -203,9 +204,9 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 | `--dark` `#141413` | 深色 | 登录 hero 反白块 |
 | `--shadow-hard` `8rpx 8rpx 0 var(--ink)` | 黑硬偏移阴影 | 仅 3 处重点卡：登录卡 / 成绩 hero / 天梯第一名 |
 
-**字号阶梯**：`52`（页面主标题）/ `40`（区块标题）/ `32`（数据强调/按钮）/ `30`（重要数据）/ `28`（正文）/ `24`（次要）/ `22`（标签图例）；数据巨字（hero 72、score-card 64、学期均分 56、logo/avatar 48）保留原大并加 `tabular-nums` 等宽数字。
+**字号阶梯**：`52`（页面主标题）/ `40`（区块标题）/ `32`（数据强调/按钮）/ `30`（重要数据）/ `28`（正文）/ `24`（次要）/ `22`（标签图例）；数据巨字（hero 72、score-card 64、logo/avatar 48）保留原大并加 `tabular-nums` 等宽数字。
 
-**动效（克制优先）**：缓出 `cubic-bezier(.22,1,.36,1)`、时长 ≤0.45s、无弹跳；进场 `riseIn` 淡入上滑 + 列表 stagger；数字滚动 `utils/animate.js`；canvas 生长（折线/雷达/柱）；骨架屏；六页下拉刷新。
+**动效（克制优先）**：缓出 `cubic-bezier(.22,1,.36,1)`、时长 ≤0.45s、无弹跳；进场 `riseIn` 淡入上滑 + 列表 stagger；数字滚动 `utils/animate.js`；canvas 生长（折线/雷达/柱）；骨架屏；五页下拉刷新。
 
 ## 待办与后端依赖（非代码阻塞项）
 
@@ -243,9 +244,10 @@ TabBar 三项：`成绩`（scores）/ `趋势`（trends）/ `我的`（profile�
 
 ## 已知限制与降级策略
 
-- 原卷图、AI 分析、天梯、学科/学期对比任一项接口异常时均**静默降级或提示**，不阻塞查分主线。
+- 原卷图、AI 分析、天梯、学科对比任一项接口异常时均**静默降级或提示**，不阻塞查分主线。
 - 雷达图需 ≥3 个学科，学科数不足时自动降级为纯表格并提示。
 - 图表使用原生 canvas，复杂交互（如双指缩放）暂不支持。
+- 海报组件开了用时注入：首帧它是占位 `view`，`selectComponent('#poster')` 取不到实例方法。页面须先 `wx:if` 挂载、收到组件 `ready` 后再 `open(model)`（`pages/detail`、`pages/trends` 均按此实现），新增页面复用海报时照抄这段时序。
 
 ## 许可证
 

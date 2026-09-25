@@ -9,9 +9,7 @@
     "pages/trends/trends",
     "pages/profile/profile",
     "pages/admin-ladder/admin-ladder",
-    "pages/leaderboard/leaderboard",
-    "pages/subjects/subjects",
-    "pages/semester/semester"
+    "pages/leaderboard/leaderboard"
   ],
   "window": {
     "navigationBarBackgroundColor": "#F1EFE9",
@@ -27,10 +25,11 @@
     "borderStyle": "black",
     "list": [
       { "pagePath": "pages/scores/scores", "text": "成绩" },
-      { "pagePath": "pages/trends/trends", "text": "趋势" },
+      { "pagePath": "pages/trends/trends", "text": "分析" },
       { "pagePath": "pages/profile/profile", "text": "我的" }
     ]
   },
   "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"
 }

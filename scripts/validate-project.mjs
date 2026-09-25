@@ -56,7 +56,17 @@ for (const file of javascriptFiles) {
 }
 
 for (const file of jsonFiles) {
-  readJson(file)
+  const config = readJson(file)
+  const placeholders = config && config.componentPlaceholder
+  if (!placeholders) continue
+
+  // 键写错的 componentPlaceholder 不会报错，只会让用时注入静默失效
+  const declared = new Set(Object.keys(config.usingComponents || {}))
+  for (const name of Object.keys(placeholders)) {
+    if (!declared.has(name)) {
+      errors.push(`${displayPath(file)}: componentPlaceholder "${name}" is not declared in usingComponents`)
+    }
+  }
 }
 
 const appConfigPath = join(root, 'app.json')
