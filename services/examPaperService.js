@@ -19,18 +19,23 @@ function absoluteUrl(imageUrl) {
   return API_BASE + imageUrl;
 }
 
-// items: [{ key, url }] → Promise<{ paths: {key: tempFilePath}, failed: number, cancelled: boolean }>
+// items: [{ key, url }] → Promise<{ paths: {key: tempFilePath}, failed: number, cancelled: boolean }> & { cancel() }
 // 顺序无关（调用方按 key 落位）；页面卸载后调用 cancel()，已完成的图片仍会返回。
+// issue #15：所有返回路径都必须带 cancel()——页面 onUnload 会无条件调用它。
+function settledDownload(result) {
+  return Object.assign(Promise.resolve(result), { cancel: function () {} });
+}
+
 function downloadImages(items) {
   const list = (Array.isArray(items) ? items : []).filter(function (it) {
     return it && it.key && it.url;
   });
   if (list.length === 0) {
-    return Promise.resolve({ paths: {}, failed: 0, cancelled: false });
+    return settledDownload({ paths: {}, failed: 0, cancelled: false });
   }
   const token = getToken();
   if (!token) {
-    return Promise.resolve({ paths: {}, failed: list.length, cancelled: false });
+    return settledDownload({ paths: {}, failed: list.length, cancelled: false });
   }
 
   const paths = {};

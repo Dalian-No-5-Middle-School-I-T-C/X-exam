@@ -220,6 +220,19 @@ test('downloadImages resolves empty lists and skips downloads without a token', 
   assert.equal(downloadCalls.length, 0);
 });
 
+test('downloadImages early returns are cancellable (issue #15)', () => {
+  resetDownloads();
+  const empty = examPaperService.downloadImages([]);
+  assert.equal(typeof empty.cancel, 'function');
+  assert.doesNotThrow(() => empty.cancel());
+  const saved = global.wx.getStorageSync;
+  global.wx.getStorageSync = () => '';
+  const noToken = examPaperService.downloadImages([{ key: 'a', url: '/api/x' }]);
+  global.wx.getStorageSync = saved;
+  assert.equal(typeof noToken.cancel, 'function');
+  assert.doesNotThrow(() => noToken.cancel());
+});
+
 test('downloadImages cancel stops picking up new work but keeps finished files', async () => {
   resetDownloads();
   const p = examPaperService.downloadImages([
@@ -294,6 +307,16 @@ test('exam-paper shows 原卷未上传 when the teacher never uploaded a paper',
   assert.equal(page.data.pages.length, 0);
   assert.equal(downloadCalls.length, 0);
   assert.equal(page.data.loading, false);
+});
+
+test('exam-paper.onUnload after a no-image load does not throw (issue #15)', async () => {
+  resetDownloads();
+  getStub = async () => paperPayload({ hasOriginalPaper: false, pages: [], answerBlocks: [] });
+  const page = makePage(examPaperDef);
+  page.onLoad({ examId: '5' });
+  await flush();
+  await flush();
+  assert.doesNotThrow(() => page.onUnload());
 });
 
 test('exam-paper surfaces request errors', async () => {
