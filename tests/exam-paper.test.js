@@ -138,6 +138,21 @@ test('normalizePaper falls back to pages length and drops unusable blocks', () =
   assert.equal(p.blocks[0].title, '作答'); // 无题号也不伪造题号
 });
 
+test('sparse paper pages render as-is: answers stay under their real page numbers', () => {
+  // 后端归页按原卷真实页码集合（删中间页会留下稀疏页码如 [1,3]），客户端只消费 pages[].answers
+  const p = normalizePaper({
+    pages: [
+      { page_index: 1, image_url: paperUrl(5, 1), answers: [{ question_number: 1, answer_text: 'A', page_index: 1 }] },
+      { page_index: 3, image_url: paperUrl(5, 3), answers: [{ question_number: 2, answer_text: 'B', page_index: 3 }] }
+    ],
+    answer_blocks: []
+  });
+  assert.deepEqual(p.pages.map(x => x.pageIndex), [1, 3]);
+  const view = decorate(p, { p1: '/tmp/1.jpg', p3: '/tmp/3.jpg' });
+  assert.deepEqual(view.pages.map(x => x.pageIndex), [1, 3]);
+  assert.deepEqual(view.pages[1].rows, [{ key: 'q-2', label: '第 2 题', text: 'B' }]);
+});
+
 test('answerRows keeps blank and unnumbered answers honest', () => {
   assert.deepEqual(answerRows([]), []);
   const rows = answerRows([
