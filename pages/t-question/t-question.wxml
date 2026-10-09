@@ -1,0 +1,76 @@
+<!-- pages/t-question/t-question.wxml -->
+<view class="container">
+  <view wx:if="{{invalid}}" class="empty {{ready ? 'show' : ''}}">
+    <view>题目编号无效</view>
+    <view class="empty-hint">请从「小题得分率」页签重新进入</view>
+  </view>
+
+  <block wx:else>
+    <view class="eyebrow">QUESTION · 逐题下钻</view>
+    <view class="title">第 {{questionNumber}} 题</view>
+    <view class="sub">{{classLabel}} · 满分 {{summary ? summary.maxScore : '—'}}</view>
+
+    <view wx:if="{{loading && list.length === 0}}" class="skeleton">
+      <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-80"></view></view>
+      <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
+    </view>
+
+    <view wx:elif="{{error}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
+
+    <block wx:elif="{{summary}}">
+      <view class="ovw card anim {{ready ? 'show' : ''}}">
+        <view class="ovw-item">
+          <view class="ovw-num">{{summary.avgRate}}</view>
+          <view class="muted">平均得分率</view>
+        </view>
+        <view class="ovw-item">
+          <view class="ovw-num">{{summary.full}}</view>
+          <view class="muted">满分人数</view>
+        </view>
+        <view class="ovw-item">
+          <view class="ovw-num red-num">{{summary.zero}}</view>
+          <view class="muted">零分人数</view>
+        </view>
+        <view class="ovw-item">
+          <view class="ovw-num">{{summary.total}}</view>
+          <view class="muted">返回人数</view>
+        </view>
+      </view>
+
+      <view class="sub note">得分率按「个人得分 / 该题满分」计算；「返回人数」是接口返回的该题有得分记录的人数。</view>
+
+      <view class="sort-bar">
+        <text class="sort-cap">排序</text>
+        <view class="chip {{sort === 'desc' ? 'on' : ''}}" data-value="desc" bindtap="onSort">得分高→低</view>
+        <view class="chip {{sort === 'asc' ? 'on' : ''}}" data-value="asc" bindtap="onSort">得分低→高</view>
+      </view>
+
+      <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms">
+        <view class="hd-row">
+          <text class="hd-seq">#</text>
+          <text class="hd-name">学生</text>
+          <text class="hd-score">得分</text>
+          <text class="hd-rate">得分率</text>
+        </view>
+        <view wx:for="{{list}}" wx:key="uid" class="row">
+          <text class="hd-seq num">{{item.seq}}</text>
+          <view class="hd-name">
+            <text class="s-name">{{item.name}}</text>
+            <text class="s-sub meta">{{item.studentNumber}} · {{item.className}}</text>
+          </view>
+          <text class="hd-score num">{{item.scoreText}}</text>
+          <view class="hd-rate">
+            <text class="s-rate num {{item.isFull ? 'full' : ''}}">{{item.rateText}}</text>
+            <view class="bar-wrap"><view class="bar" style="width: {{item.barWidth}}%"></view></view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{summary.counted < summary.total}}" class="sub note">
+        有 {{summary.total - summary.counted}} 人无该题得分记录（未作答或未判分），未计入平均。
+      </view>
+    </block>
+
+    <view wx:else class="empty {{ready ? 'show' : ''}}">该题暂无学生得分</view>
+  </block>
+</view>

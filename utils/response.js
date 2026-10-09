@@ -108,6 +108,8 @@ function normalizeQuestions(resp) {
 
 module.exports = {
   toNum: toNum,
+  pick: pick,
+  toArr: toArr,
   normalizeScores: normalizeScores,
   normalizeTrends: normalizeTrends,
   normalizeSubjects: normalizeSubjects,

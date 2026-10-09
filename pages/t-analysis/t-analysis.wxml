@@ -1,0 +1,239 @@
+<!-- pages/t-analysis/t-analysis.wxml -->
+<view class="container">
+  <view wx:if="{{invalid}}" class="empty {{ready ? 'show' : ''}}">
+    <view>考试编号无效</view>
+    <view class="empty-hint">请返回考试列表重新进入</view>
+  </view>
+
+  <block wx:else>
+    <view class="eyebrow">TEACHER · 考试分析</view>
+    <view class="title">{{examName || ('考试 #' + examId)}}</view>
+    <view class="sub">仅统计你任教的考试 · 全部为只读数据</view>
+
+    <view class="ta-bar">
+      <picker wx:if="{{classOptions.length > 1}}" mode="selector" range="{{classOptions}}"
+              range-key="className" value="{{classIndex}}" bindchange="onClassChange">
+        <view class="ta-class">
+          <text class="ta-class-label">{{classLabel}}</text>
+          <text class="ta-class-caret">▾</text>
+        </view>
+      </picker>
+      <view class="ta-links">
+        <text class="ta-link" bindtap="goRanking">成绩榜 ›</text>
+        <text wx:if="{{classOptions.length > 2}}" class="ta-link" bindtap="goClasses">班级对比 ›</text>
+      </view>
+    </view>
+
+    <scroll-view scroll-x class="chips ta-tabs">
+      <view wx:for="{{tabs}}" wx:key="key" class="chip {{tab === item.key ? 'on' : ''}}"
+            data-key="{{item.key}}" bindtap="switchTab">{{item.label}}</view>
+    </scroll-view>
+
+    <!-- 概况 -->
+    <block wx:if="{{tab === 'overview'}}">
+      <view wx:if="{{loading && !ov}}" class="skeleton">
+        <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-num"></view><view class="sk sk-line w-80"></view></view>
+        <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
+      </view>
+
+      <view wx:elif="{{ovError}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{ovError}} · 点击重试</view>
+
+      <block wx:elif="{{ov}}">
+        <view class="hero card anim {{ready ? 'show' : ''}}">
+          <view class="eyebrow eyebrow--blue">AVG · 平均分</view>
+          <view class="num hero-num">{{ovText.avg}}<text wx:if="{{ov.fullScore}}" class="hero-total"> / {{ovText.full}}</text></view>
+          <view class="hero-grid">
+            <view class="hero-cell">
+              <view class="num cell-num">{{ovText.passRate}}</view>
+              <view class="muted">及格率<text wx:if="{{ov.fullScore}}"> ≥ {{ov.passScore}}</text></view>
+            </view>
+            <view class="hero-cell">
+              <view class="num cell-num">{{ovText.excellentRate}}</view>
+              <view class="muted">优秀率<text wx:if="{{ov.fullScore}}"> ≥ {{ov.excellentScore}}</text></view>
+            </view>
+            <view class="hero-cell">
+              <view class="num cell-num">{{ovText.stdDev}}</view>
+              <view class="muted">标准差</view>
+            </view>
+            <view class="hero-cell">
+              <view class="num cell-num">{{ov.gradedCount}}</view>
+              <view class="muted">已判分人数</view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{ov.summary}}" class="card five anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms">
+          <view class="section-title">五数概括</view>
+          <view class="five-row">
+            <view class="five-item"><view class="num five-num">{{ovText.min}}</view><view class="muted">最低</view></view>
+            <view class="five-item"><view class="num five-num">{{ovText.q1}}</view><view class="muted">下四分位</view></view>
+            <view class="five-item"><view class="num five-num">{{ovText.median}}</view><view class="muted">中位数</view></view>
+            <view class="five-item"><view class="num five-num">{{ovText.q3}}</view><view class="muted">上四分位</view></view>
+            <view class="five-item"><view class="num five-num">{{ovText.max}}</view><view class="muted">最高</view></view>
+          </view>
+        </view>
+
+        <view class="card buckets anim {{ready ? 'show' : ''}}" style="animation-delay: 100ms">
+          <view class="section-title">小题错误率分布</view>
+          <view class="sub">高错误题 {{ov.highErrorQuestionCount}} 道</view>
+          <view class="bk-row">
+            <view class="bk-item"><view class="num bk-num">{{ov.errorBuckets.low}}</view><view class="muted">低错误</view></view>
+            <view class="bk-item"><view class="num bk-num">{{ov.errorBuckets.medium}}</view><view class="muted">中错误</view></view>
+            <view class="bk-item"><view class="num bk-num bk-red">{{ov.errorBuckets.high}}</view><view class="muted">高错误</view></view>
+          </view>
+        </view>
+
+        <view wx:if="{{prev.hasPrevious}}" class="card cmp anim {{ready ? 'show' : ''}}" style="animation-delay: 140ms">
+          <view class="section-title">与上次对比</view>
+          <view class="meta">{{prev.prevExamName}}</view>
+          <view class="cmp-row">
+            <view class="cmp-item">
+              <view class="num cmp-num {{prev.avgScoreChange.dir > 0 ? 'up' : (prev.avgScoreChange.dir < 0 ? 'red' : '')}}">{{prev.avgScoreChange.text}}</view>
+              <view class="muted">平均分变化</view>
+            </view>
+            <view class="cmp-item">
+              <view class="num cmp-num {{prev.passRateChange.dir > 0 ? 'up' : (prev.passRateChange.dir < 0 ? 'red' : '')}}">{{prev.passRateChange.text}}</view>
+              <view class="muted">及格率变化</view>
+            </view>
+            <view class="cmp-item">
+              <view class="num cmp-num">{{prev.prevAvgScore == null ? '—' : prev.prevAvgScore}}</view>
+              <view class="muted">上次平均分</view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{!ov.summary}}" class="empty {{ready ? 'show' : ''}}">本场考试暂无可统计的得分</view>
+      </block>
+
+      <view wx:elif="{{!loading}}" class="empty {{ready ? 'show' : ''}}">暂无概况数据</view>
+    </block>
+
+    <!-- 小题得分率 -->
+    <block wx:if="{{tab === 'question'}}">
+      <view wx:if="{{loading && questions.length === 0}}" class="skeleton">
+        <view class="sk-card"><view class="sk sk-line w-40"></view><view class="sk sk-block"></view></view>
+        <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-block"></view></view>
+      </view>
+
+      <view wx:elif="{{qError}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{qError}} · 点击重试</view>
+
+      <block wx:elif="{{questions.length > 0}}">
+        <view class="sort-bar">
+          <text class="sort-cap">排序</text>
+          <view class="chip {{qSort === 'rate' ? 'on' : ''}}" data-value="rate" bindtap="onSort">得分率↑</view>
+          <view class="chip {{qSort === 'disc' ? 'on' : ''}}" data-value="disc" bindtap="onSort">区分度↑</view>
+          <view class="chip {{qSort === 'no' ? 'on' : ''}}" data-value="no" bindtap="onSort">题号</view>
+        </view>
+
+        <view class="qlist">
+          <view wx:for="{{questions}}" wx:key="questionNumber"
+                class="qrow card anim {{ready ? 'show' : ''}}"
+                style="animation-delay: {{index < 12 ? index * 30 : 0}}ms"
+                data-no="{{item.questionNumber}}" bindtap="goQuestion">
+            <view class="qhead">
+              <text class="qno num">Q{{item.questionNumber}}</text>
+              <text class="tag">{{item.questionType}}</text>
+              <text wx:if="{{item.errorLevel === 'high'}}" class="badge b-red">高错误</text>
+              <text wx:elif="{{item.errorLevel === 'medium'}}" class="badge b-warn">中错误</text>
+              <view class="qrate num">{{item.rateText}}</view>
+            </view>
+            <view class="bar-wrap"><view class="bar" style="width: {{item.barWidth}}%"></view></view>
+            <view class="qmeta">
+              <text class="meta">均分 {{item.scoreText}}</text>
+              <text wx:if="{{item.correctRateText}}" class="meta"> · 正确率 {{item.correctRateText}}</text>
+              <text class="meta"> · 难度 {{item.difficultyText}}</text>
+              <text class="meta"> · 区分度 {{item.discriminationText}}</text>
+              <text class="meta"> · {{item.errorLabel}} {{item.errorCount}}/{{item.totalCount}}</text>
+            </view>
+            <view wx:if="{{item.knowledgePoint}}" class="qkp meta meta--faint">{{item.knowledgePoint}}</view>
+            <view wx:if="{{!item.canDrill}}" class="qnod meta">题号非纯数字，暂不支持逐班下钻</view>
+          </view>
+        </view>
+      </block>
+
+      <view wx:elif="{{!loading}}" class="empty {{ready ? 'show' : ''}}">本场考试暂无小题数据</view>
+    </block>
+
+    <!-- 分布与指标 -->
+    <block wx:if="{{tab === 'dist'}}">
+      <view wx:if="{{loading && !ov}}" class="skeleton">
+        <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-block"></view></view>
+        <view class="sk-card"><view class="sk sk-line w-40"></view><view class="sk sk-line w-60"></view></view>
+      </view>
+
+      <view wx:elif="{{ovError}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{ovError}} · 点击重试</view>
+
+      <block wx:else>
+        <view class="card anim {{ready ? 'show' : ''}}">
+          <view class="section-title">分数段分布</view>
+          <view wx:if="{{ov && ov.distribution.length > 0}}" class="hist-wrap">
+            <canvas type="2d" id="histCanvas" class="hist"></canvas>
+            <view class="meta">{{classLabel}} · 共 {{ov.distribution.length}} 段</view>
+          </view>
+          <view wx:elif="{{ov}}" class="meta">本场考试暂无分数段数据</view>
+        </view>
+
+        <view wx:if="{{metricsError}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{metricsError}} · 点击重试</view>
+        <view wx:elif="{{metrics}}" class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 60ms">
+          <view class="section-title">信度与区分指标</view>
+          <view class="mx-grid">
+            <view class="mx-item">
+              <view class="num mx-num">{{metrics.difficulty}}</view>
+              <view class="muted">难度 P（0-1）</view>
+            </view>
+            <view class="mx-item">
+              <view class="num mx-num">{{metrics.discrimination}}</view>
+              <view class="muted">区分度 D（-1~1）</view>
+            </view>
+            <view class="mx-item">
+              <view class="num mx-num">{{metrics.reliability}}</view>
+              <view class="muted">信度（α/KR-20）</view>
+            </view>
+            <view class="mx-item">
+              <view class="num mx-num">{{metrics.cv}}</view>
+              <view class="muted">变异系数</view>
+            </view>
+          </view>
+          <view class="meta">样本 {{metrics.gradedCount}} 人 · 信度为「—」表示样本不足以估计</view>
+        </view>
+      </block>
+    </block>
+
+    <!-- 知识点 -->
+    <block wx:if="{{tab === 'knowledge'}}">
+      <view wx:if="{{loading && knowledge.length === 0}}" class="skeleton">
+        <view class="sk-card"><view class="sk sk-line w-40"></view><view class="sk sk-block"></view></view>
+        <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-block"></view></view>
+      </view>
+
+      <view wx:elif="{{kpError}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{kpError}} · 点击重试</view>
+
+      <block wx:elif="{{knowledge.length > 0}}">
+        <view class="sub kp-note">按薄弱程度排序，同级按得分率升序 · 题号来自答题卡标注，未标注的知识点不入库</view>
+        <view wx:if="{{classId === '0'}}" class="sub kp-note">已选「未知班级」：后端知识点接口不按该班筛选，以下仍为全部班级口径</view>
+        <view wx:for="{{knowledge}}" wx:key="uid"
+              class="krow card anim {{ready ? 'show' : ''}}"
+              style="animation-delay: {{index < 12 ? index * 30 : 0}}ms">
+          <view class="khead">
+            <text class="kname">{{item.pointText}}</text>
+            <text class="badge {{item.severityClass}}">{{item.severity === 'common_weak' ? '普遍薄弱' : (item.severity === 'weak' ? '薄弱' : '达标')}}</text>
+            <view class="krate num">{{item.rateText}}</view>
+          </view>
+          <view class="bar-wrap"><view class="bar" style="width: {{item.barWidth}}%"></view></view>
+          <view class="kmeta">
+            <text class="meta">题号 {{item.questionNumbers}}</text>
+            <text class="meta"> · 覆盖 {{item.totalQuestions}} 题</text>
+            <text class="meta"> · 难度 {{item.difficultyText}}</text>
+            <text class="meta"> · 区分度 {{item.discriminationText}}</text>
+          </view>
+          <view class="kmeta"><text class="meta">涉及 {{item.studentCount}} 人 · 覆盖率 {{item.coverageText}}</text></view>
+        </view>
+      </block>
+
+      <view wx:elif="{{!loading}}" class="empty {{ready ? 'show' : ''}}">
+        <view>暂无知识点分析</view>
+        <view class="empty-hint">需要老师在答题卡上为题目标注知识点后才会生成</view>
+      </view>
+    </block>
+  </block>
+</view>

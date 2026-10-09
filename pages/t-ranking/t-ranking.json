@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "成绩榜",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#F1EFE9",
+  "usingComponents": {}
+}

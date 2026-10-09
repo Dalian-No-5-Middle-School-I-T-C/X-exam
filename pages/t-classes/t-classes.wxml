@@ -1,0 +1,79 @@
+<!-- pages/t-classes/t-classes.wxml -->
+<view class="container">
+  <view wx:if="{{invalid}}" class="empty {{ready ? 'show' : ''}}">
+    <view>考试编号无效</view>
+    <view class="empty-hint">请从考试分析页重新进入</view>
+  </view>
+
+  <block wx:else>
+    <view class="eyebrow">CLASSES · 班级对比</view>
+    <view class="title">各班成绩对比</view>
+    <view class="sub">满分 {{fullScore ? fullScore : '—'}} · 共 {{classes.length}} 个班</view>
+
+    <view wx:if="{{loading && classes.length === 0}}" class="skeleton">
+      <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-block"></view></view>
+      <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
+    </view>
+
+    <view wx:elif="{{error}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
+
+    <block wx:else>
+      <view class="sort-bar">
+        <text class="sort-cap">排序</text>
+        <view class="chip {{sortKey === 'avgScore' ? 'on' : ''}}" data-value="avgScore" bindtap="onSort">平均分</view>
+        <view class="chip {{sortKey === 'passRate' ? 'on' : ''}}" data-value="passRate" bindtap="onSort">及格率</view>
+        <view class="chip {{sortKey === 'discrimination' ? 'on' : ''}}" data-value="discrimination" bindtap="onSort">区分度</view>
+      </view>
+
+      <view wx:if="{{classes.length === 0}}" class="empty {{ready ? 'show' : ''}}">
+        <view>暂无可比班级</view>
+        <view class="empty-hint">需要至少两个班级有本场考试成绩</view>
+      </view>
+
+      <view wx:for="{{classes}}" wx:key="classId" class="card cls anim {{ready ? 'show' : ''}}"
+            style="animation-delay: {{index < 10 ? index * 50 : 0}}ms">
+        <view class="cls-head">
+          <text class="cls-name">{{item.className}}</text>
+          <text wx:if="{{item.gradeName}}" class="tag">{{item.gradeName}}</text>
+          <text class="cls-count meta">{{item.count}} 人</text>
+        </view>
+        <view class="bar-wrap"><view class="bar" style="width: {{item.barWidth}}%"></view></view>
+        <view class="cls-grid">
+          <view class="cls-item"><view class="num cls-num">{{item.avgScore}}</view><view class="muted">平均分</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.passRate}}</view><view class="muted">及格率</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.excellentRate}}</view><view class="muted">优秀率</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.stdDev}}</view><view class="muted">标准差</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.median}}</view><view class="muted">中位数</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.maxScore}}</view><view class="muted">最高分</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.minScore}}</view><view class="muted">最低分</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.difficulty}}</view><view class="muted">难度 P</view></view>
+          <view class="cls-item"><view class="num cls-num">{{item.discrimination}}</view><view class="muted">区分度 D</view></view>
+        </view>
+      </view>
+
+      <block wx:if="{{gaps.length > 0}}">
+        <view class="section-title gp-title">逐题班际差距最大的 {{gaps.length}} 题</view>
+        <view class="card anim {{ready ? 'show' : ''}}">
+          <view class="gp-hd">
+            <text class="gp-no">题号</text>
+            <text class="gp-gap">差距</text>
+            <text class="gp-side">最强班 → 最弱班</text>
+          </view>
+          <view wx:for="{{gaps}}" wx:key="uid" class="gp-row">
+            <text class="gp-no num">Q{{item.questionNumber}}{{item.typeLabel ? '·' + item.typeLabel : ''}}</text>
+            <text class="gp-gap num">{{item.gap}}pp</text>
+            <view class="gp-side">
+              <text class="gp-line">{{item.bestClass}} {{item.bestRate}}</text>
+              <text class="gp-line faint">{{item.worstClass}} {{item.worstRate}} · 满分 {{item.maxScore}}</text>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{gapNote}}" class="sub note">{{gapNote}}</view>
+      </block>
+
+      <view wx:if="{{classes.length > 0 && gaps.length === 0}}" class="sub note">
+        逐题差距需要各班都有该题得分记录才能计算，本场暂无可对比的题。
+      </view>
+    </block>
+  </block>
+</view>

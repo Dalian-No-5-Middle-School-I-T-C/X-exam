@@ -14,6 +14,14 @@
 ## [Unreleased]
 
 ### Added
+- **教师工作台（只读分析，教师 / 管理员专属）**：小程序此前只有学生查分主线，小题得分率、班际对比、知识点薄弱只能回主站网页看。本次补齐小程序端的**只读**分析，管理员与教师走同一条判定，因此天然同步到管理员端。
+  - **入口与分流**：`utils/role.js` 是前端唯一的角色判据——读登录响应的 `user.role_name / user.role_id`（后端从不返回 `user.role`，也从不返回 `isAdmin`）与顶层 `permissions`；admin 与持有 `grade:read` 的 teacher 可达，学生与未知角色一律拒绝。`homePath()` 让教师 / 管理员登录后直接落在 `pages/t-exams`，学生仍落在成绩页；邀请深链（`examId` → 单场成绩）只对学生生效。`pages/profile` 对教师 / 管理员显示「教师工作台」入口，学生看不到该行，其余界面与查分流程不变。
+  - **五个页面**：`pages/t-exams`（可见考试列表：按考试日期倒序 + 学科胶囊 + 关键词搜索 + 考试数/已公布/已判分汇总，公布状态直接取后端 `score_published` 的 0/1/2 不做推断）、`pages/t-analysis`（单场四页签：概况〔均分 / 标准差 / 及格率 / 优秀率 / 五数概括 / 与上次对比〕、小题得分率〔得分率 + 难度 P + 区分度 D + 错误率档，可排序、可下钻〕、分布与指标〔分数段直方图 + 整卷难度/区分度/信度〕、知识点薄弱；班级筛选覆盖全部页签；页签各自持有加载与错误态，任一接口失败只影响本页签）、`pages/t-question`（小题逐人得分，本地排序）、`pages/t-ranking`（成绩榜：整榜一次取回后本地分页与搜索，翻页零请求）、`pages/t-classes`（班际对比：各班统计量 + 同题得分率极差 Top10）。`app.json` 由 10 页增至 15 页。
+  - **权限边界**：五个页面 `onLoad` 先 `role.guardWorkspace()`，不合格角色直接 `reLaunch` 回成绩页、请求都不发；真正的边界仍在后端——`/api/exams` 要 `exam:read`、`/api/analysis/*` 要 `grade:read`，逐接口再叠 `requireExamAccess`（教师按任教学段收敛数据范围）与 `can_view_charts` / `can_view_students` 查看门，学生 token 请求一律 403。旧会话缺少 `permissions` 时放行入口、由接口 403 兜底，避免把老用户挡在门外又给不出原因。
+  - **只读**：`services/teacherService.js` 只含 GET；改分、批量发布、阅卷提交、原卷图片、答题卡设计一律不提供。教师页面也不接入 `onShareAppMessage` / `onShareTimeline` 与海报转发——页面上是他人成绩明细。
+  - **不放分包、不进 TabBar**：TabBar 仍是「成绩 / 分析 / 我的」三项，教师页面自带回「我的」按钮（`wx.switchTab`）；教师端新增代码合计约 94KB、`pages/` 整体约 182KB，相对主包 2MB 没有压力，分包反而要处理跨包跳转与主包依赖，故沿用主包 + `lazyCodeLoading` 按需注入。
+  - `utils/analysis.js`：分析响应归一化（snake/camel 别名、裸数组与裸对象并存故不拆包、`null` 与字符串数值容错，纯函数 + `node utils/analysis.js` 自检块）。口径纪律集中在这层：`scoreRate / passRate / excellentRate / errorRate` 为 0-100，`difficulty` 为 0-1，`discrimination` 为 -1~1，`avgScore` 为分值，各按各口径渲染、不做二次归一。
+- `tests/teacher.test.js`（18 例）：角色门（含只有 `role_id` 的旧响应、域级通配 `grade:*`、缺 `permissions` 的旧会话）、`homePath` 分流、`guardWorkspace` 拦下学生且不发出任何请求、非法 `examId` / 题号不请求、后端 403 文案原样呈现、班级筛选下标 → `classId` 映射与切班只重取当前页签、小题按得分率 / 区分度升序且 `null` 排最后、整榜一次取回后翻页零请求、`rank === null` 不当成前三名、满分不可知时及格率显示「—」而不是 `0%`、`classId=0`（未知班级）不传给知识点接口、班际极差要求至少两个班有数据。
 - **按需注入与用时注入**：`app.json` 增加 `"lazyCodeLoading": "requiredComponents"`（基础库 ≥2.11.1，低版本兼容但无优化效果），启动时只注入当前页所需的页面与自定义组件代码——`admin-ladder`、`change-password`、`exam-paper`、`landing` 等未访问页不再参与启动注入。`pages/detail`、`pages/trends` 进一步为海报组件配置占位组件 `view`（≥2.11.2）：只有点过「一键转发」才注入 `components/poster` 与它 `require` 的 `utils/poster.js`。时序随之改为「先 `wx:if` 挂载 → 组件 `attached` 发 `ready` → 页面 `selectComponent('#poster').open(model)`」，占位期拿不到实例方法时不再直接调用。`scripts/validate-project.mjs` 新增校验：`componentPlaceholder` 的键必须在同文件 `usingComponents` 中声明（键写错不报错，只会让用时注入静默失效）。
 - **原卷与逐题正确答案**（依赖后端 Project-X v2.6.0）：新增 `pages/exam-paper/exam-paper` 页面，成绩公布且教师开启「显示原卷」后可进入 —— 先看逐题答案与每张原卷页图片（图片下方按题号渲染老师保存的答案文字，不判对错），末尾展示本人作答图块。入口两处：成绩卡片「查看原卷 ›」与详情页「查看答案解析」，两者均由后端 `paper_visible` / `paperVisible` 控制，前端不自行推断公布状态；老师从未上传原卷图片时显示「原卷未上传」。
   - `utils/examPaper.js`：响应归一化与渲染模型（纯函数，兼容 snake/camel 字段、空白折叠、题号缺失不伪造、下载失败的条目剔除因而不留破图）。
@@ -24,6 +32,7 @@
 - 管理员专属的成绩天梯管理页，依赖后端管理员鉴权的开关读取与更新接口。
 
 ### Changed
+- **`npm test` 追加分析自检**：`test` 链尾加 `node utils/analysis.js`，教师端归一化与 `utils/response.js`、`scripts/cache-selfcheck.js` 一样在 CI 里跑自带自测块。CI 工作流无需改动：`scripts/validate-project.mjs` 本就校验 `app.json` 注册页与 `usingComponents`，新增五个教师页面直接纳入覆盖。
 - **订阅开关说清为什么失败**：`utils/subscribe.js` 原先把四类失败压成三个 `reason` 且丢尽细节——HTTP 状态与后端 `message` 被扔掉，微信的 `errno` / `errMsg` 也被扔掉，结果「后端没部署（404）」「服务端没配环境变量（503）」「网络不通」「用户自己点了取消」在界面上长得一模一样，只能靠猜。现结果统一为 `{ ok, accepted, reason, status, errno, detail }`；`pages/profile` 按状态码分文案（403/401 → 登录已过期，404/503 → 服务尚未就绪，`status === 0` → 网络异常，其余 → 绑定失败），并按弹窗返回值区分「已取消开启」与「请先在右上角设置中允许订阅消息」（`setting=ban`）、「当前暂不支持该提醒」（`setting=filter`）。面向学生不出现任何状态码或英文 `errMsg`，技术细节统一 `console.warn('[subscribe] …')`，真机 vConsole 直接可定位。
 - **成绩天梯不再切开同分并列**：天梯仍默认只展示前十，但第 10 条若与后面的人同名次，该并列组一并列出（Project-X 三条天梯接口统一按 `takeLadder` 截断）。前端按后端返回条数整表渲染、不自行截断，多于 10 条时副标题改为「前十 · 同分并列全显（共 N 人）」。后端未升级时仍是硬切 10 条。
 - **领奖台不再挑「三个代表」**：并列第 1 多于 3 人时，领奖台三个位置装不下整组第 1 名，摆哪三个都是任意取舍；此时改为整行「第 1 名 N 人」，全部第 1 名由下方完整榜单逐条列出。第 1 名不超过 3 人（含恰好 3 人）时领奖台照常摆放。
@@ -40,6 +49,9 @@
 - 单场天梯的「我的排名」卡此前从不出现：后端把天梯名次读成 `score-table` 并不产出的 `rank` 字段，`rows[].rank` 与 `myRank` / `myScore` 一起被序列化丢弃，而天梯条目又不带本人标记；随 Project-X 改用年排 `gradeRank` 修复，前端逻辑不变。
 - 成绩页、成绩卡与详情页统一显示年级排名；天梯同分学生显示相同名次。
 - 统一成绩页按钮、统计卡与分析入口的对齐和字号。
+
+### Security
+- **教师权限位随登录态一起清理**：登录响应的顶层 `permissions` 是工作台入口的判据，本次为它新增独立缓存键 `px_perms`（`utils/auth.js` 的 `setPermissions` / `getPermissions` / `clearPermissions`）。退出登录与 401 被动登出都会清除该键，`utils/request.js` 的 `clearLocalUserData()` 键清单同步纳入 `px_perms`——共用设备上换到学生账号时，读不到上一个教师账号残留在本地的权限位，入口判据与 token 一样只在当前会话内有效。
 
 ### Removed
 - **删除 `pages/subjects`（学科对比页）**：整页并入分析页，成绩首屏的「学科对比」入口卡与其 `goSubjects` 跳转一并撤掉。

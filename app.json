@@ -9,7 +9,12 @@
     "pages/trends/trends",
     "pages/profile/profile",
     "pages/admin-ladder/admin-ladder",
-    "pages/leaderboard/leaderboard"
+    "pages/leaderboard/leaderboard",
+    "pages/t-exams/t-exams",
+    "pages/t-analysis/t-analysis",
+    "pages/t-question/t-question",
+    "pages/t-ranking/t-ranking",
+    "pages/t-classes/t-classes"
   ],
   "window": {
     "navigationBarBackgroundColor": "#F1EFE9",

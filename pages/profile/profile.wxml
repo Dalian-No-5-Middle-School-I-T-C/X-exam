@@ -55,6 +55,15 @@
     </view>
   </view>
 
+  <view wx:if="{{canWorkspace}}" class="section-title">教学</view>
+  <view wx:if="{{canWorkspace}}" class="card admin-entry" bindtap="goWorkspace">
+    <view>
+      <view class="admin-title">教师工作台</view>
+      <view class="muted">考试分析、小题得分率与知识点 · 只读</view>
+    </view>
+    <text class="admin-arrow">›</text>
+  </view>
+
   <view wx:if="{{isAdmin}}" class="section-title">管理</view>
   <view wx:if="{{isAdmin}}" class="card admin-entry" bindtap="onAdminLadder">
     <view>
