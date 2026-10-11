@@ -221,10 +221,11 @@ TabBar 三项：`成绩`（scores）/ `分析`（trends）/ `我的`（profile�
 | 层 | 位置 | 判据 | 失败表现 |
 |----|------|------|----------|
 | 后端（真实边界） | `/api/exams` 走 examGate（`exam:read`），`/api/analysis/*` 走 analysisGate（`grade:read`），逐接口再叠 `requireExamAccess` + `can_view_charts` / `can_view_students` | 角色默认权限集：admin `['*']`、teacher 含 `grade:read`、**student 仅 `score:read`**；考试数据范围由 `getVisibleExamIds` 决定（admin 全量，教师按任教学段，其余为空） | 学生 token 请求这些接口一律 `403`，前端原样显示后端 `message` |
-| 前端（入口与页面） | `utils/role.js` + `role.guardWorkspace()` | `role_name / role_id` 判角色（后端从不返回 `user.role` / `isAdmin`），教师还需实际持有 `grade:read`；未知角色默认拒绝 | 学生看不到「教师工作台」入口，直接输 URL 也会被 `reLaunch` 回成绩页，请求不发 |
+| 前端（入口与页面） | `utils/role.js` + `role.guardWorkspace()` | `role_name / role_id` 判角色（后端从不返回 `user.role` / `isAdmin`；管理员判定统一走 `role.isAdminUser()`，旧会话才退回历史线索），教师还需实际持有 `grade:read`；未知角色默认拒绝 | 学生看不到「教师工作台」入口，直接输 URL 也会被 `reLaunch` 回成绩页，请求不发 |
 
-- 权限位来自登录响应的顶层 `permissions`，与 `user` 分开存于 `px_perms`；退出登录、401 被动登出都会清除，避免上一个账号的角色残留在设备上。
-- 本次改动之前建立的旧会话没有 `permissions`：此时放行工作台**入口**（真实鉴权仍由后端执行，接口 403 会在页签上显示后端文案），避免把老用户挡在门外又给不出原因。
+- 权限位来自登录响应的顶层 `permissions`，与 `user` 分开存于 `px_perms`；退出登录、401 被动登出都会清除，避免上一个账号的角色残留在设备上。`setPermissions` 只在拿到数组时写键，所以「后端没给 `permissions`」读回 `null`，与「后端给了 `[]`（零权限）」是两种状态。
+- 入口判据按上面两种状态分开处理：读不到权限位（`null`，含本次改动之前建立的旧会话）时**放行**工作台入口，真实鉴权仍由后端执行，接口 403 会在页签上显示后端文案，避免把老用户挡在门外又给不出原因；后端明确给了空数组时**隐藏**入口，不留一个点了只会报 403 的死入口。
+- 管理员判据是 `role.isAdminUser()`，`pages/profile` 的「教师工作台 / 管理」两张卡片与 `pages/admin-ladder` 的准入守卫共用同一个函数：有 `role_name` / `role_id` 时只认这两个权威字段，完全读不到（旧会话）才退回 `isAdmin` / `role` / 显示名含「管理员」这些历史线索。
 - 管理员与教师走同一条判定，因此功能天然同步到管理员端；`teacher_role`（`subject_teacher` / `head_teacher` / `grade_leader`）仅用于文案展示，不参与门禁。
 
 ### AI 响应兼容（`utils/ai.js` 的 `normalizeReport`）

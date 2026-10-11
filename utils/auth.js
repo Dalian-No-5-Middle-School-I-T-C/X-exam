@@ -47,10 +47,15 @@ function getPermissions() {
   if (memPerms) return memPerms;
   try { return wx.getStorageSync(PERMS_KEY) || null; } catch (e) { return null; }
 }
+// null 与 [] 含义不同，必须分开保存：
+//   null（键不存在）= 后端没给 permissions（旧会话 / 旧接口），前端放行入口，由接口 403 兜底
+//   []             = 后端明确给了「一个权限都没有」，入口应当隐藏
+// 所以非数组一律不写键，避免把「信息缺失」伪装成「零权限」
 function setPermissions(p, persistent) {
-  memPerms = p || null;
+  var list = Array.isArray(p) ? p : null;
+  memPerms = list;
   try {
-    if (persistent) wx.setStorageSync(PERMS_KEY, p || []);
+    if (persistent && list) wx.setStorageSync(PERMS_KEY, list);
     else wx.removeStorageSync(PERMS_KEY);
   } catch (e) { /* ignore */ }
 }

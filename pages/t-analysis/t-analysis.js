@@ -31,6 +31,7 @@ function drillable(no) {
 
 function decorateQuestion(q) {
   return {
+    uid: q.uid,
     questionNumber: q.questionNumber,
     questionType: q.questionType || '—',
     rateText: pct(q.scoreRate),
@@ -280,7 +281,10 @@ Page({
     this.setData({ loading: true, qError: '' });
     teacherService.fetchQuestions(this.data.examId, classId || undefined)
       .then(function (resp) {
-        self._questions = analysis.normalizeQuestionStats(resp);
+        // 列表键用下标 uid：同一题号的客观/主观两行 questionNumber 相同，wx:key 用题号会撞键
+        self._questions = analysis.normalizeQuestionStats(resp).map(function (q, i) {
+          return Object.assign({}, q, { uid: i });
+        });
         self.setData({ loading: false, questions: self.applySort() });
       })
       .catch(function (err) {

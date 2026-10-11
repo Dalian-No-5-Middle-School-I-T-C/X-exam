@@ -50,7 +50,7 @@ Page({
       nameInitial: (u && u.name) ? String(u.name).charAt(0) : '?',
       subOn: getSubStatus(),
       subReady: !!TEMPLATE_ID,
-      isAdmin: role.currentRole(u) === role.ROLE_ADMIN,
+      isAdmin: role.isAdminUser(u),
       canWorkspace: role.canViewTeacherWorkspace(u)
     });
     this.syncSubAuth();

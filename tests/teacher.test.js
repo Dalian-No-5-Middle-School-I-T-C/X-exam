@@ -70,14 +70,38 @@ test('角色门：教师与管理员可达工作台，学生一律不可', () =>
   assert.equal(role.canViewTeacherWorkspace({ role_id: 3 }, ['score:read']), false);
 });
 
-test('角色门：域级通配与缺 permissions 的旧会话', () => {
+test('角色门：域级通配、缺 permissions 的旧会话与明确的零权限', () => {
   assert.equal(role.canViewTeacherWorkspace(TEACHER, ['grade:*']), true);
   assert.equal(role.canViewTeacherWorkspace(TEACHER, ['exam:read']), false);
-  // 本次改动前建立的会话没有 permissions：放行入口，真实鉴权仍由后端做
-  assert.equal(role.canViewTeacherWorkspace(TEACHER, []), true);
+  // null / undefined = 读不到权限位（本次改动前建立的会话、后端未返回该字段）：
+  // 放行入口，真实鉴权仍由后端做，避免把老用户挡在门外又给不出原因
   assert.equal(role.canViewTeacherWorkspace(TEACHER, null), true);
+  assert.equal(role.canViewTeacherWorkspace(TEACHER, undefined), true);
+  // [] = 后端明确给了「一个权限位都没有」：隐藏入口，点了只会看到 403
+  assert.equal(role.canViewTeacherWorkspace(TEACHER, []), false);
   assert.equal(role.hasPermission(['*'], 'grade:read'), true);
   assert.equal(role.hasPermission([], 'grade:read'), false);
+});
+
+test('管理员判据：权威字段优先，旧会话才退回历史线索', () => {
+  global.wx = baseWx;
+  signOut();
+  assert.equal(role.isAdminUser(ADMIN), true);
+  assert.equal(role.isAdminUser({ role_id: 1 }), true);
+  assert.equal(role.isAdminUser(STUDENT), false);
+  assert.equal(role.isAdminUser(TEACHER), false);
+  // 学生即便带上线索也不是管理员（权威字段存在时一概不查线索）
+  assert.equal(role.isAdminUser({ role_name: 'student', isAdmin: true }), false);
+  assert.equal(role.isAdminUser({ role_id: 3, role_display_name: '管理员' }), false);
+  // 旧会话：没有 role_name / role_id，只有历史线索 —— 放行，否则管理员会失去天梯入口
+  assert.equal(role.isAdminUser({ isAdmin: true }), true);
+  assert.equal(role.isAdminUser({ role: 'Administrator' }), true);
+  assert.equal(role.isAdminUser({ role_display_name: '管理员' }), true);
+  assert.equal(role.isAdminUser(null), false);
+  // 同一判据同时决定工作台入口，不再出现「入口看不见、页面却能进」的错位
+  assert.equal(role.canViewTeacherWorkspace({ role_display_name: '管理员' }, []), true);
+  assert.equal(role.canViewTeacherWorkspace({ role_name: 'teacher', role_display_name: '管理员' }, []), false);
+  signOut();
 });
 
 test('homePath 决定登录落地页；guardWorkspace 拦下学生', () => {
@@ -240,6 +264,42 @@ test('t-analysis：小题按得分率升序，非数字题号不给下钻入口'
   page.goQuestion({ currentTarget: { dataset: { no: '03' } } });
   assert.equal(urls.length, 1);
   assert.match(urls[0], /questionNumber=03/);
+  signOut();
+});
+
+test('t-analysis：题号重复时小题行仍有唯一列表键', async () => {
+  const fs = require('fs');
+  const path = require('path');
+  global.wx = baseWx;
+  signIn(TEACHER, ['grade:read']);
+  stubGet(p => {
+    if (p.indexOf('/classes') >= 0) return [];
+    if (p.indexOf('/questions') >= 0) {
+      // 同一题号的客观/主观两行：questionNumber 相同，不能当 wx:key
+      return [
+        { questionNumber: '5', questionType: '客观', scoreRate: 70, difficulty: 0.7, discrimination: 0.1 },
+        { questionNumber: '5', questionType: '主观', scoreRate: 40, difficulty: 0.4, discrimination: 0.3 }
+      ];
+    }
+    return { gradedCount: 0, distribution: [], errorRateBuckets: {} };
+  });
+  const page = makePage(tAnalysisDef);
+  page.onLoad({ examId: '7' });
+  await flush();
+  await flush();
+  page.switchTab({ currentTarget: { dataset: { key: 'question' } } });
+  await flush();
+  await flush();
+  assert.equal(page.data.questions.length, 2);
+  const before = page.data.questions.map(q => q.uid);
+  assert.equal(new Set(before).size, 2, '重复题号必须给出两个不同的 uid');
+  // 排序只改变顺序，不能让 uid 丢失或撞车
+  page.onSort({ currentTarget: { dataset: { value: 'disc' } } });
+  assert.deepEqual(page.data.questions.map(q => q.uid).sort(), before.slice().sort());
+  assert.equal(new Set(page.data.questions.map(q => q.uid)).size, 2);
+
+  const wxml = fs.readFileSync(path.join(__dirname, '..', 'pages', 't-analysis', 't-analysis.wxml'), 'utf8');
+  assert.match(wxml, /wx:for="\{\{questions\}\}"\s+wx:key="uid"/, '小题列表的 wx:key 必须是 uid');
   signOut();
 });
 
@@ -519,5 +579,37 @@ test('t-ranking：切班写回 classLabel，筛选走后端 classId 而不是本
   // 榜单接口按后端 classId=0 过滤（与分析接口同一套 classFilter 口径）
   assert.ok(reqs.indexOf('/analysis/exams/7/students?classId=0') >= 0);
   assert.equal(page.data.list[0].errorRateText, '25%');
+  signOut();
+});
+
+// ── 角色判据统一（天梯管理页不再自带一套宽松判定）─────
+const adminLadderDef = capture('../pages/admin-ladder/admin-ladder.js');
+
+test('admin-ladder：判据与 profile 同源，学生与「显示名像管理员」的教师都进不去', async () => {
+  global.wx = baseWx;
+  const reqs = [];
+  stubGet(p => { reqs.push(p); return { ladderEnabled: true }; });
+
+  signIn(STUDENT, ['score:read']);
+  const s = makePage(adminLadderDef);
+  s.onLoad();
+  assert.equal(s.data.error, '仅管理员可管理成绩天梯');
+  assert.deepEqual(reqs, []);
+
+  // 权威字段是 teacher：显示名带「管理员」也不算管理员（旧判据正是这样漏的）
+  signIn({ id: 8, name: '李老师', role_name: 'teacher', role_display_name: '管理员' }, ['grade:read']);
+  const t = makePage(adminLadderDef);
+  t.onLoad();
+  assert.equal(t.data.error, '仅管理员可管理成绩天梯');
+  assert.deepEqual(reqs, []);
+
+  // 旧会话没有 role_name / role_id：历史线索继续有效，否则管理员升级后连原有页面都进不去
+  signIn({ id: 1, name: '管理员', role_display_name: '管理员' }, null);
+  const a = makePage(adminLadderDef);
+  a.onLoad();
+  await flush();
+  assert.equal(a.data.error, '');
+  assert.deepEqual(reqs, ['/ladder/config']);
+  assert.equal(a.data.enabled, true);
   signOut();
 });

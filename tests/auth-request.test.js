@@ -13,6 +13,7 @@ global.wx = {
   getStorageSync: k => (k in store ? store[k] : ''),
   setStorageSync: (k, v) => { store[k] = v; },
   removeStorageSync: k => { delete store[k]; },
+  getStorageInfoSync: () => ({ keys: Object.keys(store) }),
   request: opts => { requestCalls.push(opts); opts.success({ statusCode: 200, data: {} }); },
   reLaunch: opts => {
     relaunchCalls.push(opts);
@@ -51,6 +52,44 @@ test('user: memory + persistent storage', () => {
   assert.deepEqual(auth.getUser(), { name: 'B' });
   auth.clearUser();
   assert.equal(auth.getUser(), null);
+});
+
+test('permissions: 「读不到」与「明确为零」分开存', () => {
+  auth.clearPermissions();
+  // 后端明确给了零权限 → 落盘 []，入口据此隐藏
+  auth.setPermissions([], true);
+  assert.deepEqual(store.px_perms, []);
+  assert.deepEqual(auth.getPermissions(), []);
+  // 后端没给 permissions（旧接口 / 旧会话同形）→ 不写键，读回 null，入口放行由后端 403 兜底
+  auth.setPermissions(undefined, true);
+  assert.equal(store.px_perms, undefined);
+  assert.equal(auth.getPermissions(), null);
+  auth.setPermissions(null, true);
+  assert.equal(store.px_perms, undefined);
+  assert.equal(auth.getPermissions(), null);
+  // 非「记住我」只存内存，不在设备上留权限位
+  auth.setPermissions(['grade:read'], false);
+  assert.equal(store.px_perms, undefined);
+  assert.deepEqual(auth.getPermissions(), ['grade:read']);
+  auth.clearPermissions();
+  assert.equal(auth.getPermissions(), null);
+});
+
+// px_perms 的 null / [] 语义只在「当前账号」范围内成立，换账号残留的键会把上一位
+// 教师的权限位当成自己的，所以清理名单必须有断言守着
+test('clearLocalUserData 清掉成绩 / AI / 邀请 / 权限位，其余键保留', () => {
+  store['px_cache_scores_me_1'] = 'x';
+  store['px_ai_report_1'] = 'x';
+  store['px_pending_invite'] = 'x';
+  store['px_perms'] = ['grade:read'];
+  store['px_theme'] = 'keep';
+  request.clearLocalUserData();
+  assert.equal(store['px_cache_scores_me_1'], undefined);
+  assert.equal(store['px_ai_report_1'], undefined);
+  assert.equal(store['px_pending_invite'], undefined);
+  assert.equal(store['px_perms'], undefined);
+  assert.equal(store['px_theme'], 'keep');
+  delete store['px_theme'];
 });
 
 test('isLoggedIn reflects token presence', () => {

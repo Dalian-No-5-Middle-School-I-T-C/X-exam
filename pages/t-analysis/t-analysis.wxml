@@ -126,7 +126,7 @@
         </view>
 
         <view class="qlist">
-          <view wx:for="{{questions}}" wx:key="questionNumber"
+          <view wx:for="{{questions}}" wx:key="uid"
                 class="qrow card anim {{ready ? 'show' : ''}}"
                 style="animation-delay: {{index < 12 ? index * 30 : 0}}ms"
                 data-no="{{item.questionNumber}}" bindtap="goQuestion">

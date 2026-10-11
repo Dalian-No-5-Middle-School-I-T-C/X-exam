@@ -1,12 +1,11 @@
 const { getUser } = require('../../utils/auth');
+const role = require('../../utils/role');
 const ladderSettingsService = require('../../services/ladderSettingsService');
 
+// 管理员判据统一走 utils/role.js：本页原先自带一套宽松判定，
+// 与 profile 的入口判据可能对不上，出现「入口看不见、页面却能进」的错位
 function isAdmin(user) {
-  if (!user) return false;
-  if (user.isAdmin === true || user.is_admin === true) return true;
-  const role = String(user.role || user.roleCode || user.role_code || '').toLowerCase();
-  const displayName = String(user.role_display_name || '');
-  return role === 'admin' || role === 'administrator' || displayName.indexOf('管理员') >= 0;
+  return role.isAdminUser(user);
 }
 function readEnabled(data, fallback) {
   if (data && data.ladderEnabled != null) return !!data.ladderEnabled;
