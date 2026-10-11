@@ -4,16 +4,9 @@ const { post, requestRaw } = require('../../utils/request');
 const { normalizeReport, getCachedAI, setCachedAI } = require('../../utils/ai');
 const { getSubStatus, setSubStatus, requestSubscribe, TEMPLATE_ID } = require('../../utils/subscribe');
 const { clearCachedScores } = require('../../utils/cache');
+const role = require('../../utils/role');
 const growthService = require('../../services/growthService');
 const share = require('../../growth/share');
-
-function isAdmin(user) {
-  if (!user) return false;
-  if (user.isAdmin === true || user.is_admin === true) return true;
-  const role = String(user.role || user.roleCode || user.role_code || '').toLowerCase();
-  const displayName = String(user.role_display_name || '');
-  return role === 'admin' || role === 'administrator' || displayName.indexOf('管理员') >= 0;
-}
 
 // 学生只看结论，HTTP 状态 / 微信 errno 只进 console（真机 vConsole 可定位到底是
 // 后端没部署（404）、未配环境变量（503）还是用户自己取消）。
@@ -44,6 +37,7 @@ Page({
     subOn: false,
     subReady: false,
     isAdmin: false,
+    canWorkspace: false,
     ready: false
   },
 
@@ -56,9 +50,15 @@ Page({
       nameInitial: (u && u.name) ? String(u.name).charAt(0) : '?',
       subOn: getSubStatus(),
       subReady: !!TEMPLATE_ID,
-      isAdmin: isAdmin(u)
+      isAdmin: role.isAdminUser(u),
+      canWorkspace: role.canViewTeacherWorkspace(u)
     });
     this.syncSubAuth();
+  },
+
+  // 教师工作台入口（教师与管理员可见）：普通跳转即可返回，页面内还有 guardWorkspace 兜底
+  goWorkspace: function () {
+    wx.navigateTo({ url: '/pages/t-exams/t-exams' });
   },
 
   // 用微信真实订阅授权态复核本地开关，避免开关与实际授权脱节

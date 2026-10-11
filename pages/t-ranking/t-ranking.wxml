@@ -1,0 +1,71 @@
+<!-- pages/t-ranking/t-ranking.wxml -->
+<view class="container">
+  <view wx:if="{{invalid}}" class="empty {{ready ? 'show' : ''}}">
+    <view>考试编号无效</view>
+    <view class="empty-hint">请从考试分析页重新进入</view>
+  </view>
+
+  <block wx:else>
+    <view class="eyebrow">RANKING · 成绩榜</view>
+    <view class="title">本场成绩榜</view>
+    <view class="sub">名次由后端给出 · 共 {{total}} 人</view>
+
+    <view class="bar-top">
+      <picker wx:if="{{classOptions.length > 1}}" mode="selector" range="{{classOptions}}"
+              range-key="className" value="{{classIndex}}" bindchange="onClassChange">
+        <view class="ta-class">
+          <text class="ta-class-label">{{classLabel}}</text>
+          <text class="ta-class-caret">▾</text>
+        </view>
+      </picker>
+    </view>
+
+    <view wx:if="{{loading && list.length === 0}}" class="skeleton">
+      <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-80"></view></view>
+      <view class="sk-card"><view class="sk sk-line w-60"></view><view class="sk sk-line w-40"></view></view>
+    </view>
+
+    <view wx:elif="{{error}}" class="empty err-box {{ready ? 'show' : ''}}" bindtap="onRetry">{{error}} · 点击重试</view>
+
+    <block wx:else>
+      <view class="search-box">
+        <input class="search" placeholder="搜索姓名 / 学号" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" />
+      </view>
+
+      <view class="sub note">「低分题」是后端按单题得分占满分比例阈值判定的题数，名次由总分并列名次规则给出。</view>
+
+      <view wx:if="{{list.length === 0}}" class="empty {{ready ? 'show' : ''}}">
+        <view>{{total > 0 ? '没有匹配的学生' : '本场暂无成绩榜数据'}}</view>
+        <view wx:if="{{total > 0}}" class="empty-hint">换个关键词试试，或切回「全部班级」</view>
+      </view>
+
+      <view wx:else class="card anim {{ready ? 'show' : ''}}">
+        <view class="hd-row">
+          <text class="c-rank">名次</text>
+          <text class="c-name">学生</text>
+          <text class="c-score">总分</text>
+          <text class="c-err">低分题</text>
+        </view>
+        <view wx:for="{{list}}" wx:key="uid" class="row">
+          <text class="c-rank num {{item.isTop ? 'top' : ''}}">{{item.rankText}}</text>
+          <view class="c-name">
+            <text class="s-name">{{item.studentName}}</text>
+            <text class="s-sub meta">{{item.studentNumber}}</text>
+          </view>
+          <view class="c-score">
+            <text class="s-total num">{{item.totalScore}}</text>
+            <text class="s-sub meta">客观 {{item.objectiveScore}} / 主观 {{item.subjectiveScore}}</text>
+          </view>
+          <view class="c-err">
+            <text class="s-low {{item.errorLevel === 'high' ? 'red-num' : ''}}">{{item.lowScoreCount}}</text>
+            <text class="s-sub meta">共 {{item.questionCount}} 题 · {{item.errorRateText}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{hasMore}}" class="more-wrap">
+        <button class="btn out more-btn" bindtap="onMore">加载更多（剩余 {{matched - list.length}} 人）</button>
+      </view>
+    </block>
+  </block>
+</view>

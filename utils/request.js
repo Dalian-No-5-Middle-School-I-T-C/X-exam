@@ -17,7 +17,8 @@ function clearLocalUserData() {
     var info = wx.getStorageInfoSync();
     var keys = (info && info.keys) || [];
     keys.forEach(function (k) {
-      var hit = k === 'px_pending_invite';
+      // px_perms 存的是教师/管理员权限位，登出后同样不能残留在设备上
+      var hit = k === 'px_pending_invite' || k === 'px_perms';
       for (var i = 0; i < PREFIXES.length; i++) {
         if (k.indexOf(PREFIXES[i]) === 0) { hit = true; break; }
       }
@@ -30,6 +31,7 @@ function clearLogin() {
   clearLocalUserData();
   auth.clearToken();
   auth.clearUser();
+  auth.clearPermissions();
 }
 
 function handleUnauthorized() {

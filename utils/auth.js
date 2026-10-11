@@ -4,10 +4,13 @@ const { requestRaw } = require('./request');
 
 const TOKEN_KEY = 'px_token';
 const USER_KEY = 'px_user';
+// 登录响应里 permissions 是 user 的同级字段（不是 user 内的属性），单独持久化
+const PERMS_KEY = 'px_perms';
 
 // 内存态：非“记住我”登录仅存内存，关闭小程序即登出
 let memToken = '';
 let memUser = null;
+let memPerms = null;
 
 function getToken() {
   if (memToken) return memToken;
@@ -40,6 +43,26 @@ function clearUser() {
   memUser = null;
   try { wx.removeStorageSync(USER_KEY); } catch (e) { /* ignore */ }
 }
+function getPermissions() {
+  if (memPerms) return memPerms;
+  try { return wx.getStorageSync(PERMS_KEY) || null; } catch (e) { return null; }
+}
+// null 与 [] 含义不同，必须分开保存：
+//   null（键不存在）= 后端没给 permissions（旧会话 / 旧接口），前端放行入口，由接口 403 兜底
+//   []             = 后端明确给了「一个权限都没有」，入口应当隐藏
+// 所以非数组一律不写键，避免把「信息缺失」伪装成「零权限」
+function setPermissions(p, persistent) {
+  var list = Array.isArray(p) ? p : null;
+  memPerms = list;
+  try {
+    if (persistent && list) wx.setStorageSync(PERMS_KEY, list);
+    else wx.removeStorageSync(PERMS_KEY);
+  } catch (e) { /* ignore */ }
+}
+function clearPermissions() {
+  memPerms = null;
+  try { wx.removeStorageSync(PERMS_KEY); } catch (e) { /* ignore */ }
+}
 
 // 本地缓存盐：优先用户 id，缺失时用 token 尾部，保证跨账号隔离
 function userSalt() {
@@ -63,6 +86,7 @@ function login(identifier, password, remember, schoolCode) {
     if (res.data && res.data.token) {
       setToken(res.data.token, remember);
       setUser(res.data.user, remember);
+      setPermissions(res.data.permissions, remember);
       return res.data;
     }
     var err = new Error((res.data && res.data.message) || '登录失败');
@@ -76,6 +100,7 @@ function logout() {
   require('./request').clearLocalUserData();
   clearToken();
   clearUser();
+  clearPermissions();
 }
 
 // 静默登录：有 token 即视为已登录（真实有效性由接口 401 判定）
@@ -90,6 +115,9 @@ module.exports = {
   getUser: getUser,
   setUser: setUser,
   clearUser: clearUser,
+  getPermissions: getPermissions,
+  setPermissions: setPermissions,
+  clearPermissions: clearPermissions,
   login: login,
   logout: logout,
   isLoggedIn: isLoggedIn,

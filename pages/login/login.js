@@ -1,5 +1,6 @@
 // pages/login/login.js
 const { login, isLoggedIn } = require('../../utils/auth');
+const role = require('../../utils/role');
 const growthService = require('../../services/growthService');
 const invite = require('../../growth/invite');
 
@@ -24,7 +25,7 @@ Page({
   onShow: function () {
     // 已有 token 视为已登录：冷启动不再重复输入账号密码
     if (isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/scores/scores' });
+      wx.reLaunch({ url: role.homePath() });
     }
   },
   onReady: function () { this.setData({ ready: true }); },
@@ -55,10 +56,12 @@ Page({
       // 登录成功：上报转化并消费待生效邀请（深链到具体考试）
       const pending = growthService.onLoginSuccess();
       invite.clearPending();
-      if (pending && pending.examId) {
+      // 深链到单场成绩只对学生有意义；教师与管理员一律落到工作台或成绩页
+      const home = role.homePath(res.user, res.permissions);
+      if (pending && pending.examId && role.isStudent(res.user)) {
         wx.reLaunch({ url: '/pages/detail/detail?examId=' + pending.examId });
       } else {
-        wx.reLaunch({ url: '/pages/scores/scores' });
+        wx.reLaunch({ url: home });
       }
     } catch (err) {
       this.setData({ error: (err && err.message) || '登录失败' });

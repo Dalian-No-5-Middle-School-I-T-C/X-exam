@@ -1,0 +1,63 @@
+/* pages/t-question/t-question.wxss */
+.skeleton { margin-top: 24rpx; }
+.empty-hint { margin-top: 10rpx; font-size: 24rpx; color: var(--gray); font-weight: 400; }
+.err-box { color: var(--err-fg); border: 1rpx solid var(--err-bd); background: var(--err-soft); }
+.note { margin: 14rpx 0; line-height: 1.5; }
+
+.ovw {
+  display: flex;
+  align-items: stretch;
+  margin-top: 22rpx;
+  padding: 26rpx 0;
+}
+.ovw-item { flex: 1; text-align: center; }
+.ovw-num {
+  font-family: var(--font-mono);
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.red-num { color: var(--err); }
+
+.sort-bar { display: flex; align-items: center; margin: 18rpx 0 12rpx; }
+.sort-cap { font-size: 22rpx; color: var(--gray); margin-right: 14rpx; }
+.chip {
+  display: inline-block;
+  padding: 8rpx 22rpx;
+  margin-right: 14rpx;
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: var(--gray);
+  font-size: 22rpx;
+  border: 1rpx solid var(--line);
+}
+.chip.on {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border-color: var(--blue-bd);
+  font-weight: 600;
+}
+
+.hd-row, .row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  border-bottom: 1rpx solid var(--line);
+}
+.hd-row { padding-top: 12rpx; }
+.hd-row text { font-size: 22rpx; color: var(--gray); font-weight: 400; }
+.row:last-child { border-bottom: none; }
+
+.hd-seq { width: 48rpx; flex: none; font-size: 24rpx; color: var(--gray); }
+.hd-name { flex: 1; min-width: 0; }
+.s-name { display: block; font-size: 28rpx; color: var(--ink); font-weight: 600; }
+.s-sub { display: block; margin-top: 2rpx; }
+.hd-score { width: 150rpx; flex: none; font-size: 26rpx; color: var(--ink); text-align: right; }
+.hd-rate { width: 170rpx; flex: none; }
+.s-rate { display: block; font-size: 26rpx; color: var(--blue); text-align: right; }
+.s-rate.full { color: var(--ink); }
+
+.bar-wrap { height: 10rpx; background: var(--paper-2); margin-top: 6rpx; overflow: hidden; }
+.bar { height: 100%; background: var(--blue); }

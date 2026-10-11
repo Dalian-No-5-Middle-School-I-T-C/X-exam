@@ -1,0 +1,78 @@
+<!-- pages/t-exams/t-exams.wxml -->
+<view class="container">
+  <view class="eyebrow">TEACHER · 教师工作台</view>
+  <view class="title">考试分析</view>
+  <view class="sub">仅展示你任教的考试 · 数据由学校 Project-X 阅卷系统提供</view>
+
+  <view wx:if="{{error}}" class="empty err-box">{{error}}</view>
+
+  <view wx:if="{{stats}}" class="ovw card anim {{ready ? 'show' : ''}}">
+    <view class="ovw-item">
+      <view class="ovw-num">{{stats.exams}}</view>
+      <view class="muted">可见考试</view>
+    </view>
+    <view class="ovw-item">
+      <view class="ovw-num">{{stats.graded}}</view>
+      <view class="muted">已判分</view>
+    </view>
+    <view class="ovw-item">
+      <view class="ovw-num">{{stats.published}}</view>
+      <view class="muted">已公布</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading && list.length === 0}}" class="skeleton">
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-60"></view></view>
+    <view class="sk-card"><view class="sk sk-title"></view><view class="sk sk-line w-40"></view></view>
+  </view>
+
+  <block wx:if="{{list.length > 0}}">
+    <view class="toolbar">
+      <view class="search-box">
+        <input class="search" placeholder="搜索考试 / 学科" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" />
+      </view>
+    </view>
+    <scroll-view wx:if="{{subjects.length > 1}}" scroll-x class="chips">
+      <view class="chip {{subjectFilter === '' ? 'on' : ''}}" bindtap="onSubject" data-value="">全部</view>
+      <view wx:for="{{subjects}}" wx:key="*this"
+            class="chip {{subjectFilter === item ? 'on' : ''}}"
+            bindtap="onSubject" data-value="{{item}}">{{item}}</view>
+    </scroll-view>
+
+    <view class="list">
+      <view wx:if="{{viewList.length === 0}}" class="empty">没有匹配的考试</view>
+      <view wx:for="{{viewList}}" wx:key="examId"
+            class="row card anim {{ready ? 'show' : ''}}"
+            style="animation-delay: {{index < 12 ? index * 45 : 0}}ms"
+            bindtap="goAnalysis" data-id="{{item.examId}}">
+        <view class="row-main">
+          <view class="row-name">{{item.name}}</view>
+          <view class="row-meta meta">
+            <text>{{item.examDate || '未标日期'}}</text>
+            <text wx:if="{{item.gradeName}}"> · {{item.gradeName}}</text>
+            <text wx:if="{{item.subject}}"> · {{item.subject}}</text>
+          </view>
+          <view class="row-nums">
+            <text class="num row-num">{{item.gradedCount == null ? '—' : item.gradedCount}}</text>
+            <text class="muted row-cap">已判分</text>
+            <text class="num row-num">{{item.avgScore == null ? '—' : item.avgScore}}</text>
+            <text class="muted row-cap">平均分</text>
+          </view>
+        </view>
+        <view class="row-side">
+          <text class="badge {{item.publishState === 1 ? 'b-blue' : (item.publishState === 2 ? 'b-red' : 'b-gray')}}">{{item.publishLabel}}</text>
+          <text class="row-arrow">›</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view wx:elif="{{!loading && !error}}" class="empty {{ready ? 'show' : ''}}">
+    <view>暂无可见考试</view>
+    <view class="empty-hint">后端按你的任教班级与学科返回数据范围</view>
+  </view>
+
+  <view class="foot">
+    <button class="btn out foot-btn" bindtap="goProfile">我的 ›</button>
+  </view>
+</view>

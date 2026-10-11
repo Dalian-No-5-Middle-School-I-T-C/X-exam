@@ -1,0 +1,101 @@
+/* pages/t-analysis/t-analysis.wxss */
+.skeleton { margin-top: 24rpx; }
+.empty-hint { margin-top: 10rpx; font-size: 24rpx; color: var(--gray); font-weight: 400; }
+.err-box { color: var(--err-fg); border: 1rpx solid var(--err-bd); background: var(--err-soft); }
+
+/* 班级筛选 + 榜单入口 */
+.ta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 22rpx;
+}
+.ta-class {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid var(--line);
+  background: #fff;
+}
+.ta-class-label { font-size: 26rpx; color: var(--ink); font-weight: 600; }
+.ta-class-caret { font-size: 22rpx; color: var(--gray); }
+.ta-links { display: flex; gap: 22rpx; }
+.ta-link { font-size: 26rpx; color: var(--blue); }
+.ta-link:active { opacity: 0.6; }
+
+.chips { white-space: nowrap; }
+.ta-tabs { margin: 18rpx 0 6rpx; }
+.chip {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  margin-right: 14rpx;
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: var(--gray);
+  font-size: 24rpx;
+  border: 1rpx solid var(--line);
+}
+.chip.on {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border-color: var(--blue-bd);
+  font-weight: 600;
+}
+
+/* 概况 · 平均分主卡 */
+.hero { margin-top: 18rpx; padding: 28rpx 24rpx; }
+.hero-num { font-size: 82rpx; font-weight: 800; letter-spacing: -4rpx; line-height: 1.05; color: var(--ink); }
+.hero-total { font-size: 30rpx; font-weight: 400; color: var(--gray); letter-spacing: 0; margin-left: 6rpx; }
+.hero-grid { display: flex; flex-wrap: wrap; margin-top: 22rpx; }
+.hero-cell { width: 50%; margin-bottom: 18rpx; }
+.cell-num { font-size: 38rpx; font-weight: 700; color: var(--ink); }
+
+.five { margin-top: 18rpx; padding: 24rpx; }
+.five-row { display: flex; margin-top: 12rpx; }
+.five-item { flex: 1; text-align: center; }
+.five-num { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+
+.buckets { margin-top: 18rpx; padding: 24rpx; }
+.bk-row { display: flex; margin-top: 16rpx; }
+.bk-item { flex: 1; text-align: center; }
+.bk-num { font-size: 40rpx; font-weight: 700; color: var(--ink); }
+.bk-red { color: var(--err); }
+
+.cmp { margin-top: 18rpx; padding: 24rpx; }
+.cmp-row { display: flex; margin-top: 16rpx; }
+.cmp-item { flex: 1; text-align: center; }
+.cmp-num { font-size: 34rpx; font-weight: 700; color: var(--ink); }
+
+/* 小题得分率 */
+.sort-bar { display: flex; align-items: center; margin: 20rpx 0 4rpx; }
+.sort-cap { font-size: 22rpx; color: var(--gray); margin-right: 14rpx; }
+.sort-bar .chip { padding: 8rpx 22rpx; font-size: 22rpx; }
+
+/* 得分率条：WXML 无内联 i 元素，用两层 view 表达 */
+.bar-wrap { height: 12rpx; background: var(--paper-2); margin-top: 14rpx; overflow: hidden; }
+.bar { height: 100%; background: var(--blue); }
+
+.qlist { margin-top: 10rpx; }
+.qrow { margin-bottom: 16rpx; padding: 22rpx 24rpx; }
+.qhead { display: flex; align-items: center; gap: 12rpx; }
+.qno { font-size: 30rpx; font-weight: 800; color: var(--ink); }
+.qrate { margin-left: auto; font-size: 34rpx; font-weight: 700; color: var(--blue); }
+.qmeta { display: block; margin-top: 14rpx; }
+.qkp { display: block; margin-top: 8rpx; }
+.qnod { margin-top: 10rpx; font-size: 22rpx; color: var(--gray); }
+
+/* 分布与指标 */
+.hist-wrap { margin-top: 12rpx; }
+.hist { display: block; width: 100%; height: 340rpx; }
+.mx-grid { display: flex; flex-wrap: wrap; margin-top: 16rpx; }
+.mx-item { width: 50%; margin-bottom: 18rpx; }
+.mx-num { font-size: 38rpx; font-weight: 700; color: var(--ink); }
+
+/* 知识点 */
+.kp-note { margin: 16rpx 0 10rpx; }
+.krow { margin-bottom: 16rpx; padding: 22rpx 24rpx; }
+.khead { display: flex; align-items: center; gap: 12rpx; }
+.kname { font-size: 30rpx; font-weight: 700; color: var(--ink); word-break: break-all; }
+.krate { margin-left: auto; font-size: 32rpx; font-weight: 700; color: var(--blue); }
+.kmeta { display: block; margin-top: 12rpx; }
