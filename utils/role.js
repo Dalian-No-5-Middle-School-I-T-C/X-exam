@@ -77,6 +77,24 @@ function teacherRoleLabel(user) {
   return (u && u.teacher_role) || '';
 }
 
+// 「我的」页眉标：沿用各页 `CODE · 中文` 的写法，但这段文字随角色变化，
+// 所以判据仍走 roleNameOf（role_name 优先，只有 role_id 的旧响应也能判定），
+// 管理员复用前端唯一判据 isAdminUser，页面只消费文案、不再各写一套。
+// 后端新增角色时按学生文案回落：本页默认受众是学生，认不出角色只是叫不准，
+// 不该因此留空或报错。
+const PROFILE_EYEBROWS = {
+  student: 'STUDENT · 学生档案',
+  teacher: 'TEACHER · 老师档案',
+  admin: 'ADMIN · 管理员档案'
+};
+
+function profileEyebrow(user) {
+  var r = currentRole(user);
+  if (r === ROLE_TEACHER) return PROFILE_EYEBROWS.teacher;
+  if (r === ROLE_ADMIN || (r === '' && isAdminUser(user))) return PROFILE_EYEBROWS.admin;
+  return PROFILE_EYEBROWS.student;
+}
+
 // 登录/静默登录后的落地页：教师与管理员进工作台，学生进成绩页
 function homePath(user, perms) {
   return canViewTeacherWorkspace(user, perms) ? '/pages/t-exams/t-exams' : '/pages/scores/scores';
@@ -102,6 +120,7 @@ module.exports = {
   isAdminUser: isAdminUser,
   canViewTeacherWorkspace: canViewTeacherWorkspace,
   teacherRoleLabel: teacherRoleLabel,
+  profileEyebrow: profileEyebrow,
   homePath: homePath,
   guardWorkspace: guardWorkspace
 };

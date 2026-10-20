@@ -31,6 +31,9 @@ Page({
   data: {
     user: null,
     nameInitial: '?',
+    // 眉标文字随角色变化，判据在 utils/role.js 的 profileEyebrow；
+    // onShow 早于首次渲染执行，这里留空串即可，不必把学生文案写死在页面里
+    eyebrow: '',
     aiReport: null,
     aiLoading: false,
     aiError: '',
@@ -48,6 +51,7 @@ Page({
     this.setData({
       user: u,
       nameInitial: (u && u.name) ? String(u.name).charAt(0) : '?',
+      eyebrow: role.profileEyebrow(u),
       subOn: getSubStatus(),
       subReady: !!TEMPLATE_ID,
       isAdmin: role.isAdminUser(u),

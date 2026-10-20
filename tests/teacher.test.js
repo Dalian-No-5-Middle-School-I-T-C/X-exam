@@ -123,6 +123,27 @@ test('homePath 决定登录落地页；guardWorkspace 拦下学生', () => {
   signOut();
 });
 
+// 「我的」页眉标原先写死成学生文案，教师 / 管理员进来也显示「STUDENT · 学生档案」。
+// 这里锁的是判据本身：文字由角色给出，且管理员与「管理」入口共用同一条判据。
+test('profileEyebrow 按角色出文案，认不出角色回落学生文案', () => {
+  global.wx = baseWx;
+  signOut();
+  assert.equal(role.profileEyebrow(TEACHER), 'TEACHER · 老师档案');
+  assert.equal(role.profileEyebrow(ADMIN), 'ADMIN · 管理员档案');
+  assert.equal(role.profileEyebrow(STUDENT), 'STUDENT · 学生档案');
+  // 只有 role_id 的旧响应
+  assert.equal(role.profileEyebrow({ role_id: 2 }), 'TEACHER · 老师档案');
+  assert.equal(role.profileEyebrow({ role_id: 3 }), 'STUDENT · 学生档案');
+  // role_name 优先于 role_id：后端给了什么角色就显示什么，不按 id 猜
+  assert.equal(role.profileEyebrow({ role_name: 'teacher', role_id: 3 }), 'TEACHER · 老师档案');
+  // 未知角色与未登录：回落本页默认受众，不留空
+  assert.equal(role.profileEyebrow({ role_name: 'auditor' }), 'STUDENT · 学生档案');
+  assert.equal(role.profileEyebrow(null), 'STUDENT · 学生档案');
+  // 旧会话只剩历史线索的管理员，与 isAdminUser 决定的入口保持一致
+  assert.equal(role.profileEyebrow({ role_display_name: '管理员' }), 'ADMIN · 管理员档案');
+  assert.equal(role.profileEyebrow({ role_name: 'teacher', role_display_name: '管理员' }), 'TEACHER · 老师档案');
+});
+
 // ── pages/t-exams ─────────────────────────────────────
 const tExamsDef = capture('../pages/t-exams/t-exams.js');
 const tAnalysisDef = capture('../pages/t-analysis/t-analysis.js');
