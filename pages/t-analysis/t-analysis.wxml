@@ -6,7 +6,7 @@
   </view>
 
   <block wx:else>
-    <view class="eyebrow">TEACHER · 考试分析</view>
+    <view class="eyebrow"><text class="en">TEACHER</text><text class="cn"> · 考试分析</text></view>
     <view class="title">{{examName || ('考试 #' + examId)}}</view>
     <view class="sub">仅统计你任教的考试 · 全部为只读数据</view>
 
@@ -20,6 +20,7 @@
       </picker>
       <view class="ta-links">
         <text class="ta-link" bindtap="goRanking">成绩榜 ›</text>
+        <text class="ta-link" bindtap="goExport">导出成绩 ›</text>
         <text wx:if="{{classOptions.length > 2}}" class="ta-link" bindtap="goClasses">班级对比 ›</text>
       </view>
     </view>
@@ -40,7 +41,7 @@
 
       <block wx:elif="{{ov}}">
         <view class="hero card anim {{ready ? 'show' : ''}}">
-          <view class="eyebrow eyebrow--blue">AVG · 平均分</view>
+          <view class="eyebrow eyebrow--blue"><text class="en">AVG</text><text class="cn"> · 平均分</text></view>
           <view class="num hero-num">{{ovText.avg}}<text wx:if="{{ov.fullScore}}" class="hero-total"> / {{ovText.full}}</text></view>
           <view class="hero-grid">
             <view class="hero-cell">

@@ -58,7 +58,9 @@ Page({
       this.setData({ invalid: true });
       return;
     }
-    this.setData({ examId: id });
+    // 导出页「成绩榜 ›」会把当前班级带过来，班级名单到手后再对齐 picker 的选中项
+    const cid = options && options.classId !== undefined && options.classId !== null ? String(options.classId) : '';
+    this.setData({ examId: id, classId: /^\d+$/.test(cid) ? cid : '' });
     this.loadClasses();
     this.load();
   },
@@ -74,8 +76,16 @@ Page({
     teacherService.fetchClasses(this.data.examId)
       .then(function (resp) {
         const classes = analysis.normalizeClasses(resp);
+        const options = [{ className: '全部班级', classId: null }].concat(classes);
+        // 带着 classId 进来时（导出页的「成绩榜 ›」），picker 要显示同一个班，
+        // 否则榜单已经按班筛了、选择器却还写着「全部班级」
+        const at = self.data.classId ? options.findIndex(function (c) {
+          return c.classId !== null && String(c.classId) === self.data.classId;
+        }) : -1;
         self.setData({
-          classOptions: [{ className: '全部班级', classId: null }].concat(classes)
+          classOptions: options,
+          classIndex: at > 0 ? at : 0,
+          classLabel: at > 0 ? options[at].className : '全部班级'
         });
       })
       .catch(function () { /* 筛选失败不影响榜单本身 */ });
@@ -155,5 +165,11 @@ Page({
     this.fill();
   },
 
-  onRetry: function () { this.load(); }
+  onRetry: function () { this.load(); },
+
+  // 榜单筛中哪个班，导出页就从哪个班起步；「全部班级」不带 classId，落到导出页的整场一份
+  goExport: function () {
+    const cid = this.data.classId ? '&classId=' + encodeURIComponent(this.data.classId) : '';
+    wx.navigateTo({ url: '/pages/t-export/t-export?examId=' + this.data.examId + cid });
+  }
 });

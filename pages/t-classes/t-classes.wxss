@@ -46,7 +46,8 @@
 .gp-hd { padding-top: 12rpx; }
 .gp-hd text { font-size: 22rpx; color: var(--gray); font-weight: 400; }
 .gp-row:last-child { border-bottom: none; }
-.gp-no { width: 92rpx; flex: none; font-size: 26rpx; color: var(--ink); }
+/* 题号列只放「Q12」：题型文案挪到右侧细字行，92rpx 里塞「Q12·主观」必然折行 */
+.gp-no { width: 76rpx; flex: none; font-size: 26rpx; color: var(--ink); white-space: nowrap; }
 .gp-gap { width: 110rpx; flex: none; font-size: 28rpx; color: var(--err); font-weight: 700; }
 .gp-side { flex: 1; min-width: 0; }
 .gp-line { display: block; font-size: 24rpx; color: var(--ink); }

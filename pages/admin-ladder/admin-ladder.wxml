@@ -1,5 +1,5 @@
 <view class="container">
-  <view class="eyebrow">ADMIN · 管理设置</view>
+  <view class="eyebrow"><text class="en">ADMIN</text><text class="cn"> · 管理设置</text></view>
   <view class="title">成绩天梯</view>
   <view class="sub">仅管理员可修改；关闭后学生无法查看本场成绩天梯。</view>
 

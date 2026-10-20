@@ -1,6 +1,6 @@
 <!-- pages/leaderboard/leaderboard.wxml -->
 <view class="container">
-  <view class="eyebrow">LEADERBOARD · 年级天梯</view>
+  <view class="eyebrow"><text class="en">LEADERBOARD</text><text class="cn"> · 年级天梯</text></view>
   <view class="title">{{examName || ('考试 #' + examId)}}</view>
   <view class="sub lb-sub">年级成绩天梯 · {{boardDesc}}</view>
 

@@ -26,6 +26,66 @@ function toArr(resp, key) {
   return [];
 }
 
+// ArrayBuffer / Uint8Array → UTF-8 字符串。
+// 为什么手写解码：request 用 responseType 'arraybuffer' 取 Excel 二进制时，
+// 同一通道返回的 403/401 错误体也是 ArrayBuffer，小程序侧没有可靠的 TextDecoder 可用，
+// 不解码就只能把「权限不足：管理员已关闭…」压成一句「请求失败」。
+// 覆盖 1/2/3/4 字节序列，4 字节（emoji 等）拆成代理对；遇到裸续字节或截断序列直接跳过。
+function decodeUtf8(input) {
+  if (!input) return '';
+  var bytes;
+  if (typeof Uint8Array !== 'undefined' && (input instanceof ArrayBuffer || input instanceof Uint8Array)) {
+    bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  } else if (Array.isArray(input)) {
+    bytes = input;
+  } else {
+    return typeof input === 'string' ? input : '';
+  }
+  var out = '';
+  var i = 0;
+  // 取后续字节；越界返回 -1 让调用方丢弃这条不完整序列（补 0 会产出「一」这类假字）
+  function cont(at) {
+    if (at >= bytes.length) return -1;
+    var c = bytes[at] & 0xFF;
+    return (c & 0xC0) === 0x80 ? (c & 0x3F) : -1;
+  }
+  while (i < bytes.length) {
+    var b = bytes[i] & 0xFF;
+    i += 1;
+    var cp = -1;
+    if (b < 0x80) {
+      cp = b;
+    } else if (b >= 0xC2 && b <= 0xDF) {
+      var c1 = cont(i);
+      if (c1 < 0) break;
+      cp = ((b & 0x1F) << 6) | c1;
+      i += 1;
+    } else if (b >= 0xE0 && b <= 0xEF) {
+      var c2 = cont(i);
+      var c3 = cont(i + 1);
+      if (c2 < 0 || c3 < 0) break;
+      cp = ((b & 0x0F) << 12) | (c2 << 6) | c3;
+      i += 2;
+    } else if (b >= 0xF0 && b <= 0xF4) {
+      var c4 = cont(i);
+      var c5 = cont(i + 1);
+      var c6 = cont(i + 2);
+      if (c4 < 0 || c5 < 0 || c6 < 0) break;
+      cp = ((b & 0x07) << 18) | (c4 << 12) | (c5 << 6) | c6;
+      i += 3;
+    } else {
+      continue; // 0x80-0xC1 的续字节/非法首字节：跳过而不是产出乱码
+    }
+    if (cp > 0xFFFF) {
+      var v = cp - 0x10000;
+      out += String.fromCharCode(0xD800 + (v >> 10), 0xDC00 + (v & 0x3FF));
+    } else {
+      out += String.fromCharCode(cp);
+    }
+  }
+  return out;
+}
+
 function normalizeScores(resp) {
   var r = resp && typeof resp === 'object' ? resp : {};
   var scores = toArr(resp, 'scores').map(function (s) {
@@ -110,6 +170,7 @@ module.exports = {
   toNum: toNum,
   pick: pick,
   toArr: toArr,
+  decodeUtf8: decodeUtf8,
   normalizeScores: normalizeScores,
   normalizeTrends: normalizeTrends,
   normalizeSubjects: normalizeSubjects,
@@ -152,5 +213,16 @@ if (typeof require !== 'undefined' && require.main === module) {
 
   assert.strictEqual(normalizeTrends('oops').length, 0);
   assert.strictEqual(normalizeSubjects(null).subjects.length, 0);
+
+  // UTF-8 解码：1/2/3/4 字节混排 + 裸续字节跳过 + 截断序列不产坏字
+  assert.strictEqual(decodeUtf8(Buffer.from('权限不足', 'utf8')), '权限不足');
+  assert.strictEqual(decodeUtf8(Buffer.from('Aé€😀', 'utf8')), 'Aé€😀');
+  assert.strictEqual(decodeUtf8(Buffer.from('{"message":"导出失败"}', 'utf8')), '{"message":"导出失败"}');
+  assert.strictEqual(decodeUtf8(new Uint8Array([0x80, 0x41]).buffer), 'A');
+  assert.strictEqual(decodeUtf8(new Uint8Array([0xE4, 0xB8]).buffer), '');
+  assert.strictEqual(decodeUtf8(''), '');
+  assert.strictEqual(decodeUtf8(null), '');
+  assert.strictEqual(decodeUtf8('已是字符串'), '已是字符串');
+
   console.log('response.js self-check OK');
 }

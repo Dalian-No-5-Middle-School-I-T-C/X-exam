@@ -3,7 +3,7 @@
   <view class="hero-sec anim {{ready ? 'show' : ''}}">
     <view class="logo">PX</view>
     <view class="h-title">学生成绩查询</view>
-    <view class="eyebrow">PROJECT-X / DALIAN NO.5</view>
+    <view class="eyebrow"><text class="en">PROJECT-X / DALIAN NO.5</text></view>
     <view class="h-feats">
       <text class="h-feat">· 极速查分 · 仅本人可见</text>
       <text class="h-feat">· 趋势 / 学科分析</text>

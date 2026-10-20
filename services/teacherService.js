@@ -70,6 +70,13 @@ function fetchClassComparison(examId) {
   return request.get(examPath(examId, '/class-comparison', { all: 1 }));
 }
 
+// 导出面板的数据预览：与导出接口用的是同一个后端仓储方法（getScoreTableData），
+// 所以这里拿到的 examName / hasAssignedScore / 行字段就是最终写进 Excel 的内容。
+// 注意 classId=0（无班级）在 GET query 上会被后端当成未传，见 services/exportService.previewScope。
+function fetchScoreTable(examId, classId) {
+  return request.get(examPath(examId, '/score-table', { classId: classId }));
+}
+
 module.exports = {
   fetchExams: fetchExams,
   fetchClasses: fetchClasses,
@@ -80,5 +87,6 @@ module.exports = {
   fetchKnowledge: fetchKnowledge,
   fetchQuestionStudents: fetchQuestionStudents,
   fetchStudentRanking: fetchStudentRanking,
-  fetchClassComparison: fetchClassComparison
+  fetchClassComparison: fetchClassComparison,
+  fetchScoreTable: fetchScoreTable
 };

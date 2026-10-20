@@ -27,7 +27,7 @@
   height: 80rpx;
 }
 .search { flex: 1; color: var(--ink); font-size: 28rpx; height: 80rpx; }
-.ph { color: #B0B0B8; }
+.ph { color: var(--gray); }
 
 .chips { white-space: nowrap; margin-bottom: 8rpx; }
 .chip {
@@ -62,8 +62,9 @@
   font-size: 32rpx;
   font-weight: 700;
   color: var(--ink);
-  letter-spacing: -0.5rpx;
-  word-break: break-all;
+  letter-spacing: 0;
+  /* break-all 会在「2026.9.22」中间硬切；只在整词放不下时才断 */
+  overflow-wrap: break-word;
 }
 .row-meta { display: block; margin-top: 6rpx; }
 .row-nums { display: flex; align-items: baseline; margin-top: 16rpx; }

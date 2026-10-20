@@ -24,13 +24,13 @@
 .h-title {
   font-size: 44rpx;
   font-weight: 800;
-  letter-spacing: -1rpx;
+  letter-spacing: 0;
   color: var(--paper);
   line-height: 1.2;
 }
 .hero-sec .eyebrow { color: var(--gray-on-dark); margin: 12rpx 0 18rpx; }
 .h-feats { display: flex; flex-direction: column; gap: 8rpx; }
-.h-feat { font-family: var(--font-mono); font-size: 24rpx; color: var(--gray-on-dark); }
+.h-feat { font-family: var(--font-sans); font-size: 24rpx; color: var(--gray-on-dark); }
 
 /* 登录卡：直角 + 硬阴影（重点卡） */
 .card {
@@ -58,7 +58,7 @@
   height: 92rpx;
 }
 .input:focus { border-color: var(--blue); }
-.ph { color: #B0B0B8; }
+.ph { color: var(--gray); }
 .remember {
   font-size: 24rpx;
   color: var(--text-2);

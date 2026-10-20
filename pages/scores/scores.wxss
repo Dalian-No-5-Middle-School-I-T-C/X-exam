@@ -96,7 +96,7 @@
   font-size: 28rpx;
   height: 80rpx;
 }
-.ph { color: #B0B0B8; }
+.ph { color: var(--gray); }
 
 .chips {
   white-space: nowrap;

@@ -6,7 +6,7 @@
   </view>
 
   <block wx:else>
-    <view class="eyebrow">QUESTION · 逐题下钻</view>
+    <view class="eyebrow"><text class="en">QUESTION</text><text class="cn"> · 逐题下钻</text></view>
     <view class="title">第 {{questionNumber}} 题</view>
     <view class="sub">{{classLabel}} · 满分 {{summary ? summary.maxScore : '—'}}</view>
 
