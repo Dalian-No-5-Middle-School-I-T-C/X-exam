@@ -96,6 +96,6 @@
 .kp-note { margin: 16rpx 0 10rpx; }
 .krow { margin-bottom: 16rpx; padding: 22rpx 24rpx; }
 .khead { display: flex; align-items: center; gap: 12rpx; }
-.kname { font-size: 30rpx; font-weight: 700; color: var(--ink); word-break: break-all; }
+.kname { font-size: 30rpx; font-weight: 700; color: var(--ink); overflow-wrap: break-word; }
 .krate { margin-left: auto; font-size: 32rpx; font-weight: 700; color: var(--blue); }
 .kmeta { display: block; margin-top: 12rpx; }

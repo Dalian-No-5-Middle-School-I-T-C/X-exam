@@ -14,7 +14,8 @@
     "pages/t-analysis/t-analysis",
     "pages/t-question/t-question",
     "pages/t-ranking/t-ranking",
-    "pages/t-classes/t-classes"
+    "pages/t-classes/t-classes",
+    "pages/t-export/t-export"
   ],
   "window": {
     "navigationBarBackgroundColor": "#F1EFE9",

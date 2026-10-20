@@ -10,7 +10,7 @@
 
   <!-- 最新一次考试大卡 -->
   <view wx:if="{{latest}}" class="hero anim {{ready ? 'show' : ''}}" bindtap="goLatest">
-    <view class="eyebrow">LATEST EXAM · 最新考试</view>
+    <view class="eyebrow"><text class="en">LATEST EXAM</text><text class="cn"> · 最新考试</text></view>
     <view class="hero-top">
       <view class="hero-name">
         <text class="hero-exam">{{latest.exam_name}}</text>

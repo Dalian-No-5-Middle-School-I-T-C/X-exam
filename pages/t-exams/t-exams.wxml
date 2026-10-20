@@ -1,6 +1,6 @@
 <!-- pages/t-exams/t-exams.wxml -->
 <view class="container">
-  <view class="eyebrow">TEACHER · 教师工作台</view>
+  <view class="eyebrow"><text class="en">TEACHER</text><text class="cn"> · 教师工作台</text></view>
   <view class="title">考试分析</view>
   <view class="sub">仅展示你任教的考试 · 数据由学校 Project-X 阅卷系统提供</view>
 

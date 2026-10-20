@@ -95,6 +95,16 @@ function profileEyebrow(user) {
   return PROFILE_EYEBROWS.student;
 }
 
+// 排版要求眉题把拉丁与中文拆成 .en / .cn 两段（整行套 mono + uppercase 会把汉字逐字撑开），
+// 但文字仍只由 profileEyebrow 一处决定：这里按 `CODE · 中文` 的既定分隔符切开，页面不自己拼字符串。
+// cn 保留前导的 ` · `，使 en + cn 恰好等于 profileEyebrow 的整行文案。
+function profileEyebrowParts(user) {
+  var text = profileEyebrow(user);
+  var i = text.indexOf(' · ');
+  if (i < 0) return { en: text, cn: '' };
+  return { en: text.slice(0, i), cn: text.slice(i) };
+}
+
 // 登录/静默登录后的落地页：教师与管理员进工作台，学生进成绩页
 function homePath(user, perms) {
   return canViewTeacherWorkspace(user, perms) ? '/pages/t-exams/t-exams' : '/pages/scores/scores';
@@ -121,6 +131,7 @@ module.exports = {
   canViewTeacherWorkspace: canViewTeacherWorkspace,
   teacherRoleLabel: teacherRoleLabel,
   profileEyebrow: profileEyebrow,
+  profileEyebrowParts: profileEyebrowParts,
   homePath: homePath,
   guardWorkspace: guardWorkspace
 };

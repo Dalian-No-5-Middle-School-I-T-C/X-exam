@@ -68,11 +68,12 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 .container { padding: 28rpx 28rpx 56rpx; }
 
 /* 标题 */
+/* 标题：负字距只适合拉丁字母，中文（考试名/区块名）压紧了会互相咬字，所以归零 */
 .title {
   font-size: 52rpx;
   font-weight: 800;
   color: var(--text-1);
-  letter-spacing: -2rpx;
+  letter-spacing: 0;
   line-height: 1.15;
 }
 .sub { font-size: 24rpx; color: var(--text-3); font-weight: 400; letter-spacing: 0.2rpx; line-height: 1.55; }
@@ -86,7 +87,7 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
   font-size: 40rpx;
   font-weight: 800;
   color: var(--text-1);
-  letter-spacing: -1rpx;
+  letter-spacing: 0;
   margin: 40rpx 6rpx 18rpx;
 }
 .section-title::before {
@@ -151,22 +152,29 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
 .blue { color: var(--brand); }
 
 /* ── 新增原语（对齐 demo-brutalist） ── */
-/* 等宽眉题 */
+/* 眉题：Latin 部分走等宽 + 大字距，中文部分必须回到无衬线。
+   整行套 mono + uppercase + 0.18em 时，汉字会逐字被撑开、还要按字形回退，是最刺眼的排版 bug。
+   用法：<view class="eyebrow"><text class="en">EXPORT</text><text class="cn"> · 导出成绩表</text></view> */
 .eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 20rpx;
+  letter-spacing: 0.02em;
+  color: var(--gray);
+}
+.eyebrow .en {
+  font-family: var(--font-mono);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gray);
 }
 .eyebrow--blue { color: var(--blue); }
-/* 等宽元信息 */
+/* 元信息：中英数混排的行（"均分 3.2 · 正确率 85%"），等宽会让中文逐字回退，改用无衬线 + 等宽数字 */
 .meta {
-  font-family: var(--font-mono);
-  font-size: 20rpx;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 22rpx;
   color: var(--gray);
 }
-.meta--faint { color: var(--line); }
+.meta--faint { color: var(--gray); opacity: 0.75; }
 /* 数据点（等宽右对齐） */
 .num {
   font-family: var(--font-mono);
@@ -212,6 +220,8 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
   border-radius: var(--r-pill);
   font-size: 22rpx;
   font-weight: 600;
+  /* 固定 36rpx 高 + 全局 1.65 行高 = 22×1.65≈36.3，汉字下沿被盒子切掉；行高必须锁 1 */
+  line-height: 1;
   border: 1rpx solid;
 }
 .b-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
@@ -226,7 +236,8 @@ view, text, input, button, scroll-view, image { box-sizing: border-box; }
   overflow: hidden;
   border-radius: 0;
 }
-.prog > i { display: block; height: 100%; background: var(--blue); }
+/* 填充元素叫 .prog-fill：`.prog > i` 那条老规则里的 `<i>` 不是合法 WXML 标签，谁也用不上 */
+.prog-fill { display: block; height: 100%; background: var(--blue); }
 
 .loading, .empty {
   text-align: center;

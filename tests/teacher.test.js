@@ -144,6 +144,20 @@ test('profileEyebrow 按角色出文案，认不出角色回落学生文案', ()
   assert.equal(role.profileEyebrow({ role_name: 'teacher', role_display_name: '管理员' }), 'TEACHER · 老师档案');
 });
 
+// 眉题在模板里要拆成 .en / .cn 两段（mono + uppercase 只能落在拉丁上，见 app.wxss），
+// 拆分必须由 utils/role.js 做，页面不自己 cut 字符串；这里锁住「拆开再拼回等于整行」这条契约。
+test('profileEyebrowParts 拆分文案，en + cn 恰好等于 profileEyebrow', () => {
+  [TEACHER, ADMIN, STUDENT, { role_id: 2 }, { role_name: 'auditor' }, null].forEach(u => {
+    const p = role.profileEyebrowParts(u);
+    assert.equal(p.en + p.cn, role.profileEyebrow(u), '拼接必须还原整行：' + JSON.stringify(u));
+    assert.match(p.en, /^[A-Z0-9 /]+$/, 'en 段只能是不含中文的拉丁串：' + p.en);
+    assert.ok(p.cn === '' || /^ · /.test(p.cn), 'cn 段必须带前导分隔符：' + JSON.stringify(p.cn));
+  });
+  assert.deepEqual(role.profileEyebrowParts(TEACHER), { en: 'TEACHER', cn: ' · 老师档案' });
+  assert.deepEqual(role.profileEyebrowParts(ADMIN), { en: 'ADMIN', cn: ' · 管理员档案' });
+  assert.deepEqual(role.profileEyebrowParts(STUDENT), { en: 'STUDENT', cn: ' · 学生档案' });
+});
+
 // ── pages/t-exams ─────────────────────────────────────
 const tExamsDef = capture('../pages/t-exams/t-exams.js');
 const tAnalysisDef = capture('../pages/t-analysis/t-analysis.js');

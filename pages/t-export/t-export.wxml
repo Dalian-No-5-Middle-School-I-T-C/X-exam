@@ -1,0 +1,162 @@
+<!-- pages/t-export/t-export.wxml -->
+<view class="container">
+  <view wx:if="{{invalid}}" class="empty {{ready ? 'show' : ''}}">
+    <view>考试编号无效</view>
+    <view class="empty-hint">请从考试分析页重新进入</view>
+  </view>
+
+  <block wx:else>
+    <view class="eyebrow"><text class="en">EXPORT</text><text class="cn"> · 导出成绩表</text></view>
+    <view class="title">{{examName || ('考试 #' + examId)}}</view>
+    <view class="sub">列与模板和主站导出面板互通 · 导出的文件只存在本机</view>
+
+    <!-- 1. 班级范围 -->
+    <view class="card anim {{ready ? 'show' : ''}}">
+      <view class="section-title">导出范围</view>
+      <scroll-view scroll-x class="chips">
+        <view wx:for="{{modes}}" wx:key="key" class="chip {{mode === item.key ? 'on' : ''}}"
+              data-key="{{item.key}}" bindtap="onPickMode">{{item.label}}</view>
+      </scroll-view>
+
+      <picker wx:if="{{mode === 'one'}}" mode="selector" range="{{classOptions}}" range-key="className"
+              value="{{classIndex}}" bindchange="onClassChange">
+        <view class="ta-class">
+          <text class="ta-class-label">{{classLabel || '未取到班级名单'}}</text>
+          <text class="ta-class-caret">▾</text>
+        </view>
+      </picker>
+      <view wx:if="{{mode === 'one'}}" class="tip">只导出所选班级的这一份文件<text wx:if="{{classOptions.length === 0 && !loading}}">（名单还没取到）</text>。</view>
+      <view wx:elif="{{mode === 'each'}}" class="tip">名单里的每个班各生成一份，共 {{classOptions.length}} 次请求<text wx:if="{{classesCapped > 0}}" class="warn-txt">；另有 {{classesCapped}} 个班超出单次上限 {{classesCap}} 个，本次不导出</text>。</view>
+      <view wx:else class="tip">整场一份，含全部班级（每生去重取首行）。</view>
+    </view>
+
+    <!-- 2. 列选择 -->
+    <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 40ms">
+      <view class="section-title">表格列</view>
+      <scroll-view scroll-x class="chips">
+        <view wx:for="{{presets}}" wx:key="key" class="chip {{preset === item.key ? 'on' : ''}}"
+              data-key="{{item.key}}" bindtap="onPreset">{{item.label}}</view>
+      </scroll-view>
+
+      <view class="sub sel-cap">已选 {{selected.length}} 列 · 顺序即 Excel 列顺序</view>
+      <view wx:if="{{selected.length === 0}}" class="tip">至少选一列才能导出。</view>
+      <view class="sel-list">
+        <view wx:for="{{selected}}" wx:key="id" class="sel-row">
+          <text class="sel-no num">{{index + 1}}</text>
+          <view class="sel-main">
+            <text class="sel-label">{{item.label}}</text>
+            <text class="sel-meta meta">{{item.group}} · Excel 表头「{{item.header}}」</text>
+          </view>
+          <text class="mv {{item.canUp ? '' : 'off'}}" data-index="{{item.index}}" data-delta="-1" bindtap="onMoveCol">↑</text>
+          <text class="mv {{item.canDown ? '' : 'off'}}" data-index="{{item.index}}" data-delta="1" bindtap="onMoveCol">↓</text>
+          <text class="del" data-id="{{item.id}}" bindtap="onRemoveCol">×</text>
+        </view>
+      </view>
+
+      <view wx:if="{{hasPlaceholder}}" class="tip">「需要复核 / 置信度」后端暂无数据源，导出后是空列，与主站一致。</view>
+
+      <view class="sub avail-cap">可添加</view>
+      <view class="chips-wrap">
+        <view wx:for="{{available}}" wx:key="id" class="chip add" data-id="{{item.id}}" bindtap="onAddCol">+ {{item.label}}</view>
+        <view wx:if="{{available.length === 0}}" class="meta">已全部选中</view>
+      </view>
+    </view>
+
+    <!-- 3. 参照表与宽度 -->
+    <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 80ms">
+      <view class="section-title">年级前 N 名参照表</view>
+      <view class="row-list">
+        <view class="row-line">
+          <text class="row-name">附在同一个 Sheet 右侧</text>
+          <switch checked="{{sideOn}}" color="#2E44FF" bindchange="onToggleSide" />
+        </view>
+        <view wx:if="{{sideOn}}" class="row-line">
+          <text class="row-name">取前</text>
+          <input class="cell-input num" type="number" value="{{sideN}}" bindinput="onSideNInput" />
+          <text class="row-name">名 · 间隙列</text>
+          <input class="cell-input num" type="number" value="{{gapCols}}" bindinput="onGapInput" />
+        </view>
+        <view class="row-line">
+          <text class="row-name">估算宽度</text>
+          <text class="width-num num {{overA4 ? 'red-num' : ''}}">{{widthTotal}} / {{widthLimit}}</text>
+        </view>
+      </view>
+      <view wx:if="{{overA4}}" class="tip warn-txt">超出 A4 纵向可容纳的列宽，打印会分页；可减列或关掉参照表。</view>
+    </view>
+
+    <!-- 4. 模板 -->
+    <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 120ms">
+      <view class="section-title">列模板</view>
+      <view class="sub">4 个槽位与主站共用同一份数据，任一端存下另一端即可载入</view>
+      <view class="tpl-list">
+        <view wx:for="{{slotList}}" wx:key="slot" class="tpl-row">
+          <text class="tpl-slot num">{{item.slot}}</text>
+          <view class="tpl-main">
+            <text class="tpl-name {{item.filled ? '' : 'none'}}">{{item.name}}</text>
+            <text wx:if="{{item.filled}}" class="tpl-meta meta">{{item.meta}}</text>
+          </view>
+          <text wx:if="{{item.filled}}" class="tpl-act {{item.active ? 'on' : ''}}" data-slot="{{item.slot}}" bindtap="onLoadTemplate">载入</text>
+          <text class="tpl-act" data-slot="{{item.slot}}" bindtap="onSaveTemplate">存</text>
+          <text wx:if="{{item.filled}}" class="tpl-act dan" data-slot="{{item.slot}}" bindtap="onDeleteTemplate">删</text>
+        </view>
+      </view>
+      <view wx:if="{{templateNote}}" class="tip">{{templateNote}}</view>
+    </view>
+
+    <!-- 5. 数据预览 -->
+    <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 160ms">
+      <view class="section-title">数据预览</view>
+      <view wx:if="{{previewError}}" class="tip">{{previewError}} · <text class="link" bindtap="loadPreview">重试</text></view>
+      <block wx:elif="{{preview.headers.length > 0}}">
+        <view class="sub">共 {{previewCount}} 人，以下 {{preview.rows.length}} 行 · {{previewNote}}</view>
+        <scroll-view scroll-x class="pv">
+          <view class="pv-table">
+            <view class="pv-row pv-hd">
+              <text wx:for="{{preview.headers}}" wx:key="uid" class="pv-cell">{{item.text}}</text>
+            </view>
+            <view wx:for="{{preview.rows}}" wx:key="uid" wx:for-item="row" class="pv-row">
+              <text wx:for="{{row.cells}}" wx:key="uid" wx:for-item="c" class="pv-cell num">{{c.text}}</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view wx:if="{{hasSubColumns}}" class="tip">小题分会按题号展开成多列，预览不展示，导出的文件里有。</view>
+        <view wx:if="{{noAssigned}}" class="tip">本场没有赋分数据，导出的文件会省略「赋分」列。</view>
+      </block>
+      <view wx:elif="{{loading}}" class="meta">预览加载中…</view>
+      <view wx:else class="meta">暂无可预览的成绩</view>
+    </view>
+
+    <!-- 6. 导出 -->
+    <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 200ms">
+      <view class="section-title">生成文件</view>
+      <button wx:if="{{!exporting}}" class="btn-primary" bindtap="onExport">开始导出</button>
+      <block wx:else>
+        <view class="prog"><view class="prog-fill" style="width: {{progressPct}}%"></view></view>
+        <view class="meta prog-txt">{{progressDone}} / {{progressTotal}}<text wx:if="{{progressName}}"> · {{progressName}}</text></view>
+        <button class="btn out cancel" bindtap="onCancelExport">取消</button>
+      </block>
+
+      <view wx:if="{{resultNote}}" class="tip">{{resultNote}}</view>
+      <view wx:for="{{resultErrors}}" wx:key="uid" class="tip warn-txt">{{item.className}}：{{item.message}}</view>
+
+      <view wx:if="{{results.length}}" class="sub res-cap">导出结果 · 点文件名打开预览</view>
+      <view class="file-list">
+        <view wx:for="{{results}}" wx:key="uid" class="file-row" data-path="{{item.path}}" bindtap="onOpenFile">
+          <text class="file-name">{{item.name}}</text>
+          <text class="file-meta meta">{{item.sizeText}} · {{item.className}}</text>
+        </view>
+      </view>
+
+      <view class="row-line foot">
+        <text class="row-name">本机留存 {{localCount}} 个文件</text>
+        <text wx:if="{{localCount}}" class="link dan" bindtap="onClearFiles">清空</text>
+      </view>
+      <view class="tip">里面有其他同学的成绩：退出登录会一并删除本机文件。打开后用微信右上角菜单可发送或另存，页面本身不做分享。</view>
+    </view>
+
+    <view class="x-links">
+      <text class="ta-link" bindtap="goAnalysis">返回分析 ›</text>
+      <text class="ta-link" bindtap="goRanking">成绩榜 ›</text>
+    </view>
+  </block>
+</view>

@@ -1,6 +1,6 @@
 <!-- pages/profile/profile.wxml -->
 <view class="container">
-  <view class="eyebrow">{{eyebrow}}</view>
+  <view class="eyebrow"><text class="en">{{eyebrowEn}}</text><text class="cn">{{eyebrowCn}}</text></view>
   <view class="title">我的</view>
 
   <view class="card user anim {{ready ? 'show' : ''}}">

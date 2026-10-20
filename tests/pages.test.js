@@ -739,13 +739,14 @@ test('change-password.onSubmit validates input', async () => {
 // ---------- pages/profile 眉标 ----------
 // 眉标文字来自 utils/role.js，页面只负责在 onShow 里取当前登录用户，
 // 这里锁的是「教师 / 管理员不再被写成学生档案」这条用户可见结果。
+// 页面数据分 en / cn 两段（排版规则只给拉丁上 mono + uppercase），断言时拼回整行读。
 function profileEyebrowFor(user) {
   global.wx = Object.assign({}, baseWx, { getSetting: () => {} });
   auth.setUser(user, false);
   const page = makePage(profileDef);
   page.onShow();
   auth.clearUser();
-  return page.data.eyebrow;
+  return page.data.eyebrowEn + page.data.eyebrowCn;
 }
 
 test('profile 眉标随角色变化，认不出角色时回落学生文案', () => {
@@ -762,7 +763,8 @@ test('profile 眉标在模板里取页面数据，不再出现写死的学生文
   const fs = require('node:fs');
   const path = require('node:path');
   const wxml = fs.readFileSync(path.join(__dirname, '..', 'pages', 'profile', 'profile.wxml'), 'utf8');
-  assert.match(wxml, /<view class="eyebrow">\{\{eyebrow\}\}<\/view>/, '眉标必须绑定 {{eyebrow}}');
+  assert.match(wxml, /<view class="eyebrow"><text class="en">\{\{eyebrowEn\}\}<\/text><text class="cn">\{\{eyebrowCn\}\}<\/text><\/view>/,
+    '眉标必须绑定页面数据，并按 .en / .cn 拆分（与其余页面的排版一致）');
   assert.doesNotMatch(wxml, /学生档案/, '眉标文字只能来自 utils/role.js');
 });
 

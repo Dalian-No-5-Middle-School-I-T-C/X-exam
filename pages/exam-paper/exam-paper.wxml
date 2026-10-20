@@ -1,6 +1,6 @@
 <!-- pages/exam-paper/exam-paper.wxml -->
 <view class="container">
-  <view class="eyebrow">PAPER · 原卷与答案解析</view>
+  <view class="eyebrow"><text class="en">PAPER</text><text class="cn"> · 原卷与答案解析</text></view>
   <view class="title">{{examName || ('考试 #' + examId)}}</view>
   <view wx:if="{{subject}}" class="sub"><text class="tag">{{subject}}</text></view>
 
