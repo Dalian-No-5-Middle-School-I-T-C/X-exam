@@ -9,8 +9,30 @@
 
 .card { margin-bottom: 18rpx; }
 
+/* ── 自绘按钮的公共复位 ────────────────────────────────
+   微信基础库给 <button> 的默认值里有三样会在小尺寸控件上显形，实测（375px 视口，1rpx=0.5px）：
+   · min-height: 2.588em —— 64rpx 的 ↑↓ 被撑成 72rpx，一整行列控件错位；
+   · line-height: 2.556 —— 折叠卡头因此变成 104rpx 高的空条，「列模板」浮在中间；
+   · margin: 0 auto + padding: 0 14px + border-radius: 5px —— 行内按钮被推向中间、
+     直角设计里多出圆角，描边外再套一圈 ::after 双线。
+   本页每个自绘 button 都要走这组复位；少写一个就是本次「界面扭曲」的成因，
+   tests/export.test.js 会按 wxml 里实际用到的按钮类名逐个核对，新增按钮漏复位直接红。
+   这一组必须排在下面各组件规则之前：同为单类选择器，靠书写顺序决胜。 */
+.opt, .mv, .del, .tpl-act, .fold-head {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  word-break: normal;
+}
+.opt::after, .mv::after, .del::after, .tpl-act::after, .fold-head::after { content: none; }
+
 /* 选项按钮（导出范围 / 列预设 / 可添加列）：描边 + 定高 + 按压缩放 + 选中实底，
-   左侧小方块是选中记号，不靠颜色单独表意。 */
+   左侧圆点是单选记号，不靠颜色单独表意。 */
 .opt-row { display: flex; flex-wrap: wrap; margin: 10rpx 0 2rpx; }
 .opt {
   display: inline-flex;
@@ -22,14 +44,12 @@
   padding: 0 24rpx;
   font-size: 26rpx;
   font-weight: 600;
-  line-height: 1.2;
   color: var(--ink-soft);
   background: #fff;
   border: 1rpx solid var(--ink);
   border-radius: var(--r-pill);
 }
-.opt::after { border: none; }
-.opt::before { content: ''; flex: none; width: 14rpx; height: 14rpx; border: 1rpx solid currentColor; }
+.opt::before { content: ''; flex: none; width: 14rpx; height: 14rpx; border: 1rpx solid currentColor; border-radius: 50%; }
 .opt:active { background: var(--ink); color: var(--paper); transform: scale(0.98); }
 .opt.on { color: #fff; background: var(--blue); border-color: var(--blue); }
 .opt.on::before { background: currentColor; }
@@ -37,20 +57,40 @@
 .opt.add { color: var(--blue); border-color: var(--blue-bd); border-style: dashed; background: #fff; }
 .opt.add::before { content: none; }
 .opt.add:active { background: var(--blue-soft); color: var(--blue); }
+/* 单选组（三档范围 / 三档预设）等宽铺满一行：胶囊宽度按内容走会排成 2+1 的锯齿，
+   看着像坏了。等宽分段后既不再换行，也让「同一组里选一个」这件事在版式上成立。 */
+.opt-row.seg { gap: 12rpx; }
+.opt-row.seg .opt {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0 8rpx;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
-/* 折叠卡头：整行可点，右侧摘要让折叠态也说得清「这里面有什么」 */
+/* 折叠卡头：整行可点，右侧摘要让折叠态也说得清「这里面有什么」。
+   不写 width:100%——.section-title 自带左右 6rpx 外边距，再加 100% 宽就顶出卡片右边界。 */
 .fold-head {
-  width: 100%;
+  min-width: 0;
   padding: 10rpx 0;
   text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 0;
 }
-.fold-head::after { border: none; }
 .fold-head:active { background: var(--paper-2); }
-.fold-title { font-size: 40rpx; font-weight: 800; color: var(--ink); letter-spacing: 0; }
-.fold-sum { flex: 1; text-align: right; font-size: 24rpx; font-weight: 400; color: var(--gray); letter-spacing: 0; }
+.fold-title { flex: none; font-size: 40rpx; font-weight: 800; color: var(--ink); letter-spacing: 0; }
+.fold-sum {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: var(--gray);
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .fold-caret { flex: none; font-size: 24rpx; font-weight: 600; color: var(--blue); letter-spacing: 0; }
 
 .tip {
@@ -82,8 +122,10 @@
   background: #fff;
 }
 .ta-class:active { background: var(--paper-2); }
-.ta-class-label { font-size: 26rpx; color: var(--ink); font-weight: 600; }
-.ta-class-caret { font-size: 22rpx; color: var(--gray); }
+/* 班名可以很长（「高一（12）班 · 中外合作办学课程实验班」），flex 项默认 min-width:auto，
+   不给 min-width:0 就会把右侧的 ▾ 顶出选择框；这里让它自己折行。 */
+.ta-class-label { flex: 1; min-width: 0; font-size: 26rpx; color: var(--ink); font-weight: 600; overflow-wrap: break-word; }
+.ta-class-caret { flex: none; font-size: 22rpx; color: var(--gray); }
 
 /* 列选择 */
 .sel-cap, .avail-cap { display: block; margin: 20rpx 0 6rpx; }
@@ -106,17 +148,16 @@
   width: 64rpx;
   height: 64rpx;
   flex: none;
-  padding: 0;
   font-size: 28rpx;
-  line-height: 1;
   color: var(--ink);
   border: 1rpx solid var(--line);
   background: #fff;
 }
-.mv::after, .del::after { border: none; }
 .mv:active, .del:active { background: var(--paper-2); transform: scale(0.96); }
-/* 首/末行的方向键本来就点不动（disabled），样式上也要一眼看出是灰的，压上去不再变色 */
-.mv.off, .mv.off:active { color: var(--line); background: var(--paper); border-color: var(--line); transform: none; }
+/* 首/末行的方向键本来就点不动（disabled），样式上也要一眼看出是灰的，压上去不再变色。
+   选择器写成 .sel-list .mv.off 而不是 .mv.off：基础库的 button[disabled]:not([type])
+   权重是 (0,2,1)，单类两枚（0,2,0）压不住它，真机上会露出一块 #f7f7f7 的灰底。 */
+.sel-list .mv.off, .sel-list .mv.off:active { color: var(--line); background: var(--paper); border-color: var(--line); transform: none; }
 .del { color: var(--err-fg); border-color: var(--err-bd); background: var(--err-soft); }
 
 /* 行控件 */
@@ -130,6 +171,11 @@
 }
 .row-list .row-line:last-child, .row-line.foot { border-bottom: none; }
 .row-name { flex: 1; font-size: 26rpx; color: var(--ink); overflow-wrap: break-word; }
+/* 「取前 [10] 名 · 间隙列 [1]」这类一行两输入的行：.row-name 默认 flex:1，
+   两个标签各吃掉一半剩余空间，输入框就被顶到中间、和文字对不上。
+   这里让标签按内容走，行尾补一个弹性占位，整行靠左成一条连贯的句子。 */
+.row-line.tight .row-name { flex: none; }
+.row-line.tight::after { content: ''; flex: 1 1 auto; }
 .width-num { flex: none; font-size: 28rpx; font-weight: 700; color: var(--ink); }
 .cell-input {
   flex: none;
@@ -173,18 +219,14 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  height: 56rpx;
-  margin: 0;
+  height: 64rpx;
   padding: 0 20rpx;
   font-size: 24rpx;
   font-weight: 600;
-  line-height: 1;
   color: var(--blue);
   border: 1rpx solid var(--blue-bd);
-  border-radius: 0;
   background: #fff;
 }
-.tpl-act::after { border: none; }
 .tpl-act:active { background: var(--blue-soft); transform: scale(0.96); }
 .tpl-act.on { color: #fff; background: var(--blue); border-color: var(--blue); }
 .tpl-act.on:active { color: #fff; background: var(--blue-deep); }

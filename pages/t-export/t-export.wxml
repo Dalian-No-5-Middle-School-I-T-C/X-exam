@@ -13,7 +13,7 @@
     <!-- 1. 班级范围 -->
     <view class="card anim {{ready ? 'show' : ''}}">
       <view class="section-title">导出范围</view>
-      <view class="opt-row">
+      <view class="opt-row seg">
         <button wx:for="{{modes}}" wx:key="key" class="opt {{mode === item.key ? 'on' : ''}}"
                 data-key="{{item.key}}" bindtap="onPickMode">{{item.label}}</button>
       </view>
@@ -33,7 +33,7 @@
     <!-- 2. 列选择 -->
     <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 40ms">
       <view class="section-title">表格列</view>
-      <view class="opt-row">
+      <view class="opt-row seg">
         <button wx:for="{{presets}}" wx:key="key" class="opt {{preset === item.key ? 'on' : ''}}"
                 data-key="{{item.key}}" bindtap="onPreset">{{item.label}}</button>
       </view>
@@ -72,7 +72,7 @@
           <text class="row-name">附在同一个 Sheet 右侧</text>
           <switch checked="{{sideOn}}" color="#2E44FF" bindchange="onToggleSide" />
         </view>
-        <view wx:if="{{sideOn}}" class="row-line">
+        <view wx:if="{{sideOn}}" class="row-line tight">
           <text class="row-name">取前</text>
           <input class="cell-input num" type="number" value="{{sideN}}" bindinput="onSideNInput" />
           <text class="row-name">名 · 间隙列</text>

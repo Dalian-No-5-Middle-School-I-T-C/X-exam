@@ -1007,8 +1007,24 @@ function wxssRules(file) {
   const re = /([^{}]+)\{([^{}]*)\}/g;
   const out = [];
   let m;
-  while ((m = re.exec(clean))) out.push({ sel: m[1].split('\n').pop().trim(), body: m[2], css: clean });
+  while ((m = re.exec(clean))) {
+    // 逗号分组的选择器逐条登记：复位写成 `.a, .b, .c { min-height: 0 }` 时，
+    // 只记最后一行的话 `.a` 查不到自己已经被复位过，守卫就形同虚设。
+    m[1].split(',').map(s => s.trim().replace(/\s+/g, ' ')).filter(Boolean).forEach(sel => {
+      out.push({ sel, body: m[2], css: clean });
+    });
+  }
   return out;
+}
+
+// 按层叠顺序取某个选择器「最终生效」的属性值：合并所有命中规则的声明，再取该属性最后一次赋值。
+// 只在单条规则里做字符串匹配，判不出「复位在前、组件规则在后又把值改回去」这种真实覆盖关系。
+function effectiveProp(rules, sel, prop) {
+  const decls = rules.filter(r => r.sel === sel).flatMap(r =>
+    r.body.split(';').map(d => d.trim()).filter(Boolean)
+  );
+  const hit = decls.filter(d => new RegExp('^' + prop + '\\s*:').test(d)).pop();
+  return hit ? hit.replace(new RegExp('^' + prop + '\\s*:\\s*'), '').replace(/\s*!important$/, '').trim() : null;
 }
 
 // 返回仓库里所有 wxss 的相对路径（app.wxss + 各页面），断言按文件报问题才定位得了
@@ -1052,7 +1068,7 @@ test('入口：页面已注册，分析页与成绩榜都有导出入口', () =>
 // 这两条锁的是「教师一眼看得出哪里能点」：改造前「导出范围 / 表格列」用的是一排 .chip 视图，
 // 而 app.wxss 从来没有 .chip 原语（各教师页自己定义），本页只写了 .chip.add 一条派生规则，
 // 于是选项渲染成无边框裸文本；同时模板卡整块常驻，把一屏里最不常用的东西放在最显眼处。
-test('t-export：范围与列选择都是真按钮，微信 button 的默认边框已复位', () => {
+test('t-export：范围与列选择都是真按钮，微信 button 的默认样式按元素逐个复位', () => {
   const exp = readRel('pages', 't-export', 't-export.wxml');
   assert.doesNotMatch(exp, /class="chip/, '.chip 在本页没有基础样式，选项不得再用它');
 
@@ -1071,20 +1087,65 @@ test('t-export：范围与列选择都是真按钮，微信 button 的默认边�
   });
 
   const rules = wxssRules('pages/t-export/t-export.wxss');
-  const pick = sel => rules.filter(r => r.sel === sel)[0];
-  ['.opt-row', '.opt', '.opt::before', '.opt::after', '.opt:active', '.opt.on', '.opt.add'].forEach(sel => {
-    assert.ok(pick(sel), '缺样式：' + sel);
+  const allRules = wxssRules('app.wxss').concat(rules); // app 在前、页面在后：同特异度时页面胜出
+  const prop = (sel, p) => effectiveProp(rules, sel, p);
+  // 一个 <button> 上多个类时，按 app→页面的书写顺序合并，后写的值胜出（特异度差异这里不精细建模）
+  const propOf = (toks, p) => toks.split(' ').map(t => effectiveProp(allRules, '.' + t, p)).filter(v => v !== null).pop() || null;
+
+  // 微信基础库给 <button> 的默认值会顶掉小尺寸自绘控件的 height / 圆角 / 描边 / 行高。
+  // 最阴的是 min-height: 2.588em——它按字号算，压过页面写的 height，实测把 64rpx 的 ↑↓ 撑成 72rpx、
+  // 把折叠卡头撑成 104rpx 的空条。所以按 wxml 里真实出现的按钮逐个核，新增按钮忘复位就直接红。
+  const btnClassLists = [...new Set((exp.match(/<button[^>]*class="([^"]*)"/g) || []).map(attr =>
+    attr.replace(/^<button[^>]*class="/, '').replace(/"$/, '').replace(/\{\{[^}]*\}\}/g, ' ')
+      .split(/\s+/).filter(Boolean).join(' ')
+  ))];
+  assert.ok(btnClassLists.length >= 4, '没取到按钮类名组合，这条守卫等于什么都没测');
+  btnClassLists.forEach(toks => {
+    const label = '<button class="' + toks + '">';
+    const covered = toks.split(' ').filter(t => prop('.' + t, 'min-height') === '0');
+    if (!covered.length) {
+      // 没走本页复位的只能是 app.wxss 的原语（.btn / .btn-primary），那就得证明 height 真的够高，
+      // 撑不过 2.588em：2.588 × 字号（rpx）必须不大于声明高度（rpx），否则同样被顶开。
+      const h = parseFloat(propOf(toks, 'height') || '');
+      const fs = parseFloat(propOf(toks, 'font-size') || '');
+      assert.ok(h > 0 && fs > 0 && h >= 2.588 * fs,
+        label + ' 既没复位 min-height，height 也撑不过 2.588em（' + (2.588 * fs).toFixed(1) + 'rpx），会被基础库撑高');
+      return;
+    }
+    covered.forEach(t => {
+      const sel = '.' + t;
+      const mg = prop(sel, 'margin-left') || prop(sel, 'margin') || '';
+      assert.ok(mg && !/auto/.test(mg), label + ' 的 ' + sel + ' margin 未复位（基础库是 0 auto），行内按钮会被推向中间');
+      assert.ok(prop(sel, 'padding') !== null || prop(sel, 'padding-left') !== null, sel + ' 未复位 padding');
+      assert.ok(prop(sel, 'border-radius') !== null, sel + ' 未复位 border-radius，直角设计里会露出 5px 圆角');
+      assert.match(prop(sel + '::after', 'content') || prop(sel + '::after', 'border') || '', /none/,
+        sel + ' 缺 ::after 复位，描边外面会再套一圈双线');
+    });
   });
-  // 微信 <button> 自带 ::after 边框 + 圆角 + 浅灰底，不复位就是描边外面再套一圈双线
-  ['.opt::after', '.tpl-act::after', '.fold-head::after'].forEach(sel => {
-    assert.ok(pick(sel), '缺 button 边框复位：' + sel);
-    assert.match(pick(sel).body, /border:\s*none|content:\s*none/);
-  });
-  assert.match(pick('.opt').body, /border:\s*1rpx solid var\(--ink\)/, '选项按钮要有实描边，否则仍像文本');
-  assert.match(pick('.opt').body, /height:\s*72rpx/, '按钮高度统一，指尖目标不小于 64rpx');
-  // 选中态不能只靠蓝底：方块记号给不看颜色的人也留了线索
-  assert.match(pick('.opt::before').body, /content:/);
-  assert.match(pick('.opt.on::before').body, /background:/);
+
+  // 禁用态要压得住基础库的 button[disabled]:not([type])（特异度 0,2,1），否则真机露出一块 #f7f7f7 灰底
+  const offRule = rules.filter(r => /\.mv\.off$/.test(r.sel)).sort((a, b) => a.sel.length - b.sel.length).pop();
+  assert.ok(offRule, '方向键的禁用态没有样式规则');
+  const spec = sel => [(sel.match(/\.[A-Za-z][A-Za-z0-9_-]*/g) || []).length +
+    (sel.match(/\[[^\]]+\]/g) || []).length +
+    (sel.match(/:(?!:)[a-z-]+/g) || []).length, (sel.match(/(^|[\s>+~])[a-z][a-z0-9-]*/g) || []).length];
+  const [b, c] = spec(offRule.sel);
+  assert.ok(b > 2 || (b === 2 && c > 1), '禁用态特异度不足（' + offRule.sel + ' → 0,' + b + ',' + c + '），压不住 0,2,1 的默认灰底');
+
+  assert.match(prop('.opt', 'border'), /1rpx solid var\(--ink\)/, '选项按钮要有实描边，否则仍像文本');
+  assert.equal(prop('.opt', 'height'), '72rpx', '按钮高度统一，指尖目标不小于 64rpx');
+  // 选中态不能只靠蓝底：圆点记号给不看颜色的人也留了线索
+  assert.match(prop('.opt::before', 'content'), /./);
+  assert.equal(prop('.opt::before', 'border-radius'), '50%', '单选组用圆点记号，方块是复选的语义');
+  assert.ok(prop('.opt.on::before', 'background'), '选中态的圆点要填实');
+
+  // 单选组等宽分段：胶囊按内容宽排会成 2+1 的锯齿，看着像坏了
+  assert.equal((exp.match(/class="opt-row seg"/g) || []).length, 2, '导出范围与列预设两组要等宽分段');
+  assert.match(prop('.opt-row.seg .opt', 'flex'), /^1 1 0/, '分段按钮要等分一行');
+  assert.equal(prop('.opt-row.seg .opt', 'margin'), '0', '等宽分段靠 gap 留距，不能再带外边距');
+  assert.equal(prop('.fold-head', 'width'), null, '卡头不得写 width:100%：.section-title 自带左右 6rpx 外边距，会顶出卡片');
+  // 超长班名（「高一（12）班 · 中外合作办学课程实验班」）不得把右侧 ▾ 顶出选择框
+  assert.equal(prop('.ta-class-label', 'min-width'), '0', 'flex 项默认 min-width:auto，长班名会撑破选择器行');
 });
 
 // 上一条修的是具体一处，这一条是通栏守卫：导出页有几处类名是从 t-analysis / t-ranking 抄来的
