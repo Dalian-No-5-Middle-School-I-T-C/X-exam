@@ -1049,6 +1049,113 @@ test('入口：页面已注册，分析页与成绩榜都有导出入口', () =>
     });
 });
 
+// 这两条锁的是「教师一眼看得出哪里能点」：改造前「导出范围 / 表格列」用的是一排 .chip 视图，
+// 而 app.wxss 从来没有 .chip 原语（各教师页自己定义），本页只写了 .chip.add 一条派生规则，
+// 于是选项渲染成无边框裸文本；同时模板卡整块常驻，把一屏里最不常用的东西放在最显眼处。
+test('t-export：范围与列选择都是真按钮，微信 button 的默认边框已复位', () => {
+  const exp = readRel('pages', 't-export', 't-export.wxml');
+  assert.doesNotMatch(exp, /class="chip/, '.chip 在本页没有基础样式，选项不得再用它');
+
+  assert.match(exp, /<button[^>]*wx:for="\{\{modes\}\}"[^>]*class="opt[^"]*"[^>]*bindtap="onPickMode"/,
+    '导出范围必须是可以点的 button');
+  assert.match(exp, /<button[^>]*wx:for="\{\{presets\}\}"[^>]*class="opt[^"]*"[^>]*bindtap="onPreset"/,
+    '列预设必须是可以点的 button');
+  assert.match(exp, /<button[^>]*wx:for="\{\{available\}\}"[^>]*bindtap="onAddCol"/,
+    '可添加列必须是可以点的 button');
+  assert.match(exp, /<button class="mv[^"]*"[^>]*disabled="\{\{!item\.canUp\}\}"[^>]*bindtap="onMoveCol"/,
+    '越界的方向键要 disabled，不能只置灰却照样能点');
+  assert.match(exp, /<button class="mv[^"]*"[^>]*disabled="\{\{!item\.canDown\}\}"[^>]*bindtap="onMoveCol"/);
+  assert.match(exp, /<button class="del"[^>]*bindtap="onRemoveCol"/);
+  ['onLoadTemplate', 'onSaveTemplate', 'onDeleteTemplate'].forEach(fn => {
+    assert.match(exp, new RegExp('<button[^>]*bindtap="' + fn + '"'), '模板动作也要是 button：' + fn);
+  });
+
+  const rules = wxssRules('pages/t-export/t-export.wxss');
+  const pick = sel => rules.filter(r => r.sel === sel)[0];
+  ['.opt-row', '.opt', '.opt::before', '.opt::after', '.opt:active', '.opt.on', '.opt.add'].forEach(sel => {
+    assert.ok(pick(sel), '缺样式：' + sel);
+  });
+  // 微信 <button> 自带 ::after 边框 + 圆角 + 浅灰底，不复位就是描边外面再套一圈双线
+  ['.opt::after', '.tpl-act::after', '.fold-head::after'].forEach(sel => {
+    assert.ok(pick(sel), '缺 button 边框复位：' + sel);
+    assert.match(pick(sel).body, /border:\s*none|content:\s*none/);
+  });
+  assert.match(pick('.opt').body, /border:\s*1rpx solid var\(--ink\)/, '选项按钮要有实描边，否则仍像文本');
+  assert.match(pick('.opt').body, /height:\s*72rpx/, '按钮高度统一，指尖目标不小于 64rpx');
+  // 选中态不能只靠蓝底：方块记号给不看颜色的人也留了线索
+  assert.match(pick('.opt::before').body, /content:/);
+  assert.match(pick('.opt.on::before').body, /background:/);
+});
+
+// 上一条修的是具体一处，这一条是通栏守卫：导出页有几处类名是从 t-analysis / t-ranking 抄来的
+// （.chip、.ta-link），而那是页面级样式、app.wxss 里并没有，抄名不带样式就成了裸文本。
+test('排版回归：导出页用到的每个类名都在本页或 app.wxss 里有定义', () => {
+  const wxml = readRel('pages', 't-export', 't-export.wxml');
+  const css = readRel('pages', 't-export', 't-export.wxss').replace(/\/\*[\s\S]*?\*\//g, '') +
+    readRel('app.wxss').replace(/\/\*[\s\S]*?\*\//g, '');
+  const defined = new Set();
+  (css.match(/\.[A-Za-z][A-Za-z0-9_-]*/g) || []).forEach(c => defined.add(c.slice(1)));
+
+  const used = new Set();
+  (wxml.match(/class="([^"]*)"/g) || []).forEach(attr => {
+    attr.replace(/^class="/, '').replace(/"$/, '').replace(/\{\{[^}]*\}\}/g, expr => {
+      // 三元里的类名字面量（'on' / 'off' / 'show'…）同样要有定义
+      (expr.match(/'([a-z][a-z0-9_-]*)'/g) || []).forEach(q => used.add(q.slice(1, -1)));
+      return ' ';
+    }).split(/\s+/).filter(Boolean).forEach(c => used.add(c));
+  });
+  // .cn 是眉题的中文段，按设计只继承 .eyebrow，不单独定义规则
+  assert.deepEqual([...used].filter(c => !defined.has(c)).sort(), ['cn'],
+    '新增类名要么写进 t-export.wxss，要么改用 app.wxss 的原语——只抄类名不会带上样式');
+});
+
+test('t-export：列模板默认折叠，折叠态靠卡头摘要与失败提示说话', async () => {
+  const exp = readRel('pages', 't-export', 't-export.wxml');
+  const openAt = exp.indexOf('<block wx:if="{{templateOpen}}">');
+  const closeAt = exp.indexOf('</block>', openAt);
+  assert.ok(openAt > 0 && closeAt > openAt, '模板卡要有折叠体');
+  assert.ok(exp.indexOf('fold-sum') < openAt, '摘要写在卡头上，折叠时也看得见');
+  assert.ok(exp.indexOf('wx:if="{{templateNote}}"') > closeAt, '读取失败提示写在折叠体之外');
+  assert.match(exp, /<button class="section-title fold-head[^"]*"[^>]*bindtap="onToggleTemplates"/);
+  assert.match(exp, /wx:for="\{\{slotList\}\}"\s+wx:key="slot"/, '折叠体内仍是按槽位补齐的 4 行');
+
+  resetWx(); stubRequest();
+  signOut(); signIn(TEACHER, ['grade:read']);
+  stubPageRequests({
+    templates: [{ slot: 2, name: '月考', columns: ['totalScore'], side_table_n: 5, gap_cols: 2 }]
+  });
+  const page = loadPage();
+  await flush(); await flush();
+  assert.equal(page.data.templateOpen, false, '模板卡默认折叠');
+  assert.equal(page.data.templateSummary, '已存 1/4 槽');
+  page.onToggleTemplates();
+  assert.equal(page.data.templateOpen, true);
+  page.onLoadTemplate(tap('slot', 2));
+  assert.match(page.data.templateSummary, /用槽位2/, '载入后摘要要说清现在用的是哪个槽');
+
+  // 一个模板都没有时不写「已存 0/4」这种没用的数字
+  resetWx(); stubRequest();
+  stubPageRequests({ templates: [] });
+  const fresh = loadPage();
+  await flush(); await flush();
+  assert.equal(fresh.data.templateSummary, '未存模板');
+
+  // 模板读不到：折叠态看不见槽位列表，摘要退回「未存模板」，失败文案仍要留在卡外
+  resetWx(); stubRequest();
+  getImpl = p => {
+    if (p.indexOf('/export/templates') >= 0) throw new Error('模板接口挂了');
+    if (p.indexOf('/classes') >= 0) return CLASSES;
+    return SCORE_TABLE;
+  };
+  const bad = loadPage();
+  await flush(); await flush();
+  assert.equal(bad.data.templateOpen, false);
+  assert.equal(bad.data.templateSummary, '未存模板');
+  assert.equal(bad.data.templateNote, '模板读取失败，可继续直接导出');
+  assert.equal(bad.data.slotList.filter(s => s.filled).length, 0);
+  signOut();
+});
+
 test('排版回归：眉题按拉丁/中文拆开，mono + uppercase 只留给英文部分', () => {
   const app = readRel('app.wxss');
   const base = wxssRules('app.wxss').filter(r => r.sel === '.eyebrow')[0];

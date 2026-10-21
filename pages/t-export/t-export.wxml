@@ -13,10 +13,10 @@
     <!-- 1. 班级范围 -->
     <view class="card anim {{ready ? 'show' : ''}}">
       <view class="section-title">导出范围</view>
-      <scroll-view scroll-x class="chips">
-        <view wx:for="{{modes}}" wx:key="key" class="chip {{mode === item.key ? 'on' : ''}}"
-              data-key="{{item.key}}" bindtap="onPickMode">{{item.label}}</view>
-      </scroll-view>
+      <view class="opt-row">
+        <button wx:for="{{modes}}" wx:key="key" class="opt {{mode === item.key ? 'on' : ''}}"
+                data-key="{{item.key}}" bindtap="onPickMode">{{item.label}}</button>
+      </view>
 
       <picker wx:if="{{mode === 'one'}}" mode="selector" range="{{classOptions}}" range-key="className"
               value="{{classIndex}}" bindchange="onClassChange">
@@ -33,10 +33,10 @@
     <!-- 2. 列选择 -->
     <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 40ms">
       <view class="section-title">表格列</view>
-      <scroll-view scroll-x class="chips">
-        <view wx:for="{{presets}}" wx:key="key" class="chip {{preset === item.key ? 'on' : ''}}"
-              data-key="{{item.key}}" bindtap="onPreset">{{item.label}}</view>
-      </scroll-view>
+      <view class="opt-row">
+        <button wx:for="{{presets}}" wx:key="key" class="opt {{preset === item.key ? 'on' : ''}}"
+                data-key="{{item.key}}" bindtap="onPreset">{{item.label}}</button>
+      </view>
 
       <view class="sub sel-cap">已选 {{selected.length}} 列 · 顺序即 Excel 列顺序</view>
       <view wx:if="{{selected.length === 0}}" class="tip">至少选一列才能导出。</view>
@@ -47,17 +47,19 @@
             <text class="sel-label">{{item.label}}</text>
             <text class="sel-meta meta">{{item.group}} · Excel 表头「{{item.header}}」</text>
           </view>
-          <text class="mv {{item.canUp ? '' : 'off'}}" data-index="{{item.index}}" data-delta="-1" bindtap="onMoveCol">↑</text>
-          <text class="mv {{item.canDown ? '' : 'off'}}" data-index="{{item.index}}" data-delta="1" bindtap="onMoveCol">↓</text>
-          <text class="del" data-id="{{item.id}}" bindtap="onRemoveCol">×</text>
+          <button class="mv {{item.canUp ? '' : 'off'}}" disabled="{{!item.canUp}}"
+                  data-index="{{item.index}}" data-delta="-1" bindtap="onMoveCol">↑</button>
+          <button class="mv {{item.canDown ? '' : 'off'}}" disabled="{{!item.canDown}}"
+                  data-index="{{item.index}}" data-delta="1" bindtap="onMoveCol">↓</button>
+          <button class="del" data-id="{{item.id}}" bindtap="onRemoveCol">×</button>
         </view>
       </view>
 
       <view wx:if="{{hasPlaceholder}}" class="tip">「需要复核 / 置信度」后端暂无数据源，导出后是空列，与主站一致。</view>
 
       <view class="sub avail-cap">可添加</view>
-      <view class="chips-wrap">
-        <view wx:for="{{available}}" wx:key="id" class="chip add" data-id="{{item.id}}" bindtap="onAddCol">+ {{item.label}}</view>
+      <view class="opt-row">
+        <button wx:for="{{available}}" wx:key="id" class="opt add" data-id="{{item.id}}" bindtap="onAddCol">+ {{item.label}}</button>
         <view wx:if="{{available.length === 0}}" class="meta">已全部选中</view>
       </view>
     </view>
@@ -84,22 +86,29 @@
       <view wx:if="{{overA4}}" class="tip warn-txt">超出 A4 纵向可容纳的列宽，打印会分页；可减列或关掉参照表。</view>
     </view>
 
-    <!-- 4. 模板 -->
+    <!-- 4. 模板（默认折叠：多数导出用不上模板，展开率低的区块不该常驻占一屏） -->
     <view class="card anim {{ready ? 'show' : ''}}" style="animation-delay: 120ms">
-      <view class="section-title">列模板</view>
-      <view class="sub">4 个槽位与主站共用同一份数据，任一端存下另一端即可载入</view>
-      <view class="tpl-list">
-        <view wx:for="{{slotList}}" wx:key="slot" class="tpl-row">
-          <text class="tpl-slot num">{{item.slot}}</text>
-          <view class="tpl-main">
-            <text class="tpl-name {{item.filled ? '' : 'none'}}">{{item.name}}</text>
-            <text wx:if="{{item.filled}}" class="tpl-meta meta">{{item.meta}}</text>
+      <button class="section-title fold-head" bindtap="onToggleTemplates">
+        <text class="fold-title">列模板</text>
+        <text class="fold-sum">{{templateSummary}}</text>
+        <text class="fold-caret">{{templateOpen ? '▴ 收起' : '▾ 展开'}}</text>
+      </button>
+      <block wx:if="{{templateOpen}}">
+        <view class="sub">4 个槽位与主站共用同一份数据，任一端存下另一端即可载入</view>
+        <view class="tpl-list">
+          <view wx:for="{{slotList}}" wx:key="slot" class="tpl-row">
+            <text class="tpl-slot num">{{item.slot}}</text>
+            <view class="tpl-main">
+              <text class="tpl-name {{item.filled ? '' : 'none'}}">{{item.name}}</text>
+              <text wx:if="{{item.filled}}" class="tpl-meta meta">{{item.meta}}</text>
+            </view>
+            <button wx:if="{{item.filled}}" class="tpl-act {{item.active ? 'on' : ''}}" data-slot="{{item.slot}}" bindtap="onLoadTemplate">载入</button>
+            <button class="tpl-act" data-slot="{{item.slot}}" bindtap="onSaveTemplate">存</button>
+            <button wx:if="{{item.filled}}" class="tpl-act dan" data-slot="{{item.slot}}" bindtap="onDeleteTemplate">删</button>
           </view>
-          <text wx:if="{{item.filled}}" class="tpl-act {{item.active ? 'on' : ''}}" data-slot="{{item.slot}}" bindtap="onLoadTemplate">载入</text>
-          <text class="tpl-act" data-slot="{{item.slot}}" bindtap="onSaveTemplate">存</text>
-          <text wx:if="{{item.filled}}" class="tpl-act dan" data-slot="{{item.slot}}" bindtap="onDeleteTemplate">删</text>
         </view>
-      </view>
+      </block>
+      <!-- 读取失败的话即使在折叠态也要看得见，否则「模板读取失败」会被折叠吞掉 -->
       <view wx:if="{{templateNote}}" class="tip">{{templateNote}}</view>
     </view>
 

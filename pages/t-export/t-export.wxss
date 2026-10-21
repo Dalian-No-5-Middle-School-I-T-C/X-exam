@@ -1,12 +1,58 @@
 /* pages/t-export/t-export.wxss */
-/* 复用 app.wxss 的 card / chip / badge / btn / meta 原语，这里只补导出页特有的行控件与预览表。
-   间距沿用教师端其它页的节奏：卡片内 28rpx，区块之间由 .container 的 padding 与 anim 延迟拉开。 */
+/* 复用 app.wxss 的 card / badge / btn / meta 原语，这里补导出页特有的选项按钮、折叠卡头、行控件与预览表。
+   间距沿用教师端其它页的节奏：卡片内 28rpx，区块之间由 .container 的 padding 与 anim 延迟拉开。
+   注意 app.wxss 从来没有 .chip 原语（各教师页各自定义），本页早前的 .chip 只有 .add 一条派生规则，
+   于是「导出范围 / 表格列」渲染成一排无描边裸文本，看不出可点——现改为 .opt 真按钮，见下。 */
 .skeleton { margin-top: 24rpx; }
 .empty-hint { margin-top: 10rpx; font-size: 24rpx; color: var(--gray); font-weight: 400; }
 .err-box { color: var(--err-fg); border: 1rpx solid var(--err-bd); background: var(--err-soft); }
 
 .card { margin-bottom: 18rpx; }
-.chips { white-space: nowrap; margin: 6rpx 0 4rpx; }
+
+/* 选项按钮（导出范围 / 列预设 / 可添加列）：描边 + 定高 + 按压缩放 + 选中实底，
+   左侧小方块是选中记号，不靠颜色单独表意。 */
+.opt-row { display: flex; flex-wrap: wrap; margin: 10rpx 0 2rpx; }
+.opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  flex: none;
+  height: 72rpx;
+  margin: 0 12rpx 12rpx 0;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  background: #fff;
+  border: 1rpx solid var(--ink);
+  border-radius: var(--r-pill);
+}
+.opt::after { border: none; }
+.opt::before { content: ''; flex: none; width: 14rpx; height: 14rpx; border: 1rpx solid currentColor; }
+.opt:active { background: var(--ink); color: var(--paper); transform: scale(0.98); }
+.opt.on { color: #fff; background: var(--blue); border-color: var(--blue); }
+.opt.on::before { background: currentColor; }
+.opt.on:active { background: var(--blue-deep); color: #fff; }
+.opt.add { color: var(--blue); border-color: var(--blue-bd); border-style: dashed; background: #fff; }
+.opt.add::before { content: none; }
+.opt.add:active { background: var(--blue-soft); color: var(--blue); }
+
+/* 折叠卡头：整行可点，右侧摘要让折叠态也说得清「这里面有什么」 */
+.fold-head {
+  width: 100%;
+  padding: 10rpx 0;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+.fold-head::after { border: none; }
+.fold-head:active { background: var(--paper-2); }
+.fold-title { font-size: 40rpx; font-weight: 800; color: var(--ink); letter-spacing: 0; }
+.fold-sum { flex: 1; text-align: right; font-size: 24rpx; font-weight: 400; color: var(--gray); letter-spacing: 0; }
+.fold-caret { flex: none; font-size: 24rpx; font-weight: 600; color: var(--blue); letter-spacing: 0; }
+
 .tip {
   margin-top: 14rpx;
   font-size: 22rpx;
@@ -23,14 +69,19 @@
 .red-num { color: var(--err); }
 
 .ta-class {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10rpx;
+  width: 100%;
+  min-height: 76rpx;
   margin-top: 16rpx;
-  padding: 10rpx 20rpx;
-  border: 1rpx solid var(--line);
+  padding: 12rpx 26rpx;
+  border: 1rpx solid var(--ink);
+  border-radius: var(--r-pill);
   background: #fff;
 }
+.ta-class:active { background: var(--paper-2); }
 .ta-class-label { font-size: 26rpx; color: var(--ink); font-weight: 600; }
 .ta-class-caret { font-size: 22rpx; color: var(--gray); }
 
@@ -49,24 +100,24 @@
 .sel-label { display: block; font-size: 28rpx; font-weight: 600; color: var(--ink); }
 .sel-meta { display: block; margin-top: 2rpx; }
 .mv, .del {
-  width: 56rpx;
-  height: 56rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
   flex: none;
-  line-height: 54rpx;
-  text-align: center;
+  padding: 0;
   font-size: 28rpx;
+  line-height: 1;
   color: var(--ink);
   border: 1rpx solid var(--line);
   background: #fff;
 }
-.mv:active, .del:active { background: var(--paper-2); }
-.mv.off { color: var(--line); }
+.mv::after, .del::after { border: none; }
+.mv:active, .del:active { background: var(--paper-2); transform: scale(0.96); }
+/* 首/末行的方向键本来就点不动（disabled），样式上也要一眼看出是灰的，压上去不再变色 */
+.mv.off, .mv.off:active { color: var(--line); background: var(--paper); border-color: var(--line); transform: none; }
 .del { color: var(--err-fg); border-color: var(--err-bd); background: var(--err-soft); }
-
-.chips-wrap { display: flex; flex-wrap: wrap; margin-top: 8rpx; }
-.chips-wrap .chip { margin-bottom: 12rpx; }
-.chip.add { color: var(--ink-soft); }
-.chip.add.on, .chip.add:active { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-bd); }
 
 /* 行控件 */
 .row-line {
@@ -118,16 +169,26 @@
 .tpl-name.none { color: var(--gray); font-weight: 400; }
 .tpl-meta { display: block; margin-top: 2rpx; }
 .tpl-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  padding: 8rpx 20rpx;
+  height: 56rpx;
+  margin: 0;
+  padding: 0 20rpx;
   font-size: 24rpx;
+  font-weight: 600;
+  line-height: 1;
   color: var(--blue);
   border: 1rpx solid var(--blue-bd);
+  border-radius: 0;
   background: #fff;
 }
-.tpl-act:active { background: var(--blue-soft); }
-.tpl-act.on { background: var(--blue); color: #fff; }
-.tpl-act.dan { color: var(--err-fg); border-color: var(--err-bd); }
+.tpl-act::after { border: none; }
+.tpl-act:active { background: var(--blue-soft); transform: scale(0.96); }
+.tpl-act.on { color: #fff; background: var(--blue); border-color: var(--blue); }
+.tpl-act.on:active { color: #fff; background: var(--blue-deep); }
+.tpl-act.dan { color: var(--err-fg); border-color: var(--err-bd); background: #fff; }
 .tpl-act.dan:active { background: var(--err-soft); }
 
 /* 数据预览：横向滚动，单元格按内容宽自然排布，中文表头不换行才不会被切 */
@@ -166,3 +227,6 @@
 .foot { margin-top: 10rpx; }
 
 .x-links { display: flex; gap: 24rpx; justify-content: center; margin-top: 26rpx; }
+/* .ta-link 在 t-analysis / t-ranking 里各定义一份，不在 app.wxss，本页用了同样的类名就得自己补 */
+.ta-link { font-size: 26rpx; color: var(--blue); }
+.ta-link:active { opacity: 0.6; }
