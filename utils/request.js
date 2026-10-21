@@ -1,7 +1,9 @@
 // utils/request.js
 // 统一封装 wx.request：自动带 Bearer，401 清登录态并跳登录。
+// opts.responseType='arraybuffer' 供导出 Excel 取二进制；错误体也按二进制解码后再取 message。
 // requestRaw 为低层请求，auth.js 复用，避免登录接口重复一套请求逻辑。
 const { API_BASE, API_PREFIX } = require('./env');
+const { decodeUtf8 } = require('./response');
 
 const DEFAULT_TIMEOUT = 20000;
 let handling401 = false;
@@ -24,6 +26,10 @@ function clearLocalUserData() {
       }
       if (hit) { try { wx.removeStorageSync(k); } catch (e) { /* ignore */ } }
     });
+  } catch (e) { /* ignore */ }
+  // 教师导出的成绩表是他人分数明文，落在本地文件目录里，登出必须连文件一起清
+  try {
+    require('./exportStore').clearAll();
   } catch (e) { /* ignore */ }
 }
 function clearLogin() {
@@ -74,6 +80,16 @@ function apiError(res) {
   var body = null;
   try {
     body = res.data;
+    // responseType 'arraybuffer'（导出 Excel）时错误体也是二进制，先解码才能拿到后端那句 403 文案
+    if (typeof ArrayBuffer !== 'undefined' &&
+        (body instanceof ArrayBuffer || (typeof Uint8Array !== 'undefined' && body instanceof Uint8Array))) {
+      var text = decodeUtf8(body).replace(/^\s+/, '');
+      if (text.charAt(0) === '{') {
+        try { body = JSON.parse(text); } catch (e) { body = null; }
+      } else {
+        body = null;
+      }
+    }
     if (body && typeof body.message === 'string' && body.message) message = body.message;
   } catch (e) { /* ignore */ }
   var err = new Error(message);
@@ -116,7 +132,9 @@ function request(method, path, data, opts) {
   if (token) header['Authorization'] = 'Bearer ' + token;
   return requestRaw(method, path, data, {
     header: header,
-    timeout: opts.timeout || DEFAULT_TIMEOUT
+    timeout: opts.timeout || DEFAULT_TIMEOUT,
+    // 导出 Excel 走二进制通道：'arraybuffer' 时 resolve 的是 ArrayBuffer 本身
+    responseType: opts.responseType
   })
     .then(function (res) { return res.data; })
     .catch(function (err) {
@@ -136,5 +154,9 @@ function post(path, data, opts) {
 function put(path, data, opts) {
   return request('PUT', path, data, opts);
 }
+// delete 是保留字，导出模板删除用 del
+function del(path, opts) {
+  return request('DELETE', path, undefined, opts);
+}
 
-module.exports = { requestRaw: requestRaw, get: get, post: post, put: put, clearLocalUserData: clearLocalUserData };
+module.exports = { requestRaw: requestRaw, get: get, post: post, put: put, del: del, clearLocalUserData: clearLocalUserData };

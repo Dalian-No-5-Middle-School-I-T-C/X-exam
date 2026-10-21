@@ -1,6 +1,6 @@
 <!-- pages/detail/detail.wxml -->
 <view class="container">
-  <view class="eyebrow">EXAM · 成绩详情</view>
+  <view class="eyebrow"><text class="en">EXAM</text><text class="cn"> · 成绩详情</text></view>
   <view class="title">{{examName || ('考试 #' + examId)}}</view>
 
   <!-- 本场总分/排名概览 -->

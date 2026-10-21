@@ -736,6 +736,38 @@ test('change-password.onSubmit validates input', async () => {
   assert.equal(page.data.error, '新密码不能与当前密码相同');
 });
 
+// ---------- pages/profile 眉标 ----------
+// 眉标文字来自 utils/role.js，页面只负责在 onShow 里取当前登录用户，
+// 这里锁的是「教师 / 管理员不再被写成学生档案」这条用户可见结果。
+// 页面数据分 en / cn 两段（排版规则只给拉丁上 mono + uppercase），断言时拼回整行读。
+function profileEyebrowFor(user) {
+  global.wx = Object.assign({}, baseWx, { getSetting: () => {} });
+  auth.setUser(user, false);
+  const page = makePage(profileDef);
+  page.onShow();
+  auth.clearUser();
+  return page.data.eyebrowEn + page.data.eyebrowCn;
+}
+
+test('profile 眉标随角色变化，认不出角色时回落学生文案', () => {
+  assert.equal(profileEyebrowFor({ name: '王老师', role_name: 'teacher', role_id: 2 }), 'TEACHER · 老师档案');
+  assert.equal(profileEyebrowFor({ name: '张小明', role_name: 'student', role_id: 3 }), 'STUDENT · 学生档案');
+  // 只有 role_id 的旧响应同样判定；未登录也给出文案而不是空一行
+  assert.equal(profileEyebrowFor({ name: '管理员', role_id: 1 }), 'ADMIN · 管理员档案');
+  assert.equal(profileEyebrowFor({ name: '审计员', role_name: 'auditor' }), 'STUDENT · 学生档案');
+  assert.equal(profileEyebrowFor(null), 'STUDENT · 学生档案');
+});
+
+// 模板里若把文案写回字面量，上面的判据就白改了：这一条锁住绑定本身
+test('profile 眉标在模板里取页面数据，不再出现写死的学生文案', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const wxml = fs.readFileSync(path.join(__dirname, '..', 'pages', 'profile', 'profile.wxml'), 'utf8');
+  assert.match(wxml, /<view class="eyebrow"><text class="en">\{\{eyebrowEn\}\}<\/text><text class="cn">\{\{eyebrowCn\}\}<\/text><\/view>/,
+    '眉标必须绑定页面数据，并按 .en / .cn 拆分（与其余页面的排版一致）');
+  assert.doesNotMatch(wxml, /学生档案/, '眉标文字只能来自 utils/role.js');
+});
+
 // ---------- pages/profile 成绩发布提醒开关 ----------
 const { TEMPLATE_ID } = require('../utils/subscribe');
 

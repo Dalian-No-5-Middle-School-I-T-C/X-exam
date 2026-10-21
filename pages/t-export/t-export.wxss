@@ -1,0 +1,168 @@
+/* pages/t-export/t-export.wxss */
+/* 复用 app.wxss 的 card / chip / badge / btn / meta 原语，这里只补导出页特有的行控件与预览表。
+   间距沿用教师端其它页的节奏：卡片内 28rpx，区块之间由 .container 的 padding 与 anim 延迟拉开。 */
+.skeleton { margin-top: 24rpx; }
+.empty-hint { margin-top: 10rpx; font-size: 24rpx; color: var(--gray); font-weight: 400; }
+.err-box { color: var(--err-fg); border: 1rpx solid var(--err-bd); background: var(--err-soft); }
+
+.card { margin-bottom: 18rpx; }
+.chips { white-space: nowrap; margin: 6rpx 0 4rpx; }
+.tip {
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--gray);
+  background: var(--paper);
+  border: 1rpx solid var(--line);
+  padding: 12rpx 16rpx;
+}
+.warn-txt { color: var(--err-fg); }
+.link { color: var(--blue); }
+.link:active { opacity: 0.6; }
+.link.dan { color: var(--err-fg); }
+.red-num { color: var(--err); }
+
+.ta-class {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 16rpx;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid var(--line);
+  background: #fff;
+}
+.ta-class-label { font-size: 26rpx; color: var(--ink); font-weight: 600; }
+.ta-class-caret { font-size: 22rpx; color: var(--gray); }
+
+/* 列选择 */
+.sel-cap, .avail-cap { display: block; margin: 20rpx 0 6rpx; }
+.sel-list .sel-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.sel-list .sel-row:last-child { border-bottom: none; }
+.sel-no { width: 40rpx; flex: none; font-size: 22rpx; color: var(--gray); }
+.sel-main { flex: 1; min-width: 0; }
+.sel-label { display: block; font-size: 28rpx; font-weight: 600; color: var(--ink); }
+.sel-meta { display: block; margin-top: 2rpx; }
+.mv, .del {
+  width: 56rpx;
+  height: 56rpx;
+  flex: none;
+  line-height: 54rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: var(--ink);
+  border: 1rpx solid var(--line);
+  background: #fff;
+}
+.mv:active, .del:active { background: var(--paper-2); }
+.mv.off { color: var(--line); }
+.del { color: var(--err-fg); border-color: var(--err-bd); background: var(--err-soft); }
+
+.chips-wrap { display: flex; flex-wrap: wrap; margin-top: 8rpx; }
+.chips-wrap .chip { margin-bottom: 12rpx; }
+.chip.add { color: var(--ink-soft); }
+.chip.add.on, .chip.add:active { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-bd); }
+
+/* 行控件 */
+.row-line {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-height: 64rpx;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.row-list .row-line:last-child, .row-line.foot { border-bottom: none; }
+.row-name { flex: 1; font-size: 26rpx; color: var(--ink); overflow-wrap: break-word; }
+.width-num { flex: none; font-size: 28rpx; font-weight: 700; color: var(--ink); }
+.cell-input {
+  flex: none;
+  width: 110rpx;
+  height: 60rpx;
+  padding: 0 16rpx;
+  text-align: right;
+  font-size: 26rpx;
+  color: var(--ink);
+  border: 1rpx solid var(--line);
+  background: #fff;
+}
+
+/* 模板槽位 */
+.tpl-list .tpl-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.tpl-list .tpl-row:last-child { border-bottom: none; }
+.tpl-slot {
+  width: 44rpx;
+  height: 44rpx;
+  flex: none;
+  line-height: 42rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+  border: 1rpx solid var(--blue-bd);
+}
+.tpl-main { flex: 1; min-width: 0; }
+.tpl-name { display: block; font-size: 27rpx; font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
+.tpl-name.none { color: var(--gray); font-weight: 400; }
+.tpl-meta { display: block; margin-top: 2rpx; }
+.tpl-act {
+  flex: none;
+  padding: 8rpx 20rpx;
+  font-size: 24rpx;
+  color: var(--blue);
+  border: 1rpx solid var(--blue-bd);
+  background: #fff;
+}
+.tpl-act:active { background: var(--blue-soft); }
+.tpl-act.on { background: var(--blue); color: #fff; }
+.tpl-act.dan { color: var(--err-fg); border-color: var(--err-bd); }
+.tpl-act.dan:active { background: var(--err-soft); }
+
+/* 数据预览：横向滚动，单元格按内容宽自然排布，中文表头不换行才不会被切 */
+.pv { margin-top: 14rpx; border: 1rpx solid var(--line); }
+.pv-table { display: inline-block; min-width: 100%; }
+.pv-row { display: flex; border-bottom: 1rpx solid var(--line); }
+.pv-row:last-child { border-bottom: none; }
+.pv-cell {
+  flex: none;
+  min-width: 130rpx;
+  padding: 12rpx 18rpx;
+  font-size: 24rpx;
+  color: var(--ink);
+  border-right: 1rpx solid var(--line);
+  white-space: nowrap;
+}
+.pv-cell:last-child { border-right: none; }
+.pv-hd .pv-cell { background: var(--paper); color: var(--gray); font-size: 22rpx; }
+
+/* 进度与结果（.prog / .prog-fill 原语在 app.wxss） */
+.prog { margin-top: 20rpx; }
+.prog-txt { display: block; margin-top: 10rpx; }
+.cancel { display: flex; width: 300rpx; height: 72rpx; margin-top: 18rpx; font-size: 26rpx; }
+.res-cap { display: block; margin: 22rpx 0 4rpx; }
+.file-list .file-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.file-list .file-row:last-child { border-bottom: none; }
+.file-row:active { background: #FAF8F3; }
+.file-name { font-size: 26rpx; font-weight: 600; color: var(--blue); overflow-wrap: break-word; }
+.file-meta { color: var(--gray); }
+.foot { margin-top: 10rpx; }
+
+.x-links { display: flex; gap: 24rpx; justify-content: center; margin-top: 26rpx; }

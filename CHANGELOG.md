@@ -14,6 +14,14 @@
 ## [Unreleased]
 
 ### Added
+- **教师端导出成绩表（Excel，`pages/t-export`）**：主站教师端的 Excel 导出搬到小程序，并新增**分班级导出**。入口两处——分析页与成绩榜的「导出成绩 ›」，跳转时带上当前 `examId` 与已筛选的 `classId`（含 `classId=0` 的「未知班级」）。**主站后端零改动**，请求体与主站导出面板完全互通。
+  - **三层结构**：`utils/exportTable.js` 是纯逻辑（16 个列定义含 `label` / `Excel 表头` / 分类 / 估算宽度、三档快捷预设、列增删移动、宽度估算与 A4 超宽判定、班级名单计划、文件名净化、预览表归一、模板归一），无 `wx` 依赖、带 `node utils/exportTable.js` 自检块；`utils/exportStore.js` 管本机落盘（`px_exports/` 目录 + `px_exports_index` 索引、同名加序号、空文件与超体积判失败、只保留最近 N 个）；`services/exportService.js` 是执行层（取二进制 → 落盘 → 逐班串行 → 打开预览 → 模板读写）。页面只调 service。
+  - **三种导出范围**：全部班级一份（不传 `classId`）/ 指定一个班（`<picker>` 选班）/ 逐班各出一份（按名单顺序**串行** N 次 POST，每班一个 `.xlsx`，页面显示进度与「另有个班超出单次上限不导出」）。单班失败只记该班错误、不断整批；`runExport` 返回的对象带 `cancel()`，页面 `onUnload` 与取消按钮都会调用它。
+  - **列模板与主站共用一份数据**：4 个槽位按 `user_id` 存后端，`GET/PUT/DELETE /api/export/templates[/:slot]`；后端字段是 snake_case（`side_table_n` / `gap_cols`）且 `columns` 可能是 JSON 字符串，`normalizeTemplates` 兜住这两处，所以主站存的模板在小程序直接能载入，反之亦然。槽位越界与空列在本地先拦下，且以 **rejected promise** 返回而非同步 `throw`——页面只有一条 `.catch`，混进同步异常会变成「点了没反应」的白屏。
+  - **对齐主站的能力**：列选择与列序（顺序即 Excel 列序）、「需要复核 / 置信度」两列后端无数据源故导出为空列（页面显式提示，与主站同形）、「年级前 N 名」参照表附在同一 Sheet 右侧 + 间隙列、A4 纵向列宽估算与超宽提示（`A4_MAX_CHARS = 63` 与主站同值）、数据预览（与导出接口同一份后端仓储方法，`hasAssignedScore` 为假时整列省略「赋分」、名次变化按 `↑+3 / ↓-2 / 0 / -` 显示）。
+  - **`classId=0` 的两种命运**：POST 请求体里 `classId: 0` 后端照原意出「未知班级」那一份；GET 预览的 query `?classId=0` 会被后端判成未传而返回全年级数据，故 `previewScope()` 让预览退回全部班级并在页面上标注当前口径。
+- `tests/export.test.js`（31 例）：列定义与 `label`/`header` 分工、未知/重复列丢弃、`buildExportBody` 空列判定、宽度与 A4 阈值（基础表 + 前 10 名参照表 = 67 > 63 必提示、关参照表 46 通过）、三档数值闸门（改 `env.LIMITS` 后夹紧、非法值回落默认、`LIMITS` 键集合必须与 `LIMIT_CEILING` 一一对应）、模板 snake_case 与 JSON 字符串列归一、逐班计划超量截断并报出跳过数、文件名净化、预览表省略「赋分」与名次变化写法、手写 UTF-8 解码与 403 错误体文案、`formatBytes`、线协议（`arraybuffer` / 超时 / `Bearer` / `DELETE` / 403 中文原样带出）、401 被动登出把 xlsx 与索引一并删、落盘去重与保留数、`requestWorkbook` 的 JSON-in-binary / 空文件 / 超体积三种情况都不落盘、逐班串行顺序与单班 403 不断批、`cancel()` 语义、三种模式的请求体、学生守卫与非法 `examId` 不请求、参照表开关与输入夹紧、模板载入/保存/删除、预览失败重试与跨页带班、入口存在性，以及**排版回归断言**（全仓 `text-transform` 只允许一处、负字距选择器白名单、不出现 `word-break: break-all`、`.badge` 行高锁 1、`.meta` 无衬线 + `tabular-nums`、`.ph` 走 `--gray` 变量）。
+- **`npm test` 追加导出自检**：链尾新增 `node utils/exportTable.js && node utils/exportStore.js`；`scripts/validate-project.mjs` 无需改动，`pages/t-export` 直接纳入页面注册与事件/类名一致性校验（现 53 个 JS 文件、22 个 JSON 文件）。
 - **教师工作台（只读分析，教师 / 管理员专属）**：小程序此前只有学生查分主线，小题得分率、班际对比、知识点薄弱只能回主站网页看。本次补齐小程序端的**只读**分析，管理员与教师走同一条判定，因此天然同步到管理员端。
   - **入口与分流**：`utils/role.js` 是前端唯一的角色判据——读登录响应的 `user.role_name / user.role_id`（后端从不返回 `user.role`，也从不返回 `isAdmin`）与顶层 `permissions`；admin 与持有 `grade:read` 的 teacher 可达，学生与未知角色一律拒绝。管理员判定收敛为 `role.isAdminUser()`：权威字段存在时只认 `role_name / role_id`，只有完全读不到权威字段的旧会话才退回历史线索（`isAdmin` / `role` / `role_display_name` 含「管理员」），`pages/profile` 的「管理」卡片与 `pages/admin-ladder` 的准入守卫共用这一个判据，不再出现「入口看不见、页面却能进」的错位。`homePath()` 让教师 / 管理员登录后直接落在 `pages/t-exams`，学生仍落在成绩页；邀请深链（`examId` → 单场成绩）只对学生生效。`pages/profile` 对教师 / 管理员显示「教师工作台」入口，学生看不到该行，其余界面与查分流程不变。
   - **五个页面**：`pages/t-exams`（可见考试列表：按考试日期倒序 + 学科胶囊 + 关键词搜索 + 考试数/已公布/已判分汇总，公布状态直接取后端 `score_published` 的 0/1/2 不做推断）、`pages/t-analysis`（单场四页签：概况〔均分 / 标准差 / 及格率 / 优秀率 / 五数概括 / 与上次对比〕、小题得分率〔得分率 + 难度 P + 区分度 D + 错误率档，可排序、可下钻〕、分布与指标〔分数段直方图 + 整卷难度/区分度/信度〕、知识点薄弱；班级筛选覆盖全部页签；页签各自持有加载与错误态，任一接口失败只影响本页签）、`pages/t-question`（小题逐人得分，本地排序）、`pages/t-ranking`（成绩榜：整榜一次取回后本地分页与搜索，翻页零请求）、`pages/t-classes`（班际对比：各班统计量 + 同题得分率极差 Top10）。`app.json` 由 10 页增至 15 页。
@@ -32,6 +40,9 @@
 - 管理员专属的成绩天梯管理页，依赖后端管理员鉴权的开关读取与更新接口。
 
 ### Changed
+- **`utils/env.js` 新增 `LIMITS` 可改档**：小程序没有环境变量，这份文件就是中间档，与 `utils/exportTable.js` 的 `LIMIT_DEFAULTS` / `LIMIT_CEILING` 组成「默认值 + 可改 + 硬天花板」三档；改越界只被夹紧、不会把某一档整档取消。README 补了逐项语义表与「初始值 vs 上限」的区分说明。
+- **`utils/request.js` 支持二进制通道**：`opts.responseType === 'arraybuffer'` 时 resolve 的就是 `ArrayBuffer`；`apiError()` 先用手写 UTF-8 解码再取 `message`，否则 403 的那句中文在二进制错误体里读不出来，教师只会看到「请求失败」。解码走 `utils/response.js` 的 `decodeUtf8`（设备上的 `TextDecoder` 不可靠：1/2/3/4 字节全支持，代理对拼接，截断序列丢弃，游离的后续字节跳过）。
+- **`clearLocalUserData()` 连导出文件一起清**：401 被动登出与主动退出登录都调用 `exportStore.clearAll()`，删除 `px_exports/` 下的 xlsx 与 `px_exports_index` 索引——导出的文件是他人成绩明文，不能留在共用设备上。
 - **`npm test` 追加分析自检**：`test` 链尾加 `node utils/analysis.js`，教师端归一化与 `utils/response.js`、`scripts/cache-selfcheck.js` 一样在 CI 里跑自带自测块。CI 工作流无需改动：`scripts/validate-project.mjs` 本就校验 `app.json` 注册页与 `usingComponents`，新增五个教师页面直接纳入覆盖。
 - **订阅开关说清为什么失败**：`utils/subscribe.js` 原先把四类失败压成三个 `reason` 且丢尽细节——HTTP 状态与后端 `message` 被扔掉，微信的 `errno` / `errMsg` 也被扔掉，结果「后端没部署（404）」「服务端没配环境变量（503）」「网络不通」「用户自己点了取消」在界面上长得一模一样，只能靠猜。现结果统一为 `{ ok, accepted, reason, status, errno, detail }`；`pages/profile` 按状态码分文案（403/401 → 登录已过期，404/503 → 服务尚未就绪，`status === 0` → 网络异常，其余 → 绑定失败），并按弹窗返回值区分「已取消开启」与「请先在右上角设置中允许订阅消息」（`setting=ban`）、「当前暂不支持该提醒」（`setting=filter`）。面向学生不出现任何状态码或英文 `errMsg`，技术细节统一 `console.warn('[subscribe] …')`，真机 vConsole 直接可定位。
 - **成绩天梯不再切开同分并列**：天梯仍默认只展示前十，但第 10 条若与后面的人同名次，该并列组一并列出（Project-X 三条天梯接口统一按 `takeLadder` 截断）。前端按后端返回条数整表渲染、不自行截断，多于 10 条时副标题改为「前十 · 同分并列全显（共 N 人）」。后端未升级时仍是硬切 10 条。
@@ -40,6 +51,20 @@
 - **学科对比并入趋势页，页面改名「分析」**：`pages/trends` 一屏给出「成绩走势」（总分 / 班均 / 年段均折线）与「学科对比」（雷达 + 明细表 + 差距柱 + 最需加强学科 + 一键转发）。TabBar、导航栏标题与页内标题同步由「趋势 / 成绩趋势」改为「分析」。两段数据各自请求 `/scores/me/trends` 与 `/scores/me/subject-comparison`、各自持有错误态与空态，任一接口异常只显示本段提示，不清空另一段；`load()` 等两个请求都回来才收 loading，避免先回来的那个提前结束下拉刷新。
 
 ### Fixed
+- **中文标题被当成拉丁字母排版**（字体排列类 bug 的集中修复，`app.wxss` + 五个页面）：
+  - 眉题整行套 `font-mono` + `text-transform: uppercase` + `letter-spacing: .18em` 时，汉字会被逐字撑开并按字形回退，是页面上最刺眼的一处错位。现 `.eyebrow` 本体改为无衬线 + 0.02em，等宽 / 大写 / 0.18em 只留在 `.eyebrow .en`（仅放拉丁串）上，中文部分用 `.cn` 标记并继承容器样式。
+  - `.title`（-2rpx）、`.section-title`（-1rpx）、`.row-name`（-0.5rpx）、`.h-title`（-1rpx）的负字距只适合拉丁，压在中文上互相咬字，一律归零；负字距只保留在纯数字的大字号读数（`.hero-score` / `.hero-num`）上。
+  - `.badge` 固定 36rpx 高配全局 1.65 行高，汉字下沿被盒子切掉（22×1.65≈36.3 > 36），补 `line-height: 1`。
+  - `word-break: break-all`（`.row-name`、`.kname`）会把「2026.9.22」这类日期与知识点名从中间硬切，改 `overflow-wrap: break-word` 只在整词放不下时才断。
+  - `.meta` 整行等宽让「均分 3.2 · 正确率 85%」这类中英数混排逐字回退，改无衬线 + `font-variant-numeric: tabular-nums`；`.meta--faint` 用 `--gray` + 透明度而不是 `--line`，避免灰到看不清。
+  - 窄列折行：`pages/t-classes` 的题号列 92rpx 里塞「Q12·主观」必然折成两行，题号列收到 76rpx 并要求 `white-space: nowrap`（题型文案挪到右侧细字行）；`pages/t-ranking` 的「共 N 题 · xx%」列 110rpx → 130rpx 且 `.s-sub` 不换行、`.c-score` 相应收到 190rpx，`.bar-top` 由块级改为两端对齐的 flex 以容纳新增的导出入口。
+  - 输入框占位色原先在四个页面各写一遍 `#B0B0B8`，与主题的 `--gray` 不一致，统一改 `var(--gray)`。
+  - 进度条填充元素原先全局规则写成 `.prog > i`，而 `<i>` 不是 WXML 的合法标签、仓库里也没有任何页面用得上，是一条永远不会命中的死规则。现把原语定为 `.prog-fill`（仍在 `app.wxss`，供各页共用），导出页只保留本页的间距样式。
+- **参照表参数被 env 默认值裁小**：`sideTableN` / `gapCols` 在 `env.LIMITS` 里只是「首次进入页面的初始值」，而 `buildExportBody` 早先按 `limits()` 夹紧，教师选「前 20 名」实际只导出前 10 名。现新增 `clampSetting()`，输入框与请求体的上界只认 `LIMIT_CEILING`（N 到 200、间隙列到 10），非法值/空值回落 env 默认；真正当上限用的 `classesPerExport` / `fileMb` / `keepFiles` / `previewRows` / `exportTimeoutMs` 仍走 `limits()`。
+- **间隙列输入此前形同冻结**：`gapCols` 的改动没有进入请求体，页面上改了、导出的文件没改，现已接通并加了断言。
+- **参照表开关的「开着但 N=0」**：关掉再打开时 `sideN` 会留在 0，开关显示为启用而导出的文件里没有参照表。现重新启用时若 `sideN <= 0` 回落 `limits().sideTableN`。
+- **班级名单到手后预览不更新**：从成绩榜带班进入时名单晚于预览到达，页面停留在「全部班级」的预览上。现名单落地后按当前口径重取预览，并用 `_previewSeq` 丢弃过期响应，避免快速切班时旧数据盖新数据。
+- **「我的」页眉标不再把教师写成学生**：`pages/profile/profile.wxml` 的眉标原先写死 `STUDENT · 学生档案`，而 `onShow` 只用角色决定「教师工作台」「成绩天梯管理」两个入口，角色从不参与文案——于是教师与管理员进来仍看到「学生档案」，与同页头像下方后端给的「教师」显示名自相矛盾。现文字由 `utils/role.js` 的 `profileEyebrow()` 给出：学生 `STUDENT · 学生档案`、教师 `TEACHER · 老师档案`、管理员 `ADMIN · 管理员档案`（沿用各页 `CODE · 中文` 写法，管理员与 `pages/admin-ladder` 的 `ADMIN · 管理设置` 一致）。判据仍走 `roleNameOf`（`role_name` 优先，只有 `role_id` 的旧响应同样判定），管理员复用前端唯一判据 `isAdminUser`，因此旧会话只剩历史线索时眉标与入口一起亮、不会一处一处错位；后端新增角色或认不出角色时按学生文案回落（本页默认受众是学生），不留空也不报错。文字交给模板时按本页「排版回归」的规矩由 `profileEyebrowParts()` 切成 `.en` / `.cn` 两段（等宽 + 大写只落在拉丁上），拆开再拼回等于整行文案，页面自己不拼字符串。`tests/teacher.test.js` 锁判据与拆分契约，`tests/pages.test.js` 锁 `profile.onShow` 的实际输出与模板绑定。
 - **`permissions` 的「读不到」与「一个都没有」不再混为一谈**：`utils/auth.js` 的 `setPermissions` 原先在后端没返回 `permissions` 时也往 `px_perms` 写 `[]`（记住我登录），而 `utils/role.js` 又把 `[]` 和 `null` 一并当成「旧会话、放行入口」——于是**被撤掉 `grade:read` 的教师入口永远亮着**，点进去只看到后端 403 文案。现 `setPermissions` 只持久化数组、非数组直接不写键（读回 `null`），角色门按「`null` 放行、`[]` 隐藏」处理；`px_perms` 尚未发布过任何版本，不存在需要迁移的旧键值。
 - **管理员判据统一到 `utils/role.js`**：`pages/admin-ladder` 自带一套宽松 `isAdmin()`（认 `isAdmin` / `role` / `role_code` / 显示名含「管理员」），而本次 `pages/profile` 改走严格的 `currentRole(u) === 'admin'`，两处一对不上就出现「管理入口看不见、天梯页面却照样能进」。现两处共用 `role.isAdminUser()`：有权威字段（`role_name` / `role_id`）时只认权威字段，完全读不到才退回历史线索——既堵住「教师显示名叫『管理员』也算管理员」的旧漏洞，又不会把升级前建立会话的管理员关在门外。
 - **教师工作台的小题列表键不再用题号**：`pages/t-analysis` 的 `wx:key="questionNumber"` 与作者自己在 `t-classes.js` / `t-analysis.js` 写下的口径矛盾（同一题号的客观 / 主观两行题号相同），撞键会让列表复用出错并在控制台告警。现小题行在归一化时发一个贯穿排序的 `uid`，`wx:key` 改用 `uid`，与知识点 / 逐人得分 / 榜单三处保持一致。
@@ -54,6 +79,8 @@
 - 统一成绩页按钮、统计卡与分析入口的对齐和字号。
 
 ### Security
+- **导出文件只在本机、不接入分享**：出口只有 `wx.openDocument({ fileType: 'xlsx', showMenu: true })`，未接 `wx.shareFileMessage`，教师端页面也不新增 `onShareAppMessage` / `onShareTimeline`；页面文案直接写明「里面有其他同学的成绩：退出登录会一并删除本机文件」。本机保留份数与单文件体积都有闸门，避免把设备存储写爆。
+- **`examId` / `classId` / 模板槽位逐个校验**：非法考试编号与越界槽位在本地先拒绝（不发请求），路径段一律 `encodeURIComponent`；导出接口后端的四道门禁（`requireExamAccess` + `can_view_scores` + `can_view_students` + `grade:read`）仍是权威边界，403 文案原样显示、不改写。
 - **教师权限位随登录态一起清理**：登录响应的顶层 `permissions` 是工作台入口的判据，本次为它新增独立缓存键 `px_perms`（`utils/auth.js` 的 `setPermissions` / `getPermissions` / `clearPermissions`）。`setPermissions` 只接受数组：后端没给 `permissions` 时**不写键**，读回 `null`，与后端给的 `[]`（零权限）区分开——两者若混用，被撤权限的教师入口仍会亮着。退出登录与 401 被动登出都会清除该键，`utils/request.js` 的 `clearLocalUserData()` 键清单同步纳入 `px_perms`——共用设备上换到学生账号时，读不到上一个教师账号残留在本地的权限位，入口判据与 token 一样只在当前会话内有效。
 
 ### Removed

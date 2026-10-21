@@ -4,7 +4,14 @@
 .err-box { color: var(--err-fg); border: 1rpx solid var(--err-bd); background: var(--err-soft); }
 .note { margin: 14rpx 0; line-height: 1.5; }
 
-.bar-top { margin-top: 22rpx; }
+/* 班级筛选与导出入口左右分开：bar-top 原来是块级容器，只放一个 picker */
+.bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
 .ta-class {
   display: inline-flex;
   align-items: center;
@@ -13,8 +20,11 @@
   border: 1rpx solid var(--line);
   background: #fff;
 }
+.ta-class--static { border-style: dashed; }
 .ta-class-label { font-size: 26rpx; color: var(--ink); font-weight: 600; }
 .ta-class-caret { font-size: 22rpx; color: var(--gray); }
+.ta-link { font-size: 26rpx; color: var(--blue); flex: none; }
+.ta-link:active { opacity: 0.6; }
 
 .search-box {
   display: flex;
@@ -26,7 +36,7 @@
   margin: 20rpx 0 18rpx;
 }
 .search { flex: 1; color: var(--ink); font-size: 28rpx; height: 80rpx; }
-.ph { color: #B0B0B8; }
+.ph { color: var(--gray); }
 
 .hd-row, .row {
   display: flex;
@@ -42,14 +52,15 @@
 .c-rank { width: 64rpx; flex: none; font-size: 26rpx; color: var(--gray); }
 .c-rank.top { color: var(--blue); font-weight: 800; }
 .c-name { flex: 1; min-width: 0; }
-.c-score { width: 210rpx; flex: none; text-align: right; }
-.c-err { width: 110rpx; flex: none; text-align: right; }
+/* 定宽列里的数字一律不换行：原来「共 N 题 · xx%」挤在 110rpx 里会在词中间折行 */
+.c-score { width: 190rpx; flex: none; text-align: right; }
+.c-err { width: 130rpx; flex: none; text-align: right; }
 
-.s-name { display: block; font-size: 28rpx; color: var(--ink); font-weight: 600; }
+.s-name { display: block; font-size: 28rpx; color: var(--ink); font-weight: 600; overflow-wrap: break-word; }
 .s-total { font-size: 30rpx; color: var(--ink); font-weight: 700; }
 .s-low { font-size: 28rpx; color: var(--ink); }
 .red-num { color: var(--err); }
-.s-sub { display: block; margin-top: 2rpx; }
+.s-sub { display: block; margin-top: 2rpx; white-space: nowrap; }
 
 .more-wrap { display: flex; justify-content: center; margin-top: 22rpx; }
 .more-btn { width: 420rpx; }

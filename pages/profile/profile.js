@@ -31,6 +31,11 @@ Page({
   data: {
     user: null,
     nameInitial: '?',
+    // 眉标文字随角色变化，判据在 utils/role.js 的 profileEyebrow / profileEyebrowParts；
+    // 分 en / cn 两段是为了让排版规则只给拉丁上 mono + uppercase（见 app.wxss .eyebrow .en）。
+    // onShow 早于首次渲染执行，这里留空串即可，不必把学生文案写死在页面里
+    eyebrowEn: '',
+    eyebrowCn: '',
     aiReport: null,
     aiLoading: false,
     aiError: '',
@@ -45,9 +50,12 @@ Page({
 
   onShow: function () {
     const u = getUser();
+    const eyebrow = role.profileEyebrowParts(u);
     this.setData({
       user: u,
       nameInitial: (u && u.name) ? String(u.name).charAt(0) : '?',
+      eyebrowEn: eyebrow.en,
+      eyebrowCn: eyebrow.cn,
       subOn: getSubStatus(),
       subReady: !!TEMPLATE_ID,
       isAdmin: role.isAdminUser(u),

@@ -6,7 +6,7 @@
   </view>
 
   <block wx:else>
-    <view class="eyebrow">CLASSES · 班级对比</view>
+    <view class="eyebrow"><text class="en">CLASSES</text><text class="cn"> · 班级对比</text></view>
     <view class="title">各班成绩对比</view>
     <view class="sub">满分 {{fullScore ? fullScore : '—'}} · 共 {{classes.length}} 个班</view>
 
@@ -60,11 +60,11 @@
             <text class="gp-side">最强班 → 最弱班</text>
           </view>
           <view wx:for="{{gaps}}" wx:key="uid" class="gp-row">
-            <text class="gp-no num">Q{{item.questionNumber}}{{item.typeLabel ? '·' + item.typeLabel : ''}}</text>
+            <text class="gp-no num">Q{{item.questionNumber}}</text>
             <text class="gp-gap num">{{item.gap}}pp</text>
             <view class="gp-side">
               <text class="gp-line">{{item.bestClass}} {{item.bestRate}}</text>
-              <text class="gp-line faint">{{item.worstClass}} {{item.worstRate}} · 满分 {{item.maxScore}}</text>
+              <text class="gp-line faint">{{item.worstClass}} {{item.worstRate}} · 满分 {{item.maxScore}}{{item.typeLabel ? ' · ' + item.typeLabel : ''}}</text>
             </view>
           </view>
         </view>

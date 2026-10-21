@@ -440,5 +440,9 @@ Page({
   },
   goClasses: function () {
     wx.navigateTo({ url: '/pages/t-classes/t-classes?examId=' + this.data.examId });
+  },
+  // 导出页自己会再取一次考试名（score-table 里就有），这里只带编号，避免 URL 里塞长名字
+  goExport: function () {
+    wx.navigateTo({ url: '/pages/t-export/t-export?examId=' + this.data.examId });
   }
 });
