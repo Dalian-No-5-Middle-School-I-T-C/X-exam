@@ -76,6 +76,16 @@ function pct(done, total) {
   return Math.min(100, Math.round((done / total) * 100));
 }
 
+// 模板卡默认折叠，折叠态只剩卡头这一行，「里面有什么」必须由摘要说清楚；
+// 一个槽都没存时不写「已存 0/4」这种没用的数字，直接告诉教师展开能干什么。
+function templateSummaryOf(list, activeSlot) {
+  const n = (list || []).length;
+  if (!n) return '未存模板';
+  let s = '已存 ' + n + '/4 槽';
+  if (activeSlot) s += ' · 用槽位' + activeSlot;
+  return s;
+}
+
 // 预览矩阵是字符串数组，直接 wx:for 时 wx:key 只能拿值本身当 key，而「—」这类重复值会撞 key；
 // 补一个位置 uid，行/格都按 uid 走，微信开发者工具就不会报 duplicate key。
 function decoratePreview(view) {
@@ -130,6 +140,8 @@ Page({
     slotList: decorateSlots([], 0),
     templates: [],
     activeSlot: 0,
+    templateOpen: false,
+    templateSummary: templateSummaryOf([], 0),
     templateBusy: false,
     templateNote: '',
 
@@ -291,20 +303,19 @@ Page({
   loadTemplates: function () {
     const self = this;
     exportService.fetchTemplates()
-      .then(function (list) {
-        self.setData({
-          templates: list,
-          slotList: decorateSlots(list, self.data.activeSlot),
-          templateNote: ''
-        });
-      })
-      .catch(function () {
-        self.setData({
-          templates: [],
-          slotList: decorateSlots([], self.data.activeSlot),
-          templateNote: '模板读取失败，可继续直接导出'
-        });
-      });
+      .then(function (list) { self.applyTemplates(list, ''); })
+      .catch(function () { self.applyTemplates([], '模板读取失败，可继续直接导出'); });
+  },
+
+  // 模板数据落进 data 的唯一出口：槽位列表与卡头摘要必须同步更新，
+  // 折叠态下看不见的 slotList 若和摘要各写各的，就会出现「写着已存 2 槽、展开只有一格」。
+  applyTemplates: function (list, note) {
+    this.setData({
+      templates: list,
+      slotList: decorateSlots(list, this.data.activeSlot),
+      templateSummary: templateSummaryOf(list, this.data.activeSlot),
+      templateNote: note || ''
+    });
   },
 
   templateOf: function (slot) {
@@ -313,6 +324,10 @@ Page({
   },
 
   // ── 交互 ────────────────────────────────────────────
+  onToggleTemplates: function () {
+    this.setData({ templateOpen: !this.data.templateOpen });
+  },
+
   onPickMode: function (e) {
     const key = e.currentTarget.dataset.key;
     if (!key || key === this.data.mode) return;
@@ -383,7 +398,7 @@ Page({
     // 先把槽位参数落进 data，再 syncColumns：宽度要按新 sideN 重算，顺序反了会显示上一次的值
     this.setData({ activeSlot: slot, sideOn: t.sideTableN > 0, sideN: t.sideTableN, gapCols: t.gapCols });
     this.syncColumns(t.columns, '');
-    this.setData({ slotList: decorateSlots(this.data.templates, slot) });
+    this.applyTemplates(this.data.templates, this.data.templateNote);
     this.loadPreview();
     wx.showToast({ title: '已载入模板' + slot, icon: 'none' });
   },
@@ -416,11 +431,8 @@ Page({
             return exportService.fetchTemplates();
           })
           .then(function (list) {
-            self.setData({
-              templates: list,
-              slotList: decorateSlots(list, self.data.activeSlot),
-              templateBusy: false
-            });
+            self.applyTemplates(list, '');
+            self.setData({ templateBusy: false });
             wx.showToast({ title: '已存到模板' + slot, icon: 'none' });
           })
           .catch(function (err) {
@@ -450,12 +462,8 @@ Page({
             return exportService.fetchTemplates();
           })
           .then(function (list) {
-            self.setData({
-              templates: list,
-              slotList: decorateSlots(list, self.data.activeSlot),
-              templateBusy: false,
-              templateNote: ''
-            });
+            self.applyTemplates(list, '');
+            self.setData({ templateBusy: false });
           })
           .catch(function (err) { self.setData({ templateBusy: false, templateNote: failText(err) }); });
       }
