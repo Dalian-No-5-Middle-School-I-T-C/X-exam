@@ -120,7 +120,7 @@ function answerFileUrl(examId, page) {
   return '/api/scores/me/exams/' + examId + '/paper/answer-file/' + page;
 }
 
-// v64「原文件直接下发」：answerKeyMode=file，answerFiles 为老师上传的答案原文件
+// v66「原文件直接下发」：answerKeyMode=file，answerFiles 为老师上传的答案原文件
 function fileModePayload(overrides) {
   return paperPayload(Object.assign({
     answerKeyMode: 'file',
@@ -218,7 +218,7 @@ test('decorate fills urls by key and drops images without a temp file', () => {
   assert.deepEqual(decorate(paper, {}).pages, []);
 });
 
-// ---------- v64 答案原文件直发 ----------
+// ---------- v66 答案原文件直发 ----------
 test('normalizeAnswerKeyMode：只有 file 是直发，其余一律回落到逐题文字', () => {
   assert.equal(normalizeAnswerKeyMode('file'), 'file');
   ['text', '', null, undefined, 'FILE', 'ocr', 0, 1].forEach(v => {

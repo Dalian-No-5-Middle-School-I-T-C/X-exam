@@ -1,7 +1,7 @@
 // utils/examPaper.js
 // 「原卷 + 正确答案」响应归一化与展示模型（纯函数，可在 Node 下直接测）。
 // 后端契约：Project-X GET /api/scores/me/exams/:examId/paper
-// 口径：答案下发哪一份由后端 exams.answer_key_mode 决定（v64），小程序只按 answerKeyMode 排版：
+// 口径：答案下发哪一份由后端 exams.answer_key_mode 决定（v66），小程序只按 answerKeyMode 排版：
 //   · 'text' → 渲染教师保存的文字，不做对错判断；题号缺失时不伪造题号。
 //   · 'file' → 渲染教师上传的答案原文件（图片内联，PDF/DOCX 交给 wx.openDocument）。
 'use strict';
@@ -132,7 +132,7 @@ function normalizePaper(resp) {
     hasOriginalPaper: r.hasOriginalPaper === undefined
       ? pages.length > 0
       : (r.hasOriginalPaper === true || r.hasOriginalPaper === 1),
-    // v64：答案展示模式 + 原卷是否开放。showOriginalPaper 缺字段时按「开」处理 ——
+    // v66：答案展示模式 + 原卷是否开放。showOriginalPaper 缺字段时按「开」处理 ——
     // 那是 v54 的语义（能看到这一页就说明原卷是开的），不能反过来把已上线的界面关掉。
     answerKeyMode: answerKeyMode,
     showOriginalPaper: r.showOriginalPaper === undefined && r.show_original_paper === undefined

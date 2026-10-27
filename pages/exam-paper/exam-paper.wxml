@@ -11,7 +11,7 @@
   <view wx:elif="{{error}}" class="empty">{{error}}</view>
 
   <block wx:else>
-    <!-- 答案：下发哪一份由后端 answerKeyMode 决定（v64），页面不自行推断 -->
+    <!-- 答案：下发哪一份由后端 answerKeyMode 决定（v66），页面不自行推断 -->
     <block wx:if="{{answerKeyMode === 'file'}}">
       <view class="section-title">正确答案</view>
       <!-- 部分答案图没取到：提示放在列表上方，已拿到的文件照样能点开（不能一挂就把整段吞掉） -->
