@@ -11,38 +11,66 @@
   <view wx:elif="{{error}}" class="empty">{{error}}</view>
 
   <block wx:else>
-    <!-- 逐题答案汇总（无论原卷是否上传都可先看） -->
-    <view class="section-title">逐题答案</view>
-    <view wx:if="{{rows.length > 0}}" class="card answers anim {{ready ? 'show' : ''}}">
-      <view class="ans-row" wx:for="{{rows}}" wx:key="key">
-        <text class="ans-label num">{{item.label}}</text>
-        <text class="ans-text">{{item.text}}</text>
-      </view>
-    </view>
-    <view wx:else class="muted sub">老师尚未录入逐题答案。</view>
-
-    <!-- 原卷图片：每张图下方按题号渲染本页答案 -->
-    <view class="section-title">原卷</view>
-    <view wx:if="{{imagesUnavailable}}" class="empty">试卷图片暂不可用，可下拉重试</view>
-    <view wx:elif="{{!hasOriginalPaper}}" class="empty">原卷未上传</view>
-    <block wx:else>
-      <view class="page anim {{ready ? 'show' : ''}}" wx:for="{{pages}}" wx:key="pageIndex" style="animation-delay: {{index < 8 ? index * 50 : 0}}ms">
+    <!-- 答案：下发哪一份由后端 answerKeyMode 决定（v64），页面不自行推断 -->
+    <block wx:if="{{answerKeyMode === 'file'}}">
+      <view class="section-title">正确答案</view>
+      <!-- 部分答案图没取到：提示放在列表上方，已拿到的文件照样能点开（不能一挂就把整段吞掉） -->
+      <view wx:if="{{filesUnavailable}}" class="file-warn">部分答案图片未取到，可下拉重试</view>
+      <view wx:if="{{answerFiles.length === 0 && !filesUnavailable}}" class="empty">老师还没有上传答案文件</view>
+      <view class="page anim {{ready ? 'show' : ''}}" wx:for="{{answerFiles}}" wx:key="pageIndex" style="animation-delay: {{index < 8 ? index * 50 : 0}}ms">
         <view class="page-head">
-          <text class="page-no num">P{{item.pageIndex}}</text>
+          <text class="page-no num">A{{item.pageIndex}}</text>
           <text class="muted">{{item.filename}}</text>
         </view>
-        <image wx:if="{{item.isImage}}" class="page-img" src="{{item.url}}" mode="widthFix"
-               data-index="{{index}}" bindtap="onPreview" show-menu-by-longpress="true" />
-        <view wx:else class="page-file">
-          <text class="muted">该页为 {{item.mimeType || '非图片'}} 文件，小程序内暂不能预览。</text>
-        </view>
-        <view wx:if="{{item.rows.length > 0}}" class="page-answers">
-          <view class="pa-row" wx:for="{{item.rows}}" wx:for-item="ans" wx:key="key">
-            <text class="pa-label num">{{ans.label}}</text>
-            <text class="pa-text">{{ans.text}}</text>
+        <image wx:if="{{item.inline}}" class="page-img" src="{{item.url}}" mode="widthFix"
+               data-index="{{index}}" bindtap="onPreviewAnswer" show-menu-by-longpress="true" />
+        <!-- PDF / DOCX：小程序不能内联渲染，点开后交给系统文档预览 -->
+        <view wx:else class="afile" data-index="{{index}}" bindtap="onOpenAnswerFile">
+          <view class="afile-main">
+            <text class="afile-kind num">{{item.kind === 'pdf' ? 'PDF' : (item.kind === 'docx' ? 'WORD' : '文件')}}</text>
+            <text class="afile-hint">{{item.kind == 'pdf' || item.kind == 'docx' ? (openingKey ? '正在取文件…' : '点击查看，可转存或分享') : '暂不支持在小程序内打开'}}</text>
           </view>
+          <text class="afile-go">›</text>
         </view>
       </view>
+    </block>
+
+    <block wx:else>
+      <!-- 逐题答案汇总（无论原卷是否上传都可先看） -->
+      <view class="section-title">逐题答案</view>
+      <view wx:if="{{rows.length > 0}}" class="card answers anim {{ready ? 'show' : ''}}">
+        <view class="ans-row" wx:for="{{rows}}" wx:key="key">
+          <text class="ans-label num">{{item.label}}</text>
+          <text class="ans-text">{{item.text}}</text>
+        </view>
+      </view>
+      <view wx:else class="muted sub">老师尚未录入逐题答案。</view>
+    </block>
+
+    <!-- 原卷图片：每张图下方按题号渲染本页答案。教师只发答案不开试卷时，整段不出现 -->
+    <block wx:if="{{showOriginalPaper}}">
+      <view class="section-title">原卷</view>
+      <view wx:if="{{imagesUnavailable}}" class="empty">试卷图片暂不可用，可下拉重试</view>
+      <view wx:elif="{{!hasOriginalPaper}}" class="empty">原卷未上传</view>
+      <block wx:else>
+        <view class="page anim {{ready ? 'show' : ''}}" wx:for="{{pages}}" wx:key="pageIndex" style="animation-delay: {{index < 8 ? index * 50 : 0}}ms">
+          <view class="page-head">
+            <text class="page-no num">P{{item.pageIndex}}</text>
+            <text class="muted">{{item.filename}}</text>
+          </view>
+          <image wx:if="{{item.isImage}}" class="page-img" src="{{item.url}}" mode="widthFix"
+                 data-index="{{index}}" bindtap="onPreview" show-menu-by-longpress="true" />
+          <view wx:else class="page-file">
+            <text class="muted">该页为 {{item.mimeType || '非图片'}} 文件，小程序内暂不能预览。</text>
+          </view>
+          <view wx:if="{{item.rows.length > 0}}" class="page-answers">
+            <view class="pa-row" wx:for="{{item.rows}}" wx:for-item="ans" wx:key="key">
+              <text class="pa-label num">{{ans.label}}</text>
+              <text class="pa-text">{{ans.text}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
     </block>
 
     <!-- 本人作答图块：先看卷，再看作答 -->

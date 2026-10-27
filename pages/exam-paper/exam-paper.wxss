@@ -79,6 +79,52 @@
   word-break: break-word;
 }
 
+/* 答案原文件（PDF / DOCX）：小程序不能内联，给一个明确的点开入口。
+   用 view 而不是 button —— 微信基础库会给 button 注入 min-height/line-height/margin:auto，
+   这一页的卡宽是内容驱动的，套 button 需要逐条复位，收益为零。 */
+.file-warn {
+  margin: 0 0 16rpx;
+  padding: 16rpx 20rpx;
+  font-size: 26rpx;
+  color: var(--warning);
+  background: var(--paper-2);
+  border-left: 6rpx solid var(--warning);
+}
+.afile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  min-height: 96rpx;
+  padding: 22rpx 24rpx;
+  background: var(--paper-2);
+  border: 1rpx solid var(--border);
+}
+.afile:active { background: var(--brand-bg); }
+.afile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+.afile-kind {
+  font-size: 24rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  color: var(--brand);
+}
+.afile-hint {
+  font-size: 24rpx;
+  color: var(--text-3);
+  overflow-wrap: break-word;
+}
+.afile-go {
+  flex-shrink: 0;
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--text-3);
+}
+
 /* 本人作答图块（横向滚动，复用 detail 规格） */
 .imgs { white-space: nowrap; margin: 16rpx 0; }
 .img-wrap {
