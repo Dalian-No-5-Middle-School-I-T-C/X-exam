@@ -14,6 +14,17 @@
 ## [Unreleased]
 
 ### Added
+- **原卷与答案解析支持「答案原文件直接下发」**（依赖后端 Project-X 迁移 v66 `exams.answer_key_mode`）：主站「考试管理 → 原卷答案 → 本次正确答案」此前只能把上传的文件强制 OCR 成逐题文字，现在教师可按考试二选一——「逐题文字（OCR）」或「原文件直接下发」。小程序**只按后端返回的 `answerKeyMode` 排版，不自行推断该看哪一份**：
+  - `text`：与既有一致（逐题答案 + 每张原卷页下方按题号出文字）。
+  - `file`：「正确答案」段渲染老师上传的原文件本身——图片按原卷同规格内联显示（点开走 `wx.previewImage`，长按可转存/转发），PDF / DOCX 显示为 `PDF` / `WORD` 行，点击时才 `wx.downloadFile` 取临时文件并交给 `wx.openDocument({fileType, showMenu: true})`，避免开场就拉大附件；取文件期间显示「正在取文件…」并挡住连点，下载失败 / 本机打不开各有明确文案。
+  - **原卷段与答案模式解耦**：原卷图片只受 `showOriginalPaper` 控制（教师只发答案不开试卷时整段不出现，且一张原卷图都不下载）。
+  - `utils/examPaper.js` 新增 `normalizeAnswerKeyMode` / `answerFileKind`（文件类型只按后端登记的**文件名 + MIME** 判定，URL 里没有扩展名就不猜）与 `answerFiles` 归一（`kind` / `label` / `inline` 在归一化层定死，wxml 不再做判断）；`decorate` 增加 `a<pageIndex>` 落位，内联图没取到才剔除，PDF / DOCX 一律保留。老响应缺 `answerKeyMode` / `showOriginalPaper` 时按 v54 语义回落（`text` + 原卷可见），不把已上线的界面关掉。
+  - **部分失败不吞整段**：内联答案图未全部取到时，在列表上方给一条「部分答案图片未取到，可下拉重试」提示，已拿到的文件照样能点开（与「老师还没有上传答案文件」的空态互斥）。
+  - 答案文件行用 `<view>` 而不是 `<button>`：微信基础库会给 `button` 注入 `min-height: 2.588em` / `line-height: 2.556` / `margin: 0 auto`，这一页的卡宽是内容驱动的，逐条复位收益为零（见 `pages/exam-paper/exam-paper.wxss` 注释）。
+- `tests/exam-paper.test.js` 由 23 例增至 40 例：模式归一（只认 `'file'`，其余一律 `text`）、`answerFileKind` 的 jpg/png/pdf/doc/docx/MIME 兜底与「无扩展名不猜」、camel 与 snake 两种答案文件载荷、`decorate` 的 `a<pageIndex>` 落位与非内联保留、直发模式只预取内联图（原卷 + 作答 + 1 张答案图 = 4 个请求，顺序与 URL 逐个核对）、关原卷时只取 2 个请求、答案图挂掉时 `filesUnavailable` 与残留条目、空态、`onPreviewAnswer` 在 PDF 占位时不错位、`onOpenAnswerFile` 的下载 URL / Bearer / `fileType` / 连点保护 / 不支持类型只提示 / 两种失败文案 / 卸载后不再 `openDocument`，以及模板接线守卫（wxml 绑到的处理函数必须存在、`.afile*` / `.file-warn` 样式齐备、空态与提示条不得用 `wx:elif` 吞掉列表）。
+- 布局校验沿用导出页那套 **WXML→HTML 预览器**（本机无开发者工具、未入库）：复用同一编译器，用真的 `normalizePaper` + `decorate` 造视图模型，在 375px 视口下量五态——逐题文字（回归）/ 直发（图片 + PDF + DOCX）/ 关原卷 + 部分答案图失败 / 一个文件都没上传 / 超长文件名且正在取文件。实测答案卡 347px 与既有卡同宽、`.afile` 行高 65.59px、40 字超长文件名折成两行不越界、无任何元素超出容器右边界；预览器同样**不等于真机**，`wx.openDocument` 仍以真机为准。
+
+### Added
 - **教师端导出成绩表（Excel，`pages/t-export`）**：主站教师端的 Excel 导出搬到小程序，并新增**分班级导出**。入口两处——分析页与成绩榜的「导出成绩 ›」，跳转时带上当前 `examId` 与已筛选的 `classId`（含 `classId=0` 的「未知班级」）。**主站后端零改动**，请求体与主站导出面板完全互通。
   - **三层结构**：`utils/exportTable.js` 是纯逻辑（16 个列定义含 `label` / `Excel 表头` / 分类 / 估算宽度、三档快捷预设、列增删移动、宽度估算与 A4 超宽判定、班级名单计划、文件名净化、预览表归一、模板归一），无 `wx` 依赖、带 `node utils/exportTable.js` 自检块；`utils/exportStore.js` 管本机落盘（`px_exports/` 目录 + `px_exports_index` 索引、同名加序号、空文件与超体积判失败、只保留最近 N 个）；`services/exportService.js` 是执行层（取二进制 → 落盘 → 逐班串行 → 打开预览 → 模板读写）。页面只调 service。
   - **三种导出范围**：全部班级一份（不传 `classId`）/ 指定一个班（`<picker>` 选班）/ 逐班各出一份（按名单顺序**串行** N 次 POST，每班一个 `.xlsx`，页面显示进度与「另有个班超出单次上限不导出」）。单班失败只记该班错误、不断整批；`runExport` 返回的对象带 `cancel()`，页面 `onUnload` 与取消按钮都会调用它。

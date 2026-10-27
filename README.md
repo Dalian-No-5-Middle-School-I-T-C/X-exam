@@ -10,6 +10,7 @@
 
 - **极速体验**：静默登录 + 本地缓存，首屏即成绩，秒开无等待
 - **查分主线**：成绩总览、逐题小分、原卷图、班级均分对比
+- **查看答案解析**：成绩公布后可进入「原卷与答案解析」页。正确答案有两种下发形态，**由后端 `answerKeyMode` 决定、小程序只按它排版**——`text` 显示逐题文字答案，`file` 直接下发老师上传的答案原文件（图片内联预览，PDF / DOCX 走系统文档预览，可转存或分享）
 - **学生端分析**（复刻主站）：分析页一屏给出趋势折线 + 学科雷达 / 明细表 / 差距柱 / 薄弱学科
 - **教师工作台（只读分析）**：教师与管理员专属，学生既看不到入口也进不了页面。考试列表 → 单场分析（概况 / 小题得分率 / 分布与指标 / 知识点四个页签，班级可筛选）→ 小题逐人得分钻取、成绩榜、班际对比。分析数据全部为 GET 只读，改分 / 发布 / 阅卷提交不在小程序侧提供
 - **教师端导出成绩表（Excel）**：主站导出面板搬到小程序——选列与列序、三档快捷预设、4 槽列模板（与主站同一份后端数据，任一端存下另一端即可载入；该卡**默认折叠**，卡头摘要写出已存槽位数与当前载入的槽位）、「年级前 N 名」参照表与间隙列、A4 纵向超宽提示、数据预览；导出范围支持**全部班级一份 / 指定一个班 / 逐班各出一份**三种模式，生成的 `.xlsx` 只写在本机、点开走系统预览菜单，页面本身不提供分享。范围、预设与「可添加」三处选项都是真正的 `<button>`（不是靠 `bindtap` 的文本），前两档单选等宽铺满一行、「可添加」按内容宽换行，越界的 ↑↓ 直接 `disabled`
@@ -104,7 +105,7 @@ projectX-mini/
 ├── services/                        # 业务层：页面只调 service，不直接 require request
 │   ├── scoresService.js             # 成绩 / 学科对比 / 趋势 / 单场详情 + 缓存
 │   ├── leaderboardService.js        # 天梯
-│   ├── examPaperService.js          # 原卷页与作答图块下载
+│   ├── examPaperService.js          # 原卷页 / 作答图块 / 答案原文件下载（并发 3 + 可取消）
 │   ├── ladderSettingsService.js     # 天梯开关读写（仅管理员）
 │   ├── growthService.js             # 增长编排：邀请归因 / 分享 / 订阅引导 / 埋点
 │   ├── teacherService.js            # 教师工作台：只含 GET，无改分 / 发布 / 阅卷提交
@@ -212,6 +213,9 @@ TabBar 三项：`成绩`（scores）/ `分析`（trends）/ `我的`（profile�
 | POST | `/api/auth/login` | `{identifier,password,isPersistent}` → `{token,user,permissions,passwordChangeRequired}` | `utils/auth.js` |
 | GET | `/api/scores/me` | 本人全部成绩（含 `exam_id/exam_name/subject/total_score/graded_at`） | `pages/scores` |
 | GET | `/api/scores/me/exams/:examId` | 单场详情：逐题小分 + 班级均分 + 原卷图块 | `pages/detail` |
+| GET | `/api/scores/me/exams/:examId/paper` | 原卷与答案：`answerKeyMode`（`text` / `file`）+ `showOriginalPaper` + `pages[]` / `answers[]` / `answerFiles[]`（每项带 `fileUrl`）+ `answerBlocks[]`；未公布或未开放时 404 | `pages/exam-paper` |
+| GET | `/api/scores/me/exams/:examId/paper/pages/:pageIndex/image` | 某张原卷页原图（仅 `showOriginalPaper` 为开时可得，`downloadFile` + Bearer） | `pages/exam-paper` |
+| GET | `/api/scores/me/exams/:examId/paper/answer-file/:pageIndex` | 教师上传的答案原文件本体（仅 `answerKeyMode=file`；DOCX 带 `Content-Disposition: attachment`） | `pages/exam-paper` |
 | GET | `/api/scores/me/trends` | 趋势数据（总分 + 班均 + 年段均） | `pages/trends`（分析页 · 成绩走势） |
 | GET | `/api/scores/me/subject-comparison` | 学科对比（我的均分 / 班级均分 / 差距 / 趋势 / 薄弱学科） | `pages/trends`（分析页 · 学科对比） |
 | POST | `/api/scores/me/ai-analysis` | 整体 AI 分析，请求体 `{}` | `pages/profile` |
@@ -320,9 +324,10 @@ TabBar 三项：`成绩`（scores）/ `分析`（trends）/ `我的`（profile�
 
 1. **订阅消息正式生效**：小程序端与后端（Project-X v2.6.0）代码均已完成，剩下的全在部署侧 —— 小程序后台选用「考试成绩通知」模板并核对 `utils/subscribe.js` 的 `TEMPLATE_ID`，服务端配置三项环境变量、把 IP 加进白名单、按体验版→线上版灰度。逐步命令见后端仓库 `readus/WECHAT-GRADE-RELEASE-开发者上线清单.md`。**提审前务必先把该版本部署上线**，否则审核员打开「我的 → 成绩发布提醒」会看到失败提示。
 2. **天梯管理员开关**：后端对 `GET/PUT /api/ladder/config` 执行管理员鉴权；开关关闭时学生端天梯接口返回 403，前端显示「天梯功能暂未开启」。
-3. **原卷图域名**：`downloadFile` 合法域名需含 `dl5zx.cn`。
+3. **原卷图域名**：`downloadFile` 合法域名需含 `dl5zx.cn`。**答案原文件走同一个 `downloadFile` 域名**（`/paper/answer-file/:pageIndex`），无需新增域名配置；但 `wx.openDocument` 只能真机验证：PDF 与 DOCX 各上传一份，确认能拉起系统文档预览、右上角「…」的转存 / 发送菜单可用（`showMenu: true`），以及微信内置预览器打不开时给出的「本机无法打开该文件，可转存后查看」是否出现。
 4. **指纹/面容解锁（Soter）**：留待后续版本。
 5. **教师工作台验收**：本机没有开发者工具，需在有工具的设备上用真实教师 / 管理员账号过一遍五个分析页面 + 导出页，并在主站后台临时关闭某教师的「图表」「学生名单」查看权限，确认对应页签显示后端 403 文案而不是空白或 0%；导出侧还要确认 `wx.openDocument` 在真机上能打开 xlsx、逐班模式的文件数与班级数一致、退出登录后本机文件列表归零。本轮改的导出页控件同样只能真机确认：三档范围 / 预设是否等宽排成一行（排成 2+1 锯齿即说明 `min-height` 或 `flex` 复位在真机上没生效）、↑↓× 与「载入 / 存 / 删」是否与文字行同高（被撑高就是基础库的 `min-height: 2.588em` 压过了 `height`）、模板卡头是否只有一行高（浮成空条说明 `line-height` 没复位）、首末行的 ↑↓ 是否真点不动且灰底与本页配色一致（冒出 `#f7f7f7` 说明禁用态特异度不够）、`<button>` 的默认灰底与 `::after` 边框有没有复干净。
+6. **答案直发要随版本提审，且开关上线次序有讲究**：`pages/exam-paper` 认 `answerKeyMode` 是本次新增的小程序侧能力。**后端把某场考试切成 `file` 而学生仍在跑旧版本小程序时，页面不会崩，但会显示「老师尚未录入逐题答案」**——因为直发模式后端不再下发文字答案，旧客户端也不认识 `answerFiles`。建议先把本版本提审发布，再对具体考试打开「原文件直接下发」；已切直发的考试随时可切回「逐题文字」，两份数据都原样保留。
 
 ## 微信小程序平台限制（本项目相关）
 
